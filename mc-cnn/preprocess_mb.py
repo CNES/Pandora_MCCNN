@@ -112,7 +112,7 @@ def compute_mask(disp0, disp0y, disp1):
                 dy = disp0y[r, c]
 
             if dx != np.inf:
-                x1 = int(c + dx)
+                x1 = int(c + (-1 * dx))
                 y1 = int(r + dy)
 
                 if 0 < x1 < col and 0 < y1 < row:
@@ -392,7 +392,7 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
             imgs = []
 
             left = read_im(os.path.join(base2, fname_x0), False)
-            right = read_im(os.path.join(base2, fname_x0), False)
+            right = read_im(os.path.join(base2, fname_x1), False)
             _, height, width = left.shape
 
             imgs.append(left)
@@ -400,11 +400,11 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
             XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
             if dir == 'tsukuba':
-                disp0 = gdal.Open(os.path.join(base2, fname_disp0)).ReadAsArray().astype(np.float32) / 16
+                disp0 = gdal.Open(os.path.join(base2, fname_disp0)).ReadAsArray().astype(np.float32) / 16.
                 mask = gdal.Open(os.path.join(base2, 'nonocc.png')).ReadAsArray()
             else:
-                disp0 = gdal.Open(os.path.join(base2, fname_disp0)).ReadAsArray().astype(np.float32) / 8
-                disp1 = gdal.Open(os.path.join(base2, fname_disp1)).ReadAsArray().astype(np.float32) / 8
+                disp0 = gdal.Open(os.path.join(base2, fname_disp0)).ReadAsArray().astype(np.float32) / 8.
+                disp1 = gdal.Open(os.path.join(base2, fname_disp1)).ReadAsArray().astype(np.float32) / 8.
 
                 mask = compute_mask(disp0, None, disp1)
 
