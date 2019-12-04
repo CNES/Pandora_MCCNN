@@ -106,8 +106,8 @@ def compute_mask(disp0, disp0y, disp1, patch_size):
     mask = np.zeros((row, col), dtype=np.float32)
     rad = int(patch_size / 2)
 
-    for r in prange(row):
-        for c in prange(col):
+    for r in prange(rad, row-rad):
+        for c in prange(rad, col-rad):
             dx = disp0[r, c]
 
             dy = 0
@@ -152,7 +152,7 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
     sample_file.create_dataset(str(num_img), data=sample)
 
 
-def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
+def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_dir):
     """
     Preprocess and create middlebury hdf5 database
 
@@ -166,12 +166,14 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
     :type in_dir_2003: string
     :param in_dir_2001: path to the middlebury 2001 dataset
     :type in_dir_2001: string
+    :param output_dir: output directory
+    :type output_dir: string
     """
     patch_size = 11
     # Creating hdf5 file
-    img_file = h5py.File('images.hdf5', 'w')
-    training_file = h5py.File('training_dataset.hdf5', 'w')
-    testing_file = h5py.File('testing_dataset.hdf5', 'w')
+    img_file = h5py.File(os.path.join(output_dir, 'images.hdf5'), 'w')
+    training_file = h5py.File(os.path.join(output_dir, 'training_dataset.hdf5'), 'w')
+    testing_file = h5py.File(os.path.join(output_dir, 'testing_dataset.hdf5'), 'w')
 
     # --------------- Middlebury 2014 dataset ---------------
 
@@ -411,6 +413,7 @@ if __name__ == '__main__':
     parser.add_argument('input_dir_2005', help='Path to the input directory containing the 2005 Middlebury dataset')
     parser.add_argument('input_dir_2003', help='Path to the input directory containing the 2003 Middlebury dataset')
     parser.add_argument('input_dir_2001', help='Path to the input directory containing the 2001 Middlebury dataset')
+    parser.add_argument('output_dir', help='Path to the output directory ')
     args = parser.parse_args()
 
-    mb(args.input_dir_2014, args.input_dir_2006, args.input_dir_2005, args.input_dir_2003, args.input_dir_2001)
+    mb(args.input_dir_2014, args.input_dir_2006, args.input_dir_2005, args.input_dir_2003, args.input_dir_2001, args.output_dir)
