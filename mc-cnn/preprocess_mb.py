@@ -105,6 +105,8 @@ def compute_mask(disp0, disp0y, disp1, patch_size):
     row, col = disp0.shape
     mask = np.zeros((row, col), dtype=np.float32)
     rad = int(patch_size / 2)
+    # 6 = maximum negative displacement
+    rad += 6
 
     for r in prange(rad, row-rad):
         for c in prange(rad, col-rad):
