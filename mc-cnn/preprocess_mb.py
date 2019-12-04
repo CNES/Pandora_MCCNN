@@ -87,9 +87,9 @@ def read_im(fname, downsample):
 
 
 @njit(parallel=True)
-def compute_mask(disp0, disp0y, disp1):
+def compute_mask(disp0, disp0y, disp1, patch_size):
     """
-    Apply cross-checking
+    Apply cross-checking, and invalidate pixels with incomplete patch
 
     :param disp0: Left disparity
     :type disp0: numpy.array (row, col)
@@ -97,11 +97,14 @@ def compute_mask(disp0, disp0y, disp1):
     :type disp0y: numpy.array (row, col)
     :param disp1: Right disparity
     :type disp1: numpy.array (row, col)
+    :param patch_size: patch size
+    :type patch_size: int
     :return: Result of the cross-checking with the convention : invalid pixels = 0, valid pixels = 1
     :rtype : numpy.array (row, col)
     """
     row, col = disp0.shape
     mask = np.zeros((row, col), dtype=np.float32)
+    rad = int(patch_size / 2)
 
     for r in prange(row):
         for c in prange(col):
@@ -115,9 +118,9 @@ def compute_mask(disp0, disp0y, disp1):
                 x1 = int(c + (-1 * dx))
                 y1 = int(r + dy)
 
-                if 0 < x1 < col and 0 < y1 < row:
+                if rad < x1 < (col-rad) and rad < y1 < (row-rad):
                     dx1 = disp1[y1, x1]
-                    if (dx - dx1) < 1:
+                    if abs(dx - dx1) < 1:
                         mask[r, c] = 1
     return mask
 
@@ -232,18 +235,15 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
         disp0y = disp0y[::2, ::2]
 
         # Remove occluded pixels
-        mask = compute_mask(disp0, disp0y, disp1)
+        mask = compute_mask(disp0, disp0y, disp1, patch_size)
         disp0[mask != 1] = 0
 
-        # Patch center : patch center that have an complete window
-        offset = int((patch_size / 2))
-        y, x = np.nonzero(mask[offset: (left.shape[2] - offset), offset: (left.shape[1] - offset)] == 1)
-        y += offset
-        x += offset
+        y, x = np.nonzero(mask)
 
         # data np.array of shape ( number of valid pixels for all the images, 4 )
         # 4 = the image index, row, col, disparity for the pixel p(row, col)
         data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
+
         if num_image in te:
             save_dataset(XX, data, num_image, img_file, testing_file)
         else:
@@ -280,14 +280,10 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
         disp0[disp0 == 0] = np.inf
         disp1[disp1 == 0] = np.inf
 
-        mask = compute_mask(disp0, None, disp1)
+        mask = compute_mask(disp0, None, disp1, patch_size)
         disp0[mask != 1] = 0
-        
-        # Patch center : patch center that have an complete window
-        offset = int((patch_size / 2))
-        y, x = np.nonzero(mask[offset: (left.shape[2] - offset), offset: (left.shape[1] - offset)] == 1)
-        y += int(patch_size / 2)
-        x += int(patch_size / 2)
+
+        y, x = np.nonzero(mask)
 
         data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
         save_dataset(XX, data, num_image, img_file, training_file)
@@ -325,14 +321,10 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
         disp0[disp0 == 0] = np.inf
         disp1[disp1 == 0] = np.inf
 
-        mask = compute_mask(disp0, None, disp1)
+        mask = compute_mask(disp0, None, disp1, patch_size)
         disp0[mask != 1] = 0
 
-        # Patch center : patch center that have an complete window
-        offset = int((patch_size / 2))
-        y, x = np.nonzero(mask[offset: (left.shape[2] - offset), offset: (left.shape[1] - offset)] == 1)
-        y += int(patch_size / 2)
-        x += int(patch_size / 2)
+        y, x = np.nonzero(mask)
 
         data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
         save_dataset(XX, data, num_image, img_file, training_file)
@@ -363,14 +355,10 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
         disp0[disp0 == 0] = np.inf
         disp1[disp1 == 0] = np.inf
 
-        mask = compute_mask(disp0, None, disp1)
+        mask = compute_mask(disp0, None, disp1, patch_size)
         disp0[mask != 1] = 0
 
-        # Patch center : patch center that have an complete window
-        offset = int((patch_size / 2))
-        y, x = np.nonzero(mask[offset: (left.shape[2] - offset), offset: (left.shape[1] - offset)] == 1)
-        y += int(patch_size / 2)
-        x += int(patch_size / 2)
+        y, x = np.nonzero(mask)
 
         data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
         save_dataset(XX, data, num_image, img_file, training_file)
@@ -379,7 +367,7 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
     # --------------- Middlebury 2001 dataset ---------------
     for dir in sorted(os.listdir(in_dir_2001)):
         if dir == 'tsukuba':
-            fname_disp0, fname_disp1, fname_x0, fname_x1 = 'truedisp.row3.col3.pgm', '', 'scene1.row3.col3.ppm', 'scene1.row3.col4.ppm'
+            continue
         elif dir == 'map':
             fname_disp0, fname_disp1, fname_x0, fname_x1 = 'disp0.pgm', 'disp1.pgm', 'im0.pgm', 'im1.pgm'
         else:
@@ -399,22 +387,14 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001):
             imgs.append(right)
             XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-            if dir == 'tsukuba':
-                disp0 = gdal.Open(os.path.join(base2, fname_disp0)).ReadAsArray().astype(np.float32) / 16.
-                mask = gdal.Open(os.path.join(base2, 'nonocc.png')).ReadAsArray()
-            else:
-                disp0 = gdal.Open(os.path.join(base2, fname_disp0)).ReadAsArray().astype(np.float32) / 8.
-                disp1 = gdal.Open(os.path.join(base2, fname_disp1)).ReadAsArray().astype(np.float32) / 8.
+            disp0 = gdal.Open(os.path.join(base2, fname_disp0)).ReadAsArray().astype(np.float32) / 8.
+            disp1 = gdal.Open(os.path.join(base2, fname_disp1)).ReadAsArray().astype(np.float32) / 8.
 
-                mask = compute_mask(disp0, None, disp1)
+            mask = compute_mask(disp0, None, disp1, patch_size)
 
             disp0[mask != 1] = 0
 
-            # Patch center : patch center that have an complete window
-            offset = int((patch_size / 2))
-            y, x = np.nonzero(mask[offset: (left.shape[2] - offset), offset: (left.shape[1] - offset)] == 1)
-            y += int(patch_size / 2)
-            x += int(patch_size / 2)
+            y, x = np.nonzero(mask)
 
             data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
             save_dataset(XX, data, num_image, img_file, training_file)
