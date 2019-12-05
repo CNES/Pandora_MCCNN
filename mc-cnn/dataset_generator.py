@@ -93,7 +93,7 @@ class MiddleburyGenerator(data.Dataset):
 
         x_neg = -1
         while x_neg < 0 or x_neg >= width:
-            x_neg = int((x - disp) + np.random.uniform(1, 6))
+            x_neg = int((x - disp) + np.random.uniform(1.5, 6))
 
         # Make the right positive patch
         right_pos = self.image[id_data][light_r][exp_r, 1, y - w: y + w + 1, x_pos - w: w + x_pos + 1]

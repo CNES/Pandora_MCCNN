@@ -72,7 +72,7 @@ def train(training, testing, image, output_dir):
             output_positive = cos(left, pos)
             output_negative = cos(left, neg)
 
-            target = torch.ones(batch_size) * -1
+            target = torch.ones(batch_size)
             loss = criterion.forward(output_positive, output_negative, target.to(device=device, dtype=torch.float))
             loss.backward()
             optimizer.step()
