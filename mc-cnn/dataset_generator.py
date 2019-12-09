@@ -16,18 +16,24 @@ class MiddleburyGenerator(data.Dataset):
     """
     Generate middlebury dataset
     """
-    def __init__(self, file, image):
+    def __init__(self, file, image, cfg):
         """
         Initialization
 
         :param file: training or testing hdf5 file
         :param image: image hdf5 file
+        :param cfg: configuration
+        :type cfg: dict( dataset_neg_low, dataset_neg_high, dataset_pos )
         """
         self.data = None
         self.h5_file_image = h5py.File(image, 'r')
         self.patch_size = 11
         self.image = []
         self.id_image = []
+
+        self.neg_low = float(cfg['dataset_neg_low'])
+        self.neg_high = float(cfg['dataset_neg_high'])
+        self.pos = float(cfg['dataset_pos'])
 
         with h5py.File(file, 'r') as h5_file:
 
@@ -87,13 +93,14 @@ class MiddleburyGenerator(data.Dataset):
         left = self.image[id_data][light_l][exp_l, 0, y - w: y + w + 1, x - w: x + w + 1]
 
         x_pos = -1
-        width = self.image[id_data][light_l].shape[3]
+        width = self.image[id_data][light_r].shape[3] - 11
+
         while x_pos < 0 or x_pos >= width:
-            x_pos = int((x - disp) + np.random.uniform(-0.5, 0.5))
+            x_pos = int((x - disp) + np.random.uniform(-self.pos, self.pos))
 
         x_neg = -1
         while x_neg < 0 or x_neg >= width:
-            x_neg = int((x - disp) + np.random.uniform(1.5, 6))
+            x_neg = int((x - disp) + np.random.uniform(self.neg_low, self.neg_high))
 
         # Make the right positive patch
         right_pos = self.image[id_data][light_r][exp_r, 1, y - w: y + w + 1, x_pos - w: w + x_pos + 1]
