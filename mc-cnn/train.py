@@ -63,8 +63,8 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
     batch_size = 128
     params = {'batch_size': batch_size, 'shuffle': True}
     cfg = {'dataset_neg_low': 1.5,'dataset_neg_high': 6,'dataset_pos': 0.5}
-    training_generator = data.DataLoader(MiddleburyGenerator(training, image, **cfg), **params)
-    testing_generator = data.DataLoader(MiddleburyGenerator(testing, image, **cfg), **params)
+    training_generator = data.DataLoader(MiddleburyGenerator(training, image, cfg), **params)
+    testing_generator = data.DataLoader(MiddleburyGenerator(testing, image, cfg), **params)
 
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
@@ -72,7 +72,7 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
     training_loss = []
     testing_loss = []
     for epoch in range(nb_epoch):
-        print('-------- Epoch' + str(epoch) + ' ------------')
+        print('-------- Fast epoch' + str(epoch) + ' ------------')
 
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
@@ -94,14 +94,7 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
 
             train_epoch_loss += loss.item() * batch.size(0)
 
-        print('Training loss ', train_epoch_loss / len(training_generator))
         training_loss.append(train_epoch_loss / len(training_generator))
-
-        # Save the network, optimizer, scheduler at each epoch
-        torch.save(net.state_dict(), os.path.join(output_dir, 'mc_cnn_fast_network_epoch'+str(epoch)+'.pt'))
-        torch.save(optimizer.state_dict(), os.path.join(output_dir, 'mc_cnn_fast_optimizer_epoch'+str(epoch)+'.pt'))
-        torch.save(scheduler.state_dict(), os.path.join(output_dir, 'mc_cnn_fast_scheduler_epoch'+str(epoch)+'.pt'))
-
         scheduler.step(epoch)
 
         net.eval()
@@ -120,8 +113,15 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
 
             test_epoch_loss += loss.item() * batch.size(0)
 
-        print('Testing loss ', test_epoch_loss / len(testing_generator))
         testing_loss.append(test_epoch_loss / len(testing_generator))
+
+        # Save the network, optimizer, scheduler at each epoch
+        torch.save({'model': net.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'scheduler': scheduler.state_dict(),
+                    'epoch': epoch,
+                    'train_epoch_loss': train_epoch_loss,
+                    'test_epoch_loss': test_epoch_loss}, os.path.join(output_dir, 'mc_cnn_fast_epoch' + str(epoch) + '.pt'))
 
     # Save the loss in hdf5 file
     h5_file = h5py.File(os.path.join(output_dir, 'loss.hdf5'), 'w')
@@ -167,7 +167,7 @@ def train_mc_cnn_acc(training, testing, image, output_dir):
     training_loss = []
     testing_loss = []
     for epoch in range(nb_epoch):
-        print('-------- Epoch' + str(epoch) + ' ------------')
+        print('-------- Accurate epoch' + str(epoch) + ' ------------')
 
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
@@ -189,14 +189,7 @@ def train_mc_cnn_acc(training, testing, image, output_dir):
 
             train_epoch_loss += loss.item() * batch.size(0)
 
-        print('Training loss ', train_epoch_loss / len(training_generator))
         training_loss.append(train_epoch_loss / len(training_generator))
-
-        # Save the network, optimizer, scheduler at each epoch
-        torch.save(net.state_dict(), os.path.join(output_dir, 'mc_cnn_acc_network_epoch'+str(epoch)+'.pt'))
-        torch.save(optimizer.state_dict(), os.path.join(output_dir, 'mc_cnn_acc_optimizer_epoch'+str(epoch)+'.pt'))
-        torch.save(scheduler.state_dict(), os.path.join(output_dir, 'mc_cnn_acc_scheduler_epoch'+str(epoch)+'.pt'))
-
         scheduler.step(epoch)
 
         net.eval()
@@ -215,8 +208,15 @@ def train_mc_cnn_acc(training, testing, image, output_dir):
 
             test_epoch_loss += loss.item() * batch.size(0)
 
-        print('Testing loss ', test_epoch_loss / len(testing_generator))
         testing_loss.append(test_epoch_loss / len(testing_generator))
+
+        # Save the network, optimizer, scheduler at each epoch
+        torch.save({'model': net.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'scheduler': scheduler.state_dict(),
+                    'epoch': epoch,
+                    'train_epoch_loss': train_epoch_loss,
+                    'test_epoch_loss': test_epoch_loss}, os.path.join(output_dir, 'mc_cnn_acc_epoch' + str(epoch) + '.pt'))
 
     # Save the loss in hdf5 file
     h5_file = h5py.File(os.path.join(output_dir, 'loss.hdf5'), 'w')
