@@ -87,7 +87,7 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
             output_positive = cos(left, pos)
             output_negative = cos(left, neg)
 
-            target = torch.ones(batch_size)
+            target = torch.ones(batch.size(0))
             loss = criterion.forward(output_positive, output_negative, target.to(device=device, dtype=torch.float))
             loss.backward()
             optimizer.step()
@@ -115,7 +115,7 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
             output_positive = cos(left, pos)
             output_negative = cos(left, neg)
 
-            target = torch.ones(batch_size)
+            target = torch.ones(batch.size(0))
             loss = criterion.forward(output_positive, output_negative, target.to(device=device, dtype=torch.float))
 
             test_epoch_loss += loss.item() * batch.size(0)
