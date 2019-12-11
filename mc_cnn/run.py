@@ -136,4 +136,4 @@ def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
     sec = (sec - sec.mean()) / sec.std()
 
     return net(torch.from_numpy(ref).to(device=device, dtype=torch.float),
-               torch.from_numpy(sec).to(device=device, dtype=torch.float), -60, 0)
+               torch.from_numpy(sec).to(device=device, dtype=torch.float), disp_min, disp_max)
