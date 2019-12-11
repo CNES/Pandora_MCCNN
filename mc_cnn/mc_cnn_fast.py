@@ -46,10 +46,10 @@ class FastMcCnn(nn.Module):
         :param sample: sample
         :type sample:
         if training mode :
-            - torch ( batch_size, 3, 11, 11) with : 3 is the left patch, right positive patch, right negative
+            - normalized patch : torch ( batch_size, 3, 11, 11) with : 3 is the left patch, right positive patch, right negative
                patch, 11 the patch
         else:
-            - image torch(row, col)
+            - normalized image torch(row, col)
 
         :param training: training mode
         :type training: bool

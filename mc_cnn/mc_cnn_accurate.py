@@ -54,7 +54,7 @@ class AccMcCnn(nn.Module):
         """
         Forward function
 
-        :param sample: sample
+        :param sample: normalized patch
         :type sample: torch ( batch_size, 3, 11, 11) with : 3 is the left patch, right positive patch, right negative
         patch, 11 the patch size
         :return: left, right positive and right negative features
