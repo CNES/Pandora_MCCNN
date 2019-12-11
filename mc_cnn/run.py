@@ -11,6 +11,7 @@ import numpy as np
 import torch.nn as nn
 
 from .mc_cnn_fast import FastMcCnn
+from .mc_cnn_accurate_testing import AccMcCnnTesting
 
 
 def point_interval(img_ref, img_sec, disp):
@@ -95,3 +96,44 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
     cv *= -1
 
     return np.swapaxes(cv, 0, 2)
+
+
+def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
+    """
+    Computes the cost volume for a pair of images
+
+    :param img_ref: reference Dataset image
+    :type img_ref:
+    xarray.Dataset containing :
+        - im : 2D (row, col) xarray.DataArray
+    :param img_sec: secondary Dataset image
+    :type img_sec:
+    xarray.Dataset containing :
+        - im : 2D (row, col) xarray.DataArray
+    :param disp_min: minimum disparity
+    :type disp_min: int
+    :param disp_max: maximum disparity
+    :type disp_max: int
+    :param model_path: path to the trained network
+    :type model_path: string
+    :return: the cost volume ( similarity score is converted to a matching cost )
+    :rtype: 3D np.array (row, col, disp)
+    """
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    # Create the network
+    net = AccMcCnnTesting()
+    # Load the network
+    net.load_state_dict(torch.load(model_path)['model'])
+    net.to(device)
+    net.eval()
+
+    # Normalize images
+    ref = img_ref['im'].copy(deep=True).data
+    ref = (ref - ref.mean()) / ref.std()
+
+    sec = img_sec['im'].copy(deep=True).data
+    sec = (sec - sec.mean()) / sec.std()
+
+    return net(torch.from_numpy(ref).to(device=device, dtype=torch.float),
+               torch.from_numpy(sec).to(device=device, dtype=torch.float), -60, 0)
