@@ -32,7 +32,7 @@ def mkdir_p(path):
             raise
 
 
-def train_mc_cnn_fast(training, testing, image, output_dir):
+def train_mc_cnn_fast(training, testing, image, output_dir, augmentation):
     """
     Train the fast mc_cnn network
 
@@ -44,6 +44,8 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
     :type image: string
     :param output_dir: output directory
     :type output_dir: string
+    :param augmentation: data augmentation
+    :type augmentation: bool
     """
     # Create the output directory
     mkdir_p(output_dir)
@@ -62,9 +64,13 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
 
     batch_size = 128
     params = {'batch_size': batch_size, 'shuffle': True}
-    cfg = {'dataset_neg_low': 1.5,'dataset_neg_high': 6,'dataset_pos': 0.5}
-    training_generator = data.DataLoader(MiddleburyGenerator(training, image, cfg), **params)
-    testing_generator = data.DataLoader(MiddleburyGenerator(testing, image, cfg), **params)
+
+    cfg = {'dataset_neg_low': 1.5,'dataset_neg_high': 6,'dataset_pos': 0.5, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1,
+           'trans': 0, 'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3,
+           'd_vtrans': 1, 'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
+
+    training_generator = data.DataLoader(MiddleburyGenerator(training, image, augmentation, cfg), **params)
+    testing_generator = data.DataLoader(MiddleburyGenerator(testing, image, False, cfg), **params)
 
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
@@ -129,7 +135,7 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
     h5_file.create_dataset("testing_loss", (nb_epoch,), data=testing_loss)
 
 
-def train_mc_cnn_acc(training, testing, image, output_dir):
+def train_mc_cnn_acc(training, testing, image, output_dir, augmentation):
     """
     Train the accurate mc_cnn network
 
@@ -141,6 +147,8 @@ def train_mc_cnn_acc(training, testing, image, output_dir):
     :type image: string
     :param output_dir: output directory
     :type output_dir: string
+    :param augmentation: data augmentation
+    :type augmentation: bool
     """
     # Create the output directory
     mkdir_p(output_dir)
@@ -159,9 +167,11 @@ def train_mc_cnn_acc(training, testing, image, output_dir):
 
     batch_size = 128
     params = {'batch_size': batch_size, 'shuffle': True}
-    cfg = {'dataset_neg_low': 1.5, 'dataset_neg_high': 18, 'dataset_pos': 0.5}
-    training_generator = data.DataLoader(MiddleburyGenerator(training, image, cfg), **params)
-    testing_generator = data.DataLoader(MiddleburyGenerator(testing, image, cfg), **params)
+    cfg = {'dataset_neg_low': 1.5, 'dataset_neg_high': 18, 'dataset_pos': 0.5, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1,
+           'trans': 0, 'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3,
+           'd_vtrans': 1, 'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
+    training_generator = data.DataLoader(MiddleburyGenerator(training, image, augmentation, cfg), **params)
+    testing_generator = data.DataLoader(MiddleburyGenerator(testing, image, False, cfg), **params)
 
     nb_epoch = 14
     training_loss = []
@@ -231,11 +241,12 @@ if __name__ == '__main__':
     parser.add_argument('testing', help='Path to a hdf5 file containing the testing sample')
     parser.add_argument('image', help='Path to a hdf5 file containing the image sample')
     parser.add_argument('output_dir', help='Output directory')
+    parser.add_argument('-data_augmentation', help='Apply data augmentation ?', choices=['True', 'False'], default=False)
     args = parser.parse_args()
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     if args.net == 'fast':
-        train_mc_cnn_fast(args.training, args.testing, args.image, args.output_dir)
+        train_mc_cnn_fast(args.training, args.testing, args.image, args.output_dir, args.data_augmentation)
     else:
-        train_mc_cnn_acc(args.training, args.testing, args.image, args.output_dir)
+        train_mc_cnn_acc(args.training, args.testing, args.image, args.output_dir, args.data_augmentation)
