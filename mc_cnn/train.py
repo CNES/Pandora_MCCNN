@@ -81,7 +81,7 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
             # zero the parameter gradients
             optimizer.zero_grad()
 
-            left, pos, neg = net(batch.to(device=device, dtype=torch.float))
+            left, pos, neg = net(batch.to(device=device, dtype=torch.float), training=True)
 
             # Cosine  similarity
             output_positive = cos(left, pos)
@@ -102,7 +102,7 @@ def train_mc_cnn_fast(training, testing, image, output_dir):
             # zero the parameter gradients
             optimizer.zero_grad()
 
-            left, pos, neg = net(batch.to(device=device, dtype=torch.float))
+            left, pos, neg = net(batch.to(device=device, dtype=torch.float), training=True)
 
             # Cosine  similarity
             output_positive = cos(left, pos)
