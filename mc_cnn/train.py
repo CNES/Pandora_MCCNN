@@ -69,8 +69,10 @@ def train_mc_cnn_fast(training, testing, image, output_dir, augmentation):
            'trans': 0, 'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3,
            'd_vtrans': 1, 'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
 
-    training_generator = data.DataLoader(MiddleburyGenerator(training, image, augmentation, cfg), **params)
-    testing_generator = data.DataLoader(MiddleburyGenerator(testing, image, False, cfg), **params)
+    training_loader = MiddleburyGenerator(training, image, augmentation, cfg)
+    training_generator = data.DataLoader(training_loader, **params)
+    testing_loader = MiddleburyGenerator(testing, image, False, cfg)
+    testing_generator = data.DataLoader(testing_loader, **params)
 
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
@@ -100,7 +102,7 @@ def train_mc_cnn_fast(training, testing, image, output_dir, augmentation):
 
             train_epoch_loss += loss.item() * batch.size(0)
 
-        training_loss.append(train_epoch_loss / len(training_generator))
+        training_loss.append(train_epoch_loss / len(training_loader))
         scheduler.step(epoch)
 
         net.eval()
@@ -119,15 +121,16 @@ def train_mc_cnn_fast(training, testing, image, output_dir, augmentation):
 
             test_epoch_loss += loss.item() * batch.size(0)
 
-        testing_loss.append(test_epoch_loss / len(testing_generator))
+        testing_loss.append(test_epoch_loss / len(testing_loader))
 
         # Save the network, optimizer, scheduler at each epoch
         torch.save({'model': net.state_dict(),
                     'optimizer': optimizer.state_dict(),
                     'scheduler': scheduler.state_dict(),
                     'epoch': epoch,
-                    'train_epoch_loss': train_epoch_loss,
-                    'test_epoch_loss': test_epoch_loss}, os.path.join(output_dir, 'mc_cnn_fast_epoch' + str(epoch) + '.pt'))
+                    'train_epoch_loss': train_epoch_loss / len(training_loader),
+                    'test_epoch_loss': test_epoch_loss / len(testing_loader)},
+                   os.path.join(output_dir, 'mc_cnn_fast_epoch' + str(epoch) + '.pt'))
 
     # Save the loss in hdf5 file
     h5_file = h5py.File(os.path.join(output_dir, 'loss.hdf5'), 'w')
@@ -170,8 +173,11 @@ def train_mc_cnn_acc(training, testing, image, output_dir, augmentation):
     cfg = {'dataset_neg_low': 1.5, 'dataset_neg_high': 18, 'dataset_pos': 0.5, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1,
            'trans': 0, 'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3,
            'd_vtrans': 1, 'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
-    training_generator = data.DataLoader(MiddleburyGenerator(training, image, augmentation, cfg), **params)
-    testing_generator = data.DataLoader(MiddleburyGenerator(testing, image, False, cfg), **params)
+
+    training_loader = MiddleburyGenerator(training, image, augmentation, cfg)
+    training_generator = data.DataLoader(training_loader, **params)
+    testing_loader = MiddleburyGenerator(testing, image, False, cfg)
+    testing_generator = data.DataLoader(testing_loader, **params)
 
     nb_epoch = 14
     training_loss = []
@@ -199,7 +205,7 @@ def train_mc_cnn_acc(training, testing, image, output_dir, augmentation):
 
             train_epoch_loss += loss.item() * batch.size(0)
 
-        training_loss.append(train_epoch_loss / len(training_generator))
+        training_loss.append(train_epoch_loss / len(training_loader))
         scheduler.step(epoch)
 
         net.eval()
@@ -218,15 +224,16 @@ def train_mc_cnn_acc(training, testing, image, output_dir, augmentation):
 
             test_epoch_loss += loss.item() * batch.size(0)
 
-        testing_loss.append(test_epoch_loss / len(testing_generator))
+        testing_loss.append(test_epoch_loss / len(testing_loader))
 
         # Save the network, optimizer, scheduler at each epoch
         torch.save({'model': net.state_dict(),
                     'optimizer': optimizer.state_dict(),
                     'scheduler': scheduler.state_dict(),
                     'epoch': epoch,
-                    'train_epoch_loss': train_epoch_loss,
-                    'test_epoch_loss': test_epoch_loss}, os.path.join(output_dir, 'mc_cnn_acc_epoch' + str(epoch) + '.pt'))
+                    'train_epoch_loss': train_epoch_loss / len(training_loader),
+                    'test_epoch_loss': test_epoch_loss / len(testing_loader)},
+                   os.path.join(output_dir, 'mc_cnn_acc_epoch' + str(epoch) + '.pt'))
 
     # Save the loss in hdf5 file
     h5_file = h5py.File(os.path.join(output_dir, 'loss.hdf5'), 'w')
