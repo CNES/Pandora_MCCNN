@@ -81,6 +81,8 @@ class FastMcCnn(nn.Module):
 
         # Testing mode
         else:
-            # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 2 dimensions
-            features = self.conv_blocks(sample.unsqueeze(0).unsqueeze(0))
-            return torch.squeeze(F.normalize(features, p=2, dim=1))
+            # Disabling gradient calculation in evaluation mode. It will reduce memory consumption
+            with torch.no_grad():
+                # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 2 dimensions
+                features = self.conv_blocks(sample.unsqueeze(0).unsqueeze(0))
+                return torch.squeeze(F.normalize(features, p=2, dim=1))

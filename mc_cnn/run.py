@@ -92,6 +92,9 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
         d = int(disp - disp_min)
         cv[d, p[0]:p[1], :] = np.swapaxes((cos(ref[:, :, p[0]:p[1]], sec[:, :, q[0]:q[1]]).cpu().detach().numpy()), 0, 1)
 
+    # Releases cache memory
+    torch.cuda.empty_cache()
+
     # The minus sign converts the similarity score to a matching cost
     cv *= -1
 
@@ -135,5 +138,8 @@ def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
     sec = img_sec['im'].copy(deep=True).data
     sec = (sec - sec.mean()) / sec.std()
 
-    return net(torch.from_numpy(ref).to(device=device, dtype=torch.float),
-               torch.from_numpy(sec).to(device=device, dtype=torch.float), disp_min, disp_max)
+    cv = net(torch.from_numpy(ref).to(device=device, dtype=torch.float),
+             torch.from_numpy(sec).to(device=device, dtype=torch.float), disp_min, disp_max)
+    # Releases cache memory
+    torch.cuda.empty_cache()
+    return cv
