@@ -131,7 +131,7 @@ class MiddleburyGenerator(data.Dataset):
             brightness = np.random.uniform(-self.brightness, self.brightness)
             contrast = np.random.uniform(1. / self.contrast, self.contrast)
 
-            left = self.data_augmentation(self.image[id_data][light_l][exp_l, 1, :, :], y, x, scale, phi,
+            left = self.data_augmentation(self.image[id_data][light_l][exp_l, 0, :, :], y, x, scale, phi,
                                                trans, hshear, brightness, contrast)
 
             scale__ = [scale[0] * np.random.uniform(self.d_hscale, 1), scale[1]]
