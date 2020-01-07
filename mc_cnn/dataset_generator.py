@@ -18,16 +18,14 @@ class MiddleburyGenerator(data.Dataset):
     """
     Generate middlebury dataset
     """
-    def __init__(self, file, image, transformation, cfg):
+    def __init__(self, file, image, cfg):
         """
         Initialization
 
         :param file: training or testing hdf5 file
         :param image: image hdf5 file
-        :param transformation: apply data augmentation
-        :type transformation: bool
         :param cfg: configuration
-        :type cfg: dict( dataset_neg_low, dataset_neg_high, dataset_pos, scale, hscale, hshear, trans, rotate,
+        :type cfg: dict( transformation, dataset_neg_low, dataset_neg_high, dataset_pos, scale, hscale, hshear, trans, rotate,
         brightness, contrast, d_hscale, d_hshear, d_vtrans, d_rotate, d_brightness, d_contrast )
         """
         self.data = None
@@ -57,7 +55,7 @@ class MiddleburyGenerator(data.Dataset):
                 self.image.append(image_grp)
 
         # Data augmentation parameters
-        self.transformation = transformation
+        self.transformation = cfg['transformation']
         self.scale = float(cfg['scale'])
         self.hscale = float(cfg['hscale'])
         self.hshear = float(cfg['hshear'])
