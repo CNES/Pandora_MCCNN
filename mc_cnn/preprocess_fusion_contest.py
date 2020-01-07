@@ -103,6 +103,9 @@ def fusion_contest(data_path, gt, output):
         # img of shape (2, 1024, 1024, 3)
         img = np.stack((left, right), axis=0)
 
+        if num_image == end_training:
+            num_img_per_file = 0
+
         # Testing
         if num_image >= end_training:
             # Max images per testing file
@@ -112,7 +115,7 @@ def fusion_contest(data_path, gt, output):
                 testing_file = h5py.File(os.path.join(output, 'testing_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
                 num_img_per_file = 0
 
-            save_dataset(img, valid_disp, gt[num_image], img_file, testing_file)
+            save_dataset(img, valid_disp, file, img_file, testing_file)
             num_img_per_file += 1
         # Training
         else:
@@ -124,7 +127,7 @@ def fusion_contest(data_path, gt, output):
                     os.path.join(output, 'training_dataset_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
                 num_img_per_file = 0
 
-            save_dataset(img, valid_disp, gt[num_image], img_file, training_file)
+            save_dataset(img, valid_disp, file, img_file, training_file)
             num_img_per_file += 1
 
 
