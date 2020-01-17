@@ -24,8 +24,8 @@ def save_dataset(img, sample, img_name, img_file, sample_file):
     :param img: images
     :type img: np.array (2, 1024, 1024, 3) ( 2 = left image, right image)
     :param sample: samples of the image
-    :type sample: np.array(number of valid pixels for all the images, 3).
-    The last dimension is : row, col, disparity for the pixel p(row, col)
+    :type sample: np.array(number of valid pixels for all the images, 4).
+    The last dimension is : number of the image, row, col, disparity for the pixel p(row, col)
     :param img_name: name of the current image pair ( name of the gt disparity )
     :type img_name: string
     :param img_file: image database file
@@ -47,9 +47,8 @@ def fusion_contest(data_path, gt, output):
     :param output: output directory
     :type output: string
     """
-    img_file = h5py.File(os.path.join(output, 'images_fusion_contest_0.hdf5'), 'w')
+    img_file = h5py.File(os.path.join(output, 'images_training_dataset_fusion_contest_0.hdf5'), 'w')
     training_file = h5py.File(os.path.join(output, 'training_dataset_fusion_contest_0.hdf5'), 'w')
-    testing_file = h5py.File(os.path.join(output, 'testing_fusion_contest_0.hdf5'), 'w')
 
     gt = glob.glob(gt + '/*_LEFT_DSP.tif')
     nb_img = len(gt)
@@ -79,8 +78,9 @@ def fusion_contest(data_path, gt, output):
         left = (left - left.mean()) / left.std()
         right = (right - right.mean()) / right.std()
 
-        # Truncated the disparity map: remove 100 pixels on the top, bottom, left, right in order to have complete patch
-        max_patch_size = 100
+        # Truncated the disparity map: remove 100 pixels on the top, bottom, left, right in order to have complete patch,
+        # and remove 128 pixels on the left and right that correspond to the maximal and minimal disparity
+        max_patch_size = 100 + 128
         dsp[0:max_patch_size, :] = -999
         dsp[nb_row-max_patch_size:, :] = -999
         dsp[:, 0:max_patch_size] = -999
@@ -97,38 +97,44 @@ def fusion_contest(data_path, gt, output):
         # Remove invalid disparity = -999
         y, x = np.where(dsp != -999)
 
-        # data np.array of shape ( number of valid pixels the current image, 3 )
-        # 3 = row, col, disparity for the pixel p(row, col)
-        valid_disp = np.column_stack((y, x, dsp[y, x])).astype(np.float32)
+        # data np.array of shape ( number of valid pixels the current image, 4 )
+        # 4 = number of the image, row, col, disparity for the pixel p(row, col)
+        valid_disp = np.column_stack((np.zeros_like(y) + num_image, y, x, dsp[y, x])).astype(np.float32)
         # img of shape (2, 1024, 1024, 3)
         img = np.stack((left, right), axis=0)
 
         if num_image == end_training:
             num_img_per_file = 0
-
-        # Testing
-        if num_image >= end_training:
-            # Max images per testing file
-            if num_img_per_file == 200:
-                num_file += 1
-                img_file = h5py.File(os.path.join(output, 'images_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
-                testing_file = h5py.File(os.path.join(output, 'testing_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
-                num_img_per_file = 0
+            num_file = 0
+            img_file = h5py.File(os.path.join(output, 'images_testing_dataset_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
+            testing_file = h5py.File(os.path.join(output, 'testing_dataset_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
 
             save_dataset(img, valid_disp, file, img_file, testing_file)
             num_img_per_file += 1
-        # Training
         else:
-            # Max images per training file
-            if num_img_per_file == 200:
-                num_file += 1
-                img_file = h5py.File(os.path.join(output, 'images_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
-                training_file = h5py.File(
-                    os.path.join(output, 'training_dataset_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
-                num_img_per_file = 0
+            # Testing
+            if num_image > end_training:
+                # Max images per testing file
+                if num_img_per_file == 200:
+                    num_file += 1
+                    img_file = h5py.File(os.path.join(output, 'images_testing_dataset_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
+                    testing_file = h5py.File(os.path.join(output, 'testing_dataset_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
+                    num_img_per_file = 0
 
-            save_dataset(img, valid_disp, file, img_file, training_file)
-            num_img_per_file += 1
+                save_dataset(img, valid_disp, file, img_file, testing_file)
+                num_img_per_file += 1
+            # Training
+            else:
+                # Max images per training file
+                if num_img_per_file == 200:
+                    num_file += 1
+                    img_file = h5py.File(os.path.join(output, 'images_training_dataset_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
+                    training_file = h5py.File(
+                        os.path.join(output, 'training_dataset_fusion_contest_' + str(num_file) + '.hdf5'), 'w')
+                    num_img_per_file = 0
+
+                save_dataset(img, valid_disp, file, img_file, training_file)
+                num_img_per_file += 1
 
 
 if __name__ == '__main__':
