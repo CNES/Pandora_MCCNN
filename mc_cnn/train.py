@@ -85,19 +85,12 @@ def train_mc_cnn_fast(training, testing, image, output_dir, dataset_cfg):
     # lr = 0.0002 if 9 <= epoch < 18 ...
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 9, gamma=0.1)
 
-    if dataset_cfg['dataset'] == "fusion_contest":
-        # Set up the seed
-        set_seed()
-        batch_size = 128
-        params = {'batch_size': batch_size, 'shuffle': True, 'num_workers': 0, 'worker_init_fn':_init_fn}
+    batch_size = 128
+    params = {'batch_size': batch_size, 'shuffle': True}
 
-    else:
-        batch_size = 128
-        params = {'batch_size': batch_size, 'shuffle': True}
-
-    training_loader = MiddleburyGenerator(training, image, cfg)
+    training_loader = MiddleburyGenerator(training, image, dataset_cfg)
     training_generator = data.DataLoader(training_loader, **params)
-    testing_loader = MiddleburyGenerator(testing, image, cfg)
+    testing_loader = MiddleburyGenerator(testing, image, dataset_cfg)
     testing_generator = data.DataLoader(testing_loader, **params)
 
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
@@ -196,15 +189,8 @@ def train_mc_cnn_acc(training, testing, image, output_dir, dataset_cfg):
     # lr = 0.0003 if 10 <= epoch < 18 ...
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, gamma=0.1)
 
-    if dataset_cfg['dataset'] == "fusion_contest":
-        # Set up the seed
-        set_seed()
-        batch_size = 128
-        params = {'batch_size': batch_size, 'shuffle': True, 'num_workers': 0, 'worker_init_fn':_init_fn}
-
-    else:
-        batch_size = 128
-        params = {'batch_size': batch_size, 'shuffle': True}
+    batch_size = 128
+    params = {'batch_size': batch_size, 'shuffle': True}
 
     training_loader = MiddleburyGenerator(training, image, dataset_cfg)
     training_generator = data.DataLoader(training_loader, **params)
@@ -278,7 +264,6 @@ def train_mc_cnn_acc(training, testing, image, output_dir, dataset_cfg):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('net', help="Type of the network : accurate or fast ", choices=['accurate', 'fast'])
-    parser.add_argument('dataset', help='Dataset used for training', choices=['middlebury', 'fusion_contest'])
     parser.add_argument('training', help='Path to a hdf5 file containing the training sample')
     parser.add_argument('testing', help='Path to a hdf5 file containing the testing sample')
     parser.add_argument('image', help='Path to a hdf5 file containing the image sample')
@@ -288,19 +273,15 @@ if __name__ == '__main__':
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    if args.dataset == 'middlebury':
-        fast_cfg = {'dataset': 'middlebury', 'transformation': args.data_augmentation, 'dataset_neg_low': 1.5,
-               'dataset_neg_high': 6, 'dataset_pos': 0.5, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1, 'trans': 0,
-               'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3, 'd_vtrans': 1,
-               'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
+    fast_cfg = {'dataset': 'middlebury', 'transformation': args.data_augmentation, 'dataset_neg_low': 1.5,
+                'dataset_neg_high': 6, 'dataset_pos': 0.5, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1, 'trans': 0,
+                'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3, 'd_vtrans': 1,
+                'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
 
-        acc_cfg = {'dataset': 'middlebury', 'transformation': args.data_augmentation, 'dataset_neg_low': 1.5,
-                   'dataset_neg_high': 18, 'dataset_pos': 0.5, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1,
-                    'trans': 0, 'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3,
-                    'd_vtrans': 1, 'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
-
-    if args.dataset == 'fusion_contest':
-        cfg = {'dataset': 'fusion_contest'}
+    acc_cfg = {'dataset': 'middlebury', 'transformation': args.data_augmentation, 'dataset_neg_low': 1.5,
+               'dataset_neg_high': 18, 'dataset_pos': 0.5, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1,
+               'trans': 0, 'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3,
+               'd_vtrans': 1, 'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
 
     if args.net == 'fast':
         train_mc_cnn_fast(args.training, args.testing, args.image, args.output_dir, fast_cfg)
