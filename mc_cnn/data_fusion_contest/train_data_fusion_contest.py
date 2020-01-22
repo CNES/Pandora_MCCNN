@@ -14,6 +14,7 @@ import os
 import errno
 import numpy as np
 import glob
+import copy
 
 from mc_cnn.data_fusion_contest.mc_cnn_accurate import AccMcCnnDataFusion
 from mc_cnn.data_fusion_contest.dataset_generator_fusion_contest import DataFusionContestGenerator
@@ -87,9 +88,11 @@ def train_mc_cnn_acc(input_dir, output_dir, dataset_cfg):
     batch_size = 128
     params = {'batch_size': batch_size, 'shuffle': True, 'num_workers': 10, 'worker_init_fn':_init_fn}
 
+    # Testing configuration
+    test_cfg = copy.deepcopy(dataset_cfg)
+    test_cfg['transformation'] = False
+
     nb_epoch = 5
-    training_loss = []
-    testing_loss = []
     for epoch in range(0, nb_epoch):
         print('-------- Accurate epoch' + str(epoch) + ' ------------')
 
@@ -104,7 +107,7 @@ def train_mc_cnn_acc(input_dir, output_dir, dataset_cfg):
 
         training_files = glob.glob(input_dir + '/training_dataset_fusion_contest_*')
         testing_files = glob.glob(input_dir + '/testing_dataset_fusion_contest_*')
-        exit()
+
         for file in training_files[0:3]:
             nb_file = os.path.basename(file).split('training_dataset_fusion_contest_')[1]
             training_loader = DataFusionContestGenerator(file, os.path.join(input_dir + 'images_training_dataset_fusion_contest_' + nb_file), dataset_cfg)
@@ -142,7 +145,7 @@ def train_mc_cnn_acc(input_dir, output_dir, dataset_cfg):
 
         for file in testing_files[0:2]:
             nb_file = os.path.basename(file).split('testing_dataset_fusion_contest_')[1]
-            testing_loader = DataFusionContestGenerator(file, os.path.join(input_dir + 'images_testing_dataset_fusion_contest_' + nb_file), dataset_cfg)
+            testing_loader = DataFusionContestGenerator(file, os.path.join(input_dir + 'images_testing_dataset_fusion_contest_' + nb_file), test_cfg)
             testing_generator = data.DataLoader(testing_loader, **params)
             for it, batch in enumerate(testing_generator, 0):
                 # zero the parameter gradients
@@ -161,8 +164,6 @@ def train_mc_cnn_acc(input_dir, output_dir, dataset_cfg):
 
             len_testing_loader += len(testing_loader)
 
-        testing_loss.append(test_epoch_loss / len_testing_loader)
-
         # Save the network, optimizer, scheduler at each epoch
         torch.save({'model': net.state_dict(),
                     'optimizer': optimizer.state_dict(),
@@ -180,7 +181,7 @@ if __name__ == '__main__':
     parser.add_argument('-data_augmentation', help='Apply data augmentation ?', choices=['True', 'False'], default=False)
     args = parser.parse_args()
 
-    device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     cfg_data_augmentation = {'transformation': args.data_augmentation, 'dataset_neg_low': 3,
                'dataset_neg_high': 18, 'dataset_pos': 2, 'vertical_disp': 2, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1,
