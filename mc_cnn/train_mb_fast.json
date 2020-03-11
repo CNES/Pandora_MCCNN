@@ -1,0 +1,27 @@
+{
+    "network": "fast",
+    "training": "/work/OT/siaa/3D/Development/rt_corr_deep/middlebury/middlebury_database/training_dataset.hdf5",
+    "testing": "/work/OT/siaa/3D/Development/rt_corr_deep/middlebury/middlebury_database/testing_dataset.hdf5",
+    "image": "/work/OT/siaa/3D/Development/rt_corr_deep/middlebury/middlebury_database/images.hdf5",
+    "dataset_neg_low": 1.5,
+    "dataset_neg_high": 6,
+    "dataset_pos": 0.5,
+    "patch_size": 11,
+    "data_augmentation": false,
+
+    "augmentation_param":{
+      "scale": 0.8,
+      "hscale": 0.8,
+      "hshear": 0.1,
+      "trans": 0,
+      "rotate": 28,
+      "brightness": 1.3,
+      "contrast": 1.1,
+      "d_hscale": 0.9,
+      "d_hshear": 0.3,
+      "d_vtrans": 1,
+      "d_rotate": 3,
+      "d_brightness": 0.7,
+      "d_contrast": 1.1
+    }
+}

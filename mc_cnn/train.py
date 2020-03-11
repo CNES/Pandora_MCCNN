@@ -1,9 +1,9 @@
-# coding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright: (c) 2019 Centre National d'Etudes Spatiales
+
 """
-:author: Véronique Defonte
-:organization: CS SI
-:copyright: 2019 CNES. All rights reserved.
-:created: dec. 2019
+This module contains all functions to train mc-cnn fast and accurate networks
 """
 
 import torch
@@ -12,15 +12,12 @@ from torch.utils import data
 import argparse
 import os
 import errno
-import h5py
-import numpy as np
+import json
 
 from mc_cnn_fast import FastMcCnn
 from mc_cnn_accurate import AccMcCnn
 from dataset_generator import MiddleburyGenerator
 
-# Global variable that control the random seed
-SEED = 0
 
 def mkdir_p(path):
     """
@@ -35,43 +32,18 @@ def mkdir_p(path):
             raise
 
 
-def _init_fn(worker_id):
-    """
-    Set the init function in order to have multiple worker in the dataloader
-    """
-    np.random.seed(SEED + worker_id)
-
-
-def set_seed():
-    """
-    Set up the random seed
-
-    """
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed(SEED)
-    torch.cuda.manual_seed_all(SEED)  # if you are using multi-GPU.
-    np.random.seed(SEED)  # Numpy module.
-    torch.manual_seed(SEED)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
-
-def train_mc_cnn_fast(training, testing, image, output_dir, dataset_cfg):
+def train_mc_cnn_fast(cfg, output_dir):
     """
     Train the fast mc_cnn network
 
-    :param training: path to the hdf5 training dataset
-    :type training: string
-    :param testing: path to the hdf5 testing dataset
-    :type testing: string
-    :param image: path to the hdf5 image dataset
-    :type image: string
+    :param cfg: configuration
+    :type cfg: dict
     :param output_dir: output directory
     :type output_dir: string
-    :param dataset_cfg: data augmentation
-    :type dataset_cfg: dict
     """
     # Create the output directory
     mkdir_p(output_dir)
+    save_cfg(output_dir, cfg)
 
     # Create the network
     net = FastMcCnn()
@@ -88,9 +60,9 @@ def train_mc_cnn_fast(training, testing, image, output_dir, dataset_cfg):
     batch_size = 128
     params = {'batch_size': batch_size, 'shuffle': True}
 
-    training_loader = MiddleburyGenerator(training, image, dataset_cfg)
+    training_loader = MiddleburyGenerator(cfg['training'], cfg['image'], cfg)
     training_generator = data.DataLoader(training_loader, **params)
-    testing_loader = MiddleburyGenerator(testing, image, dataset_cfg)
+    testing_loader = MiddleburyGenerator(cfg['testing'], cfg['image'], cfg)
     testing_generator = data.DataLoader(testing_loader, **params)
 
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
@@ -104,8 +76,6 @@ def train_mc_cnn_fast(training, testing, image, output_dir, dataset_cfg):
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
         net.train()
-        # Change the seed at each epoch
-        SEED = epoch
         for it, batch in enumerate(training_generator, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -153,29 +123,19 @@ def train_mc_cnn_fast(training, testing, image, output_dir, dataset_cfg):
                     'test_epoch_loss': test_epoch_loss / len(testing_loader)},
                    os.path.join(output_dir, 'mc_cnn_fast_epoch' + str(epoch) + '.pt'))
 
-    # Save the loss in hdf5 file
-    h5_file = h5py.File(os.path.join(output_dir, 'loss.hdf5'), 'w')
-    h5_file.create_dataset("training_loss", (nb_epoch,), data=training_loss)
-    h5_file.create_dataset("testing_loss", (nb_epoch,), data=testing_loss)
 
-
-def train_mc_cnn_acc(training, testing, image, output_dir, dataset_cfg):
+def train_mc_cnn_acc(cfg, output_dir):
     """
     Train the accurate mc_cnn network
 
-    :param training: path to the hdf5 training dataset
-    :type training: string
-    :param testing: path to the hdf5 testing dataset
-    :type testing: string
-    :param image: path to the hdf5 image dataset
-    :type image: string
+    :param cfg: configuration
+    :type cfg: dict
     :param output_dir: output directory
     :type output_dir: string
-    :param dataset_cfg: data augmentation
-    :type dataset_cfg: dict
     """
     # Create the output directory
     mkdir_p(output_dir)
+    save_cfg(output_dir, cfg)
 
     # Create the network
     net = AccMcCnn()
@@ -192,9 +152,9 @@ def train_mc_cnn_acc(training, testing, image, output_dir, dataset_cfg):
     batch_size = 128
     params = {'batch_size': batch_size, 'shuffle': True}
 
-    training_loader = MiddleburyGenerator(training, image, dataset_cfg)
+    training_loader = MiddleburyGenerator(cfg['training'], cfg['image'], cfg)
     training_generator = data.DataLoader(training_loader, **params)
-    testing_loader = MiddleburyGenerator(testing, image, dataset_cfg)
+    testing_loader = MiddleburyGenerator(cfg['testing'], cfg['image'], cfg)
     testing_generator = data.DataLoader(testing_loader, **params)
 
     nb_epoch = 14
@@ -206,8 +166,6 @@ def train_mc_cnn_acc(training, testing, image, output_dir, dataset_cfg):
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
         net.train()
-        # Change the seed at each epoch
-        SEED = epoch
         for it, batch in enumerate(training_generator, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -255,35 +213,42 @@ def train_mc_cnn_acc(training, testing, image, output_dir, dataset_cfg):
                     'test_epoch_loss': test_epoch_loss / len(testing_loader)},
                    os.path.join(output_dir, 'mc_cnn_acc_epoch' + str(epoch) + '.pt'))
 
-    # Save the loss in hdf5 file
-    h5_file = h5py.File(os.path.join(output_dir, 'loss.hdf5'), 'w')
-    h5_file.create_dataset("training_loss", (nb_epoch,), data=training_loss)
-    h5_file.create_dataset("testing_loss", (nb_epoch,), data=testing_loss)
+
+def read_config_file(config_file):
+    """
+    Read a json configuration file
+
+    :param config_file: path to a json file containing the algorithm parameters
+    :type config_file: string
+    :return:
+    """
+    with open(config_file, 'r') as f:
+        user_cfg = json.load(f)
+    return user_cfg
+
+
+def save_cfg(output, user_cfg):
+    """
+    Save user configuration in the json file : config.json
+
+    :param output: output directory
+    :param user_cfg: user configuration
+    """
+    with open(os.path.join(output, 'config.json'), 'w') as f:
+        json.dump(user_cfg, f, indent=2)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('net', help="Type of the network : accurate or fast ", choices=['accurate', 'fast'])
-    parser.add_argument('training', help='Path to a hdf5 file containing the training sample')
-    parser.add_argument('testing', help='Path to a hdf5 file containing the testing sample')
-    parser.add_argument('image', help='Path to a hdf5 file containing the image sample')
-    parser.add_argument('output_dir', help='Output directory')
-    parser.add_argument('-data_augmentation', help='Apply data augmentation ?', choices=['True', 'False'], default=False)
+    parser.add_argument('injson', help="Input json file")
+    parser.add_argument('outdir', help='Output directory')
     args = parser.parse_args()
+
+    user_cfg = read_config_file(args.injson)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    fast_cfg = {'dataset': 'middlebury', 'transformation': args.data_augmentation, 'dataset_neg_low': 1.5,
-                'dataset_neg_high': 6, 'dataset_pos': 0.5, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1, 'trans': 0,
-                'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3, 'd_vtrans': 1,
-                'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
-
-    acc_cfg = {'dataset': 'middlebury', 'transformation': args.data_augmentation, 'dataset_neg_low': 1.5,
-               'dataset_neg_high': 18, 'dataset_pos': 0.5, 'scale': 0.8, 'hscale': 0.8, 'hshear': 0.1,
-               'trans': 0, 'rotate': 28, 'brightness': 1.3, 'contrast': 1.1, 'd_hscale': 0.9, 'd_hshear': 0.3,
-               'd_vtrans': 1, 'd_rotate': 3, 'd_brightness': 0.7, 'd_contrast': 1.1}
-
-    if args.net == 'fast':
-        train_mc_cnn_fast(args.training, args.testing, args.image, args.output_dir, fast_cfg)
+    if user_cfg['network'] == 'fast':
+        train_mc_cnn_fast(user_cfg, args.outdir)
     else:
-        train_mc_cnn_acc(args.training, args.testing, args.image, args.output_dir, acc_cfg)
+        train_mc_cnn_acc(user_cfg, args.outdir)

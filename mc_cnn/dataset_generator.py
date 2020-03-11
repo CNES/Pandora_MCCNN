@@ -1,9 +1,9 @@
-# coding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright: (c) 2019 Centre National d'Etudes Spatiales
+
 """
-:author: Véronique Defonte
-:organization: CS SI
-:copyright: 2019 CNES. All rights reserved.
-:created: dec. 2019
+This module contains all functions to load and preprocess dataset
 """
 
 import random
@@ -25,21 +25,15 @@ class MiddleburyGenerator(data.Dataset):
         :param file: training or testing hdf5 file
         :param image: image hdf5 file
         :param cfg: configuration
-        :type cfg: dict( transformation, dataset_neg_low, dataset_neg_high, dataset_pos, scale, hscale, hshear, trans, rotate,
-        brightness, contrast, d_hscale, d_hshear, d_vtrans, d_rotate, d_brightness, d_contrast )
+        :type cfg: dict
         """
         self.data = None
         self.h5_file_image = h5py.File(image, 'r')
-        self.patch_size = 11
         self.image = []
         self.id_image = []
 
-        self.neg_low = float(cfg['dataset_neg_low'])
-        self.neg_high = float(cfg['dataset_neg_high'])
-        self.pos = float(cfg['dataset_pos'])
-
+        # Load the training / testing dataset
         with h5py.File(file, 'r') as h5_file:
-
             for dst in h5_file.keys():
                 if self.data is None:
                     self.data = h5_file[dst][:]
@@ -47,6 +41,7 @@ class MiddleburyGenerator(data.Dataset):
                     self.data = np.concatenate((self.data, h5_file[dst][:]), axis=0)
                 self.id_image.append(int(h5_file[dst][0, 0]))
 
+        # Load images
         with h5py.File(image, 'r') as h5_file:
             for grp in self.id_image:
                 image_grp = []
@@ -54,21 +49,27 @@ class MiddleburyGenerator(data.Dataset):
                     image_grp.append(h5_file[str(int(grp))][dst][:])
                 self.image.append(image_grp)
 
+        # Training parameters
+        self.patch_size = int(cfg['patch_size'])
+        self.neg_low = float(cfg['dataset_neg_low'])
+        self.neg_high = float(cfg['dataset_neg_high'])
+        self.pos = float(cfg['dataset_pos'])
+
         # Data augmentation parameters
-        self.transformation = cfg['transformation']
-        self.scale = float(cfg['scale'])
-        self.hscale = float(cfg['hscale'])
-        self.hshear = float(cfg['hshear'])
-        self.trans = float(cfg['trans'])
-        self.rotate = float(cfg['rotate'])
-        self.brightness = float(cfg['brightness'])
-        self.contrast = float(cfg['contrast'])
-        self.d_hscale = float(cfg['d_hscale'])
-        self.d_hshear = float(cfg['d_hshear'])
-        self.d_vtrans = float(cfg['d_vtrans'])
-        self.d_rotate = float(cfg['d_rotate'])
-        self.d_brightness = float(cfg['d_brightness'])
-        self.d_contrast = float(cfg['d_contrast'])
+        self.transformation = cfg['data_augmentation']
+        self.scale = float(cfg['augmentation_param']['scale'])
+        self.hscale = float(cfg['augmentation_param']['hscale'])
+        self.hshear = float(cfg['augmentation_param']['hshear'])
+        self.trans = float(cfg['augmentation_param']['trans'])
+        self.rotate = float(cfg['augmentation_param']['rotate'])
+        self.brightness = float(cfg['augmentation_param']['brightness'])
+        self.contrast = float(cfg['augmentation_param']['contrast'])
+        self.d_hscale = float(cfg['augmentation_param']['d_hscale'])
+        self.d_hshear = float(cfg['augmentation_param']['d_hshear'])
+        self.d_vtrans = float(cfg['augmentation_param']['d_vtrans'])
+        self.d_rotate = float(cfg['augmentation_param']['d_rotate'])
+        self.d_brightness = float(cfg['augmentation_param']['d_brightness'])
+        self.d_contrast = float(cfg['augmentation_param']['d_contrast'])
 
     def __getitem__(self, index):
         """
@@ -85,10 +86,11 @@ class MiddleburyGenerator(data.Dataset):
         id_data = self.id_image.index(id_image)
 
         nb_illuminations = len(self.image[id_data])
+        # Left illuminations
         light_l = random.randint(0, nb_illuminations-1)
 
-        # nb_exposures = self.h5_file_image[str(id_image)][str(light_l)].shape[0]
         nb_exposures = self.image[id_data][light_l].shape[0]
+        # Left exposures
         exp_l = random.randint(0, nb_exposures-1)
 
         # Right illuminations and exposures
@@ -110,12 +112,13 @@ class MiddleburyGenerator(data.Dataset):
         w = int(self.patch_size / 2)
 
         x_pos = -1
-        width = self.image[id_data][light_r].shape[3] - 11
-
+        width = self.image[id_data][light_r].shape[3] - int(self.patch_size / 2)
+        # Create the positive example = x - d + pos, with pos [-pos, pos]
         while x_pos < 0 or x_pos >= width:
             x_pos = int((x - disp) + np.random.uniform(-self.pos, self.pos))
 
         x_neg = -1
+        # Create the negative example = x - d + neg, with neg [ neg_low, neg_high]
         while x_neg < 0 or x_neg >= width:
             x_neg = int((x - disp) + np.random.uniform(self.neg_low, self.neg_high))
 
@@ -129,6 +132,7 @@ class MiddleburyGenerator(data.Dataset):
             brightness = np.random.uniform(-self.brightness, self.brightness)
             contrast = np.random.uniform(1. / self.contrast, self.contrast)
 
+            # Make the left augmented patch
             left = self.data_augmentation(self.image[id_data][light_l][exp_l, 0, :, :], y, x, scale, phi,
                                                trans, hshear, brightness, contrast)
 
@@ -139,9 +143,11 @@ class MiddleburyGenerator(data.Dataset):
             brightness_ = brightness + np.random.uniform(-self.d_brightness, self.d_brightness)
             contrast_ = contrast * np.random.uniform(1 / self.d_contrast, self.d_contrast)
 
+            # Make the right positive augmented patch
             right_pos = self.data_augmentation(self.image[id_data][light_r][exp_r, 1, :, :], y, x_pos, scale__, phi_,
                                                trans_, hshear_, brightness_, contrast_)
 
+            # Make the right negative augmented patch
             right_neg = self.data_augmentation(self.image[id_data][light_r][exp_r, 1, :, :], y, x_neg, scale__, phi_,
                                                trans_, hshear_, brightness_, contrast_)
 
@@ -154,7 +160,6 @@ class MiddleburyGenerator(data.Dataset):
             right_neg = self.image[id_data][light_r][exp_r, 1, y - w: y + w + 1, x_neg - w: w + x_neg + 1]
 
         return np.stack((left, right_pos, right_neg), axis=0)
-
 
     def __len__(self):
         """
@@ -177,7 +182,7 @@ class MiddleburyGenerator(data.Dataset):
         :param brightness: brightness
         :param contrast: contrast
         :return: the augmented patch
-        :rtype: np.array(11, 11)
+        :rtype: np.array(self.patch_size, self.patch_size)
         """
         m = [1, 0, -x, 0, 1, -y]
         m = self.mul32([1, 0, trans[0], 0, 1, trans[1]], m)
@@ -190,7 +195,7 @@ class MiddleburyGenerator(data.Dataset):
 
         m = np.reshape(m, (2,3))
 
-        dst = cv2.warpAffine(src, m, (11, 11))
+        dst = cv2.warpAffine(src, m, (self.patch_size, self.patch_size))
         dst *= contrast
         dst += brightness
         return dst
