@@ -4,8 +4,6 @@ MC-CNN est un réseau de neurones qui produit un coût de mise en correspondance
 
 ## Installation pour les utilisateurs sur le cluster HAL du CNES
 
-Un environnement conda est mis à disposition dans /work/OT/siaa/3D/Development/rt_corr_deep/conda_environment/mc_cnn_env :
-
 
 ```sh
 u@m $ module purge
