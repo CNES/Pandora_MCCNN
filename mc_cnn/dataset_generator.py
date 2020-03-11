@@ -50,7 +50,7 @@ class MiddleburyGenerator(data.Dataset):
                 self.image.append(image_grp)
 
         # Training parameters
-        self.patch_size = int(cfg['patch_size'])
+        self.patch_size = 11
         self.neg_low = float(cfg['dataset_neg_low'])
         self.neg_high = float(cfg['dataset_neg_high'])
         self.pos = float(cfg['dataset_pos'])

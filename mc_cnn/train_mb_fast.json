@@ -6,7 +6,6 @@
     "dataset_neg_low": 1.5,
     "dataset_neg_high": 6,
     "dataset_pos": 0.5,
-    "patch_size": 11,
     "data_augmentation": false,
 
     "augmentation_param":{
