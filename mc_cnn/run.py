@@ -1,17 +1,18 @@
-# coding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright: (c) 2019 Centre National d'Etudes Spatiales
+
 """
-:author: Véronique Defonte
-:organization: CS SI
-:copyright: 2019 CNES. All rights reserved.
-:created: dec. 2019
+This module contains functions to test mc-cnn fast and accurate
 """
+
 
 import torch
 import numpy as np
 import torch.nn as nn
 
 from .mc_cnn_fast import FastMcCnn
-from .mc_cnn_accurate_testing import AccMcCnnTesting
+from .mc_cnn_accurate import AccMcCnnTesting
 
 
 def point_interval(img_ref, img_sec, disp):
@@ -40,7 +41,7 @@ def point_interval(img_ref, img_sec, disp):
 
 def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
     """
-    Computes the cost volume for a pair of images
+    Computes the cost volume for a pair of images with mc-cnn fast
 
     :param img_ref: reference Dataset image
     :type img_ref:
@@ -67,6 +68,7 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
     net.load_state_dict(torch.load(model_path)['model'])
     net.to(device)
     net.eval()
+
     cos = nn.CosineSimilarity(dim=0, eps=1e-6)
 
     # Normalize images
@@ -103,7 +105,7 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
 
 def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
     """
-    Computes the cost volume for a pair of images
+    Computes the cost volume for a pair of images with mc-cnn accurate
 
     :param img_ref: reference Dataset image
     :type img_ref:
