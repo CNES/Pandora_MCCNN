@@ -2,19 +2,18 @@
 
 MC-CNN est un réseau de neurones qui produit un coût de mise en correspondance entre deux imagettes.
 
-## Dépendances
-
-    python >= 3.6, numpy, gdal2., pygdal, opencv, torch, torchvision, h5py
-
 ## Installation pour les utilisateurs sur le cluster HAL du CNES
 
 Un environnement conda est mis à disposition dans /work/OT/siaa/3D/Development/rt_corr_deep/conda_environment/mc_cnn_env :
 
+
 ```sh
 u@m $ module purge
-u@m $ module load conda
-u@m $ module load gdal/2.1.1
-u@m $ conda activate /work/OT/siaa/3D/Development/rt_corr_deep/conda_environment/mc_cnn_env
+u@m $ module load python/3.7.2 gdal/2.1.1
+u@m $ virtualenv myEnv --no-site-packages
+u@m $ source myEnv/bin/activate
+(myEnv) u@m $ git clone git@gitlab.cnes.fr:OutilsCommuns/CorrelateurChaine3D/mc-cnn.git
+(myEnv) u@m $ pip install -e mc-cnn
 ```
 
 ## Utilisation

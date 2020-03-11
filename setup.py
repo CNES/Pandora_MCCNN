@@ -1,8 +1,16 @@
 from setuptools import setup, find_packages
 from codecs import open
+import subprocess
 
-# TODO : faire les requirements
-requirements = []
+requirements = ['numpy',
+                'numba',
+                'pygdal=={}.*'.format(subprocess.check_output(
+                    ['gdal-config', '--version']).rstrip().decode("utf-8")),
+                'torch',
+                'torchvision',
+                'h5py',
+                'opencv-python',
+                'scipy']
 
 
 def readme():

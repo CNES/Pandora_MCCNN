@@ -1,5 +1,0 @@
-# change GDAL_VERSION by `gdal-config --version`.* to install the most appropriate gdal version base on pre-installed gdal
-pygdal==GDAL_VERSION
-numpy
-h5py
-numba
