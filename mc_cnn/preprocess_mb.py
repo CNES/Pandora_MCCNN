@@ -1,9 +1,9 @@
-# coding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright: (c) 2019 Centre National d'Etudes Spatiales
+
 """
-:author: Véronique Defonte
-:organization: CS SI
-:copyright: 2019 CNES. All rights reserved.
-:created: dec. 2019
+This module contains all functions to generate the training and testing dataset on Middlebury
 """
 
 import argparse
