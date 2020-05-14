@@ -124,12 +124,12 @@ def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
     :return: the cost volume ( similarity score is converted to a matching cost )
     :rtype: 3D np.array (row, col, disp)
     """
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Create the network
     net = AccMcCnnTesting()
     # Load the network
-    net.load_state_dict(torch.load(model_path)['model'])
+    net.load_state_dict(torch.load(model_path, map_location=device)['model'])
     net.to(device)
     net.eval()
 
