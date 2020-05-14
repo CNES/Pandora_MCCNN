@@ -10,9 +10,9 @@ import argparse
 import os
 import numpy as np
 import re
-from osgeo import gdal
 from numba import njit, prange
 import h5py
+import rasterio
 
 
 def load_pfm(fname):
@@ -68,7 +68,7 @@ def read_im(fname, downsample):
     :return: data of the file
     :rtype : np.array (1, row, col)
     """
-    x = gdal.Open(fname).ReadAsArray()
+    x = rasterio.open(fname).read()
 
     if downsample:
         x = x[:, ::2, ::2]
@@ -274,8 +274,8 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
             # XX[0].shape = (3, 2, row, col )
             XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        disp0 = gdal.Open(base1 + '/disp1.png').ReadAsArray().astype(np.float32)
-        disp1 = gdal.Open(base1 + '/disp5.png').ReadAsArray().astype(np.float32)
+        disp0 = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
+        disp1 = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
         disp0 /= 2
@@ -315,8 +315,8 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
             # XX[0].shape = (3, 2, row, col )
             XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        disp0 = gdal.Open(base1 + '/disp1.png').ReadAsArray().astype(np.float32)
-        disp1 = gdal.Open(base1 + '/disp5.png').ReadAsArray().astype(np.float32)
+        disp0 = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
+        disp1 = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
         disp0 /= 2
@@ -349,8 +349,8 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
         imgs.append(right)
         XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        disp0 = gdal.Open(base1 + '/disp2.pgm').ReadAsArray().astype(np.float32)
-        disp1 = gdal.Open(base1 + '/disp6.pgm').ReadAsArray().astype(np.float32)
+        disp0 = rasterio.open(base1 + '/disp2.pgm').read().astype(np.float32)
+        disp1 = rasterio.open(base1 + '/disp6.pgm').read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
         disp0 /= 2
@@ -391,8 +391,8 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
             imgs.append(right)
             XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-            disp0 = gdal.Open(os.path.join(base2, fname_disp0)).ReadAsArray().astype(np.float32) / 8.
-            disp1 = gdal.Open(os.path.join(base2, fname_disp1)).ReadAsArray().astype(np.float32) / 8.
+            disp0 = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.
+            disp1 = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.
 
             mask = compute_mask(disp0, None, disp1, patch_size)
 

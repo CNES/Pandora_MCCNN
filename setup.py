@@ -4,8 +4,7 @@ import subprocess
 
 requirements = ['numpy',
                 'numba',
-                'pygdal=={}.*'.format(subprocess.check_output(
-                    ['gdal-config', '--version']).rstrip().decode("utf-8")),
+                'rasterio',
                 'torch',
                 'torchvision',
                 'h5py',
