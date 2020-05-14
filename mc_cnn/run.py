@@ -15,21 +15,21 @@ from .mc_cnn_fast import FastMcCnn
 from .mc_cnn_accurate import AccMcCnnTesting
 
 
-def point_interval(img_ref, img_sec, disp):
+def point_interval(ref_features, sec_features, disp):
     """
     Computes the range of points over which the similarity measure will be applied
 
-    :param img_ref: reference features image
-    :type img_ref: np array of shape (64, row, col)
-    :param img_sec: secondary features image
-    :type img_sec: np array of shape (64, row, col)
+    :param ref_features: reference features
+    :type ref_features: Tensor of shape (64, row, col)
+    :param sec_features: secondary features
+    :type sec_features: Tensor of shape (64, row, col)
     :param disp: current disparity
     :type disp: float
     :return: the range of the reference and secondary image over which the similarity measure will be applied
     :rtype: tuple
     """
-    _, _, nx_ref = img_ref.shape
-    _, _, nx_sec = img_sec.shape
+    _, _, nx_ref = ref_features.shape
+    _, _, nx_sec = sec_features.shape
 
     # range in the reference image
     p = (max(0 - disp, 0), min(nx_ref - disp, nx_ref))
@@ -69,8 +69,6 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
     net.to(device)
     net.eval()
 
-    cos = nn.CosineSimilarity(dim=0, eps=1e-6)
-
     # Normalize images
     ref = img_ref['im'].copy(deep=True).data
     ref = (ref - ref.mean()) / ref.std()
@@ -78,21 +76,40 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
     sec = img_sec['im'].copy(deep=True).data
     sec = (sec - sec.mean()) / sec.std()
 
-    # Right and left shape : (64, row-10, col-10)
-    ref = net(torch.from_numpy(ref).to(device=device, dtype=torch.float), training=False)
-    sec = net(torch.from_numpy(sec).to(device=device, dtype=torch.float), training=False)
+    # Extracts the image features by propagating the images in the mc_cnn fast network
+    # Right and left features of shape : (64, row-10, col-10)
+    ref_features = net(torch.from_numpy(ref).to(device=device, dtype=torch.float), training=False)
+    sec_features = net(torch.from_numpy(sec).to(device=device, dtype=torch.float), training=False)
 
+    cv = computes_cost_volume_mc_cnn_fast(ref_features, sec_features, disp_min, disp_max)
+
+    return cv
+
+
+def computes_cost_volume_mc_cnn_fast(ref_features, sec_features, disp_min, disp_max):
+    """
+    Computes the cost volume using the reference and secondary features computing by mc_cnn fast
+
+    :param ref_features: reference features
+    :type ref_features: Tensor of shape (64, row, col)
+    :param sec_features: secondary features
+    :type sec_features: Tensor of shape (64, row, col)
+    :return: the cost volume ( similarity score is converted to a matching cost )
+    :rtype: 3D np.array (row, col, disp)
+    """
     # Construct the cost volume
     disparity_range = np.arange(disp_min, disp_max + 1)
 
     # Allocate the numpy cost volume cv = (disp, col, row), for efficient memory management
-    cv = np.zeros((len(disparity_range), ref.shape[2], ref.shape[1]), dtype=np.float32)
+    cv = np.zeros((len(disparity_range), ref_features.shape[2], ref_features.shape[1]), dtype=np.float32)
     cv += np.nan
 
+    cos = nn.CosineSimilarity(dim=0, eps=1e-6)
+
     for disp in disparity_range:
-        p, q = point_interval(ref, sec, disp)
+        p, q = point_interval(ref_features, sec_features, disp)
         d = int(disp - disp_min)
-        cv[d, p[0]:p[1], :] = np.swapaxes((cos(ref[:, :, p[0]:p[1]], sec[:, :, q[0]:q[1]]).cpu().detach().numpy()), 0, 1)
+        cv[d, p[0]:p[1], :] = np.swapaxes((cos(ref_features[:, :, p[0]:p[1]], sec_features[:, :, q[0]:q[1]]).cpu().detach().numpy()), 0, 1)
 
     # Releases cache memory
     torch.cuda.empty_cache()
