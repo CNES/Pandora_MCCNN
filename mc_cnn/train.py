@@ -16,7 +16,7 @@ import json
 
 from mc_cnn_fast import FastMcCnn
 from mc_cnn_accurate import AccMcCnn
-from dataset_generator import MiddleburyGenerator
+from mc_cnn.dataset_generator.middlebury_generator import MiddleburyGenerator
 
 
 def mkdir_p(path):
