@@ -14,8 +14,8 @@ import os
 import errno
 import json
 
-from mc_cnn_fast import FastMcCnn
-from mc_cnn_accurate import AccMcCnn
+from mc_cnn.model.mc_cnn_accurate import AccMcCnn
+from mc_cnn.model.mc_cnn_fast import FastMcCnn
 from mc_cnn.dataset_generator.middlebury_generator import MiddleburyGenerator
 
 
