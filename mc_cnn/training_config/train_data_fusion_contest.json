@@ -1,14 +1,14 @@
 {
-    "network": "accurate",
-    "dataset": "middlebury",
+    "network": "fast",
+    "dataset": "data_fusion_contest",
     "training_sample": "training_dataset.hdf5",
-    "training_image": "images.hdf5",
+    "training_image": "training_images.hdf5",
     "testing_sample": "testing_dataset.hdf5",
-    "testing_image": "images.hdf5",
+    "testing_image": "testing_images.hdf5",
     "dataset_neg_low": 1.5,
     "dataset_neg_high": 18,
     "dataset_pos": 0.5,
-    "data_augmentation": false,
+    "data_augmentation": true,
 
     "augmentation_param":{
       "scale": 0.8,

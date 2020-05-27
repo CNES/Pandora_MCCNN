@@ -1,8 +1,10 @@
 {
     "network": "fast",
-    "training": "/work/OT/siaa/3D/Development/rt_corr_deep/middlebury/middlebury_database/training_dataset.hdf5",
-    "testing": "/work/OT/siaa/3D/Development/rt_corr_deep/middlebury/middlebury_database/testing_dataset.hdf5",
-    "image": "/work/OT/siaa/3D/Development/rt_corr_deep/middlebury/middlebury_database/images.hdf5",
+    "dataset": "middlebury",
+    "training_sample": "training_dataset.hdf5",
+    "training_image": "images.hdf5",
+    "testing_sample": "testing_dataset.hdf5",
+    "testing_image": "images.hdf5",
     "dataset_neg_low": 1.5,
     "dataset_neg_high": 6,
     "dataset_pos": 0.5,
