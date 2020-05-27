@@ -42,20 +42,20 @@ class DataFusionContestGenerator(data.Dataset):
         self.neg_high = float(cfg['dataset_neg_high'])
         self.pos = float(cfg['dataset_pos'])
         self.disp_vert = float(cfg['vertical_disp'])
-        self.transformation = cfg['transformation']
-        self.scale = float(cfg['scale'])
-        self.hscale = float(cfg['hscale'])
-        self.hshear = float(cfg['hshear'])
-        self.trans = float(cfg['trans'])
-        self.rotate = float(cfg['rotate'])
-        self.brightness = float(cfg['brightness'])
-        self.contrast = float(cfg['contrast'])
-        self.d_hscale = float(cfg['d_hscale'])
-        self.d_hshear = float(cfg['d_hshear'])
-        self.d_vtrans = float(cfg['d_vtrans'])
-        self.d_rotate = float(cfg['d_rotate'])
-        self.d_brightness = float(cfg['d_brightness'])
-        self.d_contrast = float(cfg['d_contrast'])
+        self.transformation = cfg['data_augmentation']
+        self.scale = float(cfg['augmentation_param']['scale'])
+        self.hscale = float(cfg['augmentation_param']['hscale'])
+        self.hshear = float(cfg['augmentation_param']['hshear'])
+        self.trans = float(cfg['augmentation_param']['trans'])
+        self.rotate = float(cfg['augmentation_param']['rotate'])
+        self.brightness = float(cfg['augmentation_param']['brightness'])
+        self.contrast = float(cfg['augmentation_param']['contrast'])
+        self.d_hscale = float(cfg['augmentation_param']['d_hscale'])
+        self.d_hshear = float(cfg['augmentation_param']['d_hshear'])
+        self.d_vtrans = float(cfg['augmentation_param']['d_vtrans'])
+        self.d_rotate = float(cfg['augmentation_param']['d_rotate'])
+        self.d_brightness = float(cfg['augmentation_param']['d_brightness'])
+        self.d_contrast = float(cfg['augmentation_param']['d_contrast'])
 
     def __getitem__(self, index):
         """
@@ -171,3 +171,4 @@ class DataFusionContestGenerator(data.Dataset):
     def mul32(self, a, b):
         return a[0]*b[0]+a[1]*b[3], a[0]*b[1]+a[1]*b[4], a[0]*b[2]+a[1]*b[5]+a[2], a[3]*b[0]+a[4]*b[3], \
                a[3]*b[1]+a[4]*b[4], a[3]*b[2]+a[4]*b[5]+a[5]
+
