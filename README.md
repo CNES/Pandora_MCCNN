@@ -1,6 +1,6 @@
 # MC-CNN
 
-MC-CNN est un réseau de neurones qui produit un coût de mise en correspondance entre deux imagettes.
+MC-CNN [1] est un réseau de neurones qui produit un coût de mise en correspondance entre deux imagettes.
 
 ## Installation pour les utilisateurs sur le cluster HAL du CNES
 
@@ -16,27 +16,62 @@ u@m $ source myEnv/bin/activate
 
 ## Utilisation
 
+### Création des bases d'apprentissage
+
+Les scripts du dossier preprocessing, permettent de créer des bases d'apprentissage hdf5.
+
 ### Entrainement des réseaux mc-cnn fast et accurate
 
 ```bash
-    usage: train.py [-h] [-data_augmentation {True,False}]
-                    {accurate,fast} training testing image output_dir
-
+    python mc_cnn/train.py -h
+    usage: train.py [-h] injson outdir
+    
     positional arguments:
-      {accurate,fast}       Type of the network : accurate or fast
-      training              Path to a hdf5 file containing the training sample
-      testing               Path to a hdf5 file containing the testing sample
-      image                 Path to a hdf5 file containing the image sample
-      output_dir            Output directory
-
+      injson      Input json file
+      outdir      Output directory
+    
     optional arguments:
-      -h, --help            show this help message and exit
-      -data_augmentation {True,False}
-                            Apply data augmentation ?
+      -h, --help  show this help message and exit
 ```
 
-Les bases d'apprentissages training, testing, image, sont disponibles dans l'espace /work/OT/siaa/3D/Development/rt_corr_deep/.
+Le fichier injson contient les paramètres d'entrainement, il est de la forme : 
+
+ ```json
+     {
+        "network": "accurate",
+        "dataset": "middlebury",
+        "training_sample": "training_dataset.hdf5",
+        "training_image": "images.hdf5",
+        "testing_sample": "testing_dataset.hdf5",
+        "testing_image": "images.hdf5",
+        "dataset_neg_low": 1.5,
+        "dataset_neg_high": 18,
+        "dataset_pos": 0.5,
+        "data_augmentation": false,
+    
+        "augmentation_param":{
+          "scale": 0.8,
+          "hscale": 0.8,
+          "hshear": 0.1,
+          "trans": 0,
+          "rotate": 28,
+          "brightness": 1.3,
+          "contrast": 1.1,
+          "d_hscale": 0.9,
+          "d_hshear": 0.3,
+          "d_vtrans": 1,
+          "d_rotate": 3,
+          "d_brightness": 0.7,
+          "d_contrast": 1.1
+        }
+    }
+ ```
+
+Des exemples sont disponibles dans le dossier training_config.
 
 ### Utilisation des réseaux mc-cnn fast et accurate
 
 L'utilisation des réseaux mc-cnn fast et accurate se fait via Pandora, avec le plugin [plugin_MC-CNN](https://gitlab.cnes.fr/OutilsCommuns/CorrelateurChaine3D/pandora_plugins/plugin_mc-cnn).
+
+
+[1][ŽBONTAR, Jure et LECUN, Yann. Stereo matching by training a convolutional neural network to compare image patches. The journal of machine learning research, 2016, vol. 17, no 1, p. 2287-2318.]
