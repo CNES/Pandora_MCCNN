@@ -259,7 +259,7 @@ class TestMCCNN(unittest.TestCase):
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_GT, rtol=1e-05)
 
-    def MiddleburyGenerator(self):
+    def test_MiddleburyGenerator(self):
         """
         test the function MiddleburyGenerator
         """
