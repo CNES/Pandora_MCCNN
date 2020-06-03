@@ -12,7 +12,7 @@ import torch.nn as nn
 from torch.utils import data
 
 from mc_cnn.run import computes_cost_volume_mc_cnn_fast
-from mc_cnn.mc_cnn_accurate import AccMcCnnTesting
+from mc_cnn.mc_cnn_accurate import AccMcCnnInfer
 from mc_cnn.dataset_generator import MiddleburyGenerator
 
 
@@ -190,7 +190,7 @@ class TestMCCNN(unittest.TestCase):
         # The minus sign converts the similarity score to a matching cost
         cv_GT *= -1
 
-        acc = AccMcCnnTesting()
+        acc = AccMcCnnInfer()
         # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 1 dimensions
         cv = acc.computes_cost_volume_mc_cnn_accurate(ref_feature, sec_features, -2, 2, self.sad_cost)
 
@@ -221,7 +221,7 @@ class TestMCCNN(unittest.TestCase):
         # The minus sign converts the similarity score to a matching cost
         cv_GT *= -1
 
-        acc = AccMcCnnTesting()
+        acc = AccMcCnnInfer()
         # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 1 dimensions
         cv = acc.computes_cost_volume_mc_cnn_accurate(ref_feature, sec_features, -4, -1, self.sad_cost)
 
@@ -252,7 +252,7 @@ class TestMCCNN(unittest.TestCase):
         # The minus sign converts the similarity score to a matching cost
         cv_GT *= -1
 
-        acc = AccMcCnnTesting()
+        acc = AccMcCnnInfer()
         # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 1 dimensions
         cv = acc.computes_cost_volume_mc_cnn_accurate(ref_feature, sec_features, 1, 4, self.sad_cost)
 

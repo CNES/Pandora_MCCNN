@@ -83,13 +83,13 @@ class AccMcCnn(nn.Module):
         return pos_sample, neg_sample
 
 
-class AccMcCnnTesting(nn.Module):
+class AccMcCnnInfer(nn.Module):
     def __init__(self):
         """
-        Define the mc_cnn accurate neural network for testing
+        Define the mc_cnn accurate neural network for inference
 
         """
-        super(AccMcCnnTesting, self).__init__()
+        super(AccMcCnnInfer, self).__init__()
         self.in_channels = 1
         self.num_conv_feature_maps = 112
         self.conv_kernel_size = 3

@@ -12,7 +12,7 @@ import numpy as np
 import torch.nn as nn
 
 from .mc_cnn_fast import FastMcCnn
-from .mc_cnn_accurate import AccMcCnnTesting
+from .mc_cnn_accurate import AccMcCnnInfer
 
 
 def point_interval(ref_features, sec_features, disp):
@@ -144,7 +144,7 @@ def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Create the network
-    net = AccMcCnnTesting()
+    net = AccMcCnnInfer()
     # Load the network
     net.load_state_dict(torch.load(model_path, map_location=device)['model'])
     net.to(device)
