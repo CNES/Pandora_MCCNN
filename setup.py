@@ -9,7 +9,8 @@ requirements = ['numpy',
                 'torchvision',
                 'h5py',
                 'opencv-python',
-                'scipy']
+                'scipy',
+                'nose2']
 
 
 def readme():
