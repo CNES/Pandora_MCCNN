@@ -8,6 +8,7 @@
     "dataset_neg_low": 1.5,
     "dataset_neg_high": 18,
     "dataset_pos": 0.5,
+    "vertical_disp": 0,
     "data_augmentation": true,
 
     "augmentation_param":{

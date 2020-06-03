@@ -114,18 +114,14 @@ class DataFusionContestGenerator(data.Dataset):
 
             right_neg = self.data_augmentation(self.image[id_data][1, :, :], y_disp, x_neg, scale__, phi_,
                                                trans_, hshear_, brightness_, contrast_)
-            left = np.moveaxis(left, -1, 0)
-            right_pos = np.moveaxis(right_pos, -1, 0)
-            right_neg = np.moveaxis(right_neg, -1, 0)
 
         else:
             # Make the left patch
-            # Move the RGB axis in the first position
-            left = np.moveaxis(self.image[id_data][0, y - w: y + w + 1, x - w: x + w + 1], -1, 0)
+            left = self.image[id_data][0, y - w: y + w + 1, x - w: x + w + 1]
             # Make the right positive patch
-            right_pos = np.moveaxis(self.image[id_data][1, y_disp - w: y_disp + w + 1, x_pos - w: w + x_pos + 1], -1, 0)
+            right_pos = self.image[id_data][1, y_disp - w: y_disp + w + 1, x_pos - w: w + x_pos + 1]
             # Make the right negative patch
-            right_neg = np.moveaxis(self.image[id_data][ 1, y_disp - w: y_disp + w + 1, x_neg - w: w + x_neg + 1], -1, 0)
+            right_neg = self.image[id_data][1, y_disp - w: y_disp + w + 1, x_neg - w: w + x_neg + 1]
 
         return np.stack((left, right_pos, right_neg), axis=0)
 
