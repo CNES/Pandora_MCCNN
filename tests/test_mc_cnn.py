@@ -12,8 +12,8 @@ import torch.nn as nn
 from torch.utils import data
 
 from mc_cnn.run import computes_cost_volume_mc_cnn_fast
-from mc_cnn.mc_cnn_accurate import AccMcCnnInfer
-from mc_cnn.dataset_generator import MiddleburyGenerator
+from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
+from mc_cnn.dataset_generator.middlebury_generator import MiddleburyGenerator
 
 
 class TestMCCNN(unittest.TestCase):
