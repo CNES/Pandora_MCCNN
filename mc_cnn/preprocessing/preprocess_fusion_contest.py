@@ -1,9 +1,9 @@
-# coding: utf-8
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright: (c) 2019 Centre National d'Etudes Spatiales
+
 """
-:author: Véronique Defonte
-:organization: CS SI
-:copyright: 2019 CNES. All rights reserved.
-:created: Jan. 2020
+This module contains all functions to generate the training and testing dataset on the data fusion contest
 """
 
 import argparse
@@ -35,6 +35,7 @@ def save_dataset(img, sample, img_name, img_file, sample_file):
     """
     sample_file.create_dataset(img_name, data=sample)
     img_file.create_dataset(img_name, data=img)
+
 
 def fusion_contest(data_path, gt, output):
     """

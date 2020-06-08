@@ -11,8 +11,8 @@ import torch
 import numpy as np
 import torch.nn as nn
 
-from .mc_cnn_fast import FastMcCnn
-from .mc_cnn_accurate import AccMcCnnInfer
+from mc_cnn.model.mc_cnn_fast import FastMcCnn
+from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
 
 
 def point_interval(ref_features, sec_features, disp):

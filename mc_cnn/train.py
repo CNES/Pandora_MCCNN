@@ -13,10 +13,17 @@ import argparse
 import os
 import errno
 import json
+import numpy as np
+import copy
 
-from mc_cnn_fast import FastMcCnn
-from mc_cnn_accurate import AccMcCnn
-from dataset_generator import MiddleburyGenerator
+from mc_cnn.model.mc_cnn_accurate import AccMcCnn
+from mc_cnn.model.mc_cnn_fast import FastMcCnn
+from mc_cnn.dataset_generator.middlebury_generator import MiddleburyGenerator
+from mc_cnn.dataset_generator.datas_fusion_contest_generator import DataFusionContestGenerator
+
+
+# Global variable that control the random seed
+SEED = 0
 
 
 def mkdir_p(path):
@@ -30,6 +37,27 @@ def mkdir_p(path):
             pass
         else:
             raise
+
+
+def _init_fn(worker_id):
+    """
+    Set the init function in order to have multiple worker in the dataloader
+    """
+    np.random.seed(SEED + worker_id)
+
+
+def set_seed():
+    """
+    Set up the random seed
+
+    """
+    torch.manual_seed(SEED)
+    torch.cuda.manual_seed(SEED)
+    torch.cuda.manual_seed_all(SEED)  # if you are using multi-GPU.
+    np.random.seed(SEED)  # Numpy module.
+    torch.manual_seed(SEED)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
 
 
 def train_mc_cnn_fast(cfg, output_dir):
@@ -60,9 +88,19 @@ def train_mc_cnn_fast(cfg, output_dir):
     batch_size = 128
     params = {'batch_size': batch_size, 'shuffle': True}
 
-    training_loader = MiddleburyGenerator(cfg['training'], cfg['image'], cfg)
+    # Testing configuration : deactivate data augmentation
+    test_cfg = copy.deepcopy(cfg)
+    test_cfg['transformation'] = False
+
+    if cfg['dataset'] == "middlebury":
+        training_loader = MiddleburyGenerator(cfg['training_sample'], cfg['training_image'], cfg)
+        testing_loader = MiddleburyGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
+
+    if cfg['dataset'] == "data_fusion_contest":
+        training_loader = DataFusionContestGenerator(cfg['training_sample'], cfg['training_image'], cfg)
+        testing_loader = DataFusionContestGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
+
     training_generator = data.DataLoader(training_loader, **params)
-    testing_loader = MiddleburyGenerator(cfg['testing'], cfg['image'], cfg)
     testing_generator = data.DataLoader(testing_loader, **params)
 
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
@@ -76,6 +114,10 @@ def train_mc_cnn_fast(cfg, output_dir):
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
         net.train()
+
+        # Change the seed at each epoch
+        SEED = epoch
+
         for it, batch in enumerate(training_generator, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
@@ -152,9 +194,19 @@ def train_mc_cnn_acc(cfg, output_dir):
     batch_size = 128
     params = {'batch_size': batch_size, 'shuffle': True}
 
-    training_loader = MiddleburyGenerator(cfg['training'], cfg['image'], cfg)
+    # Testing configuration : deactivate data augmentation
+    test_cfg = copy.deepcopy(cfg)
+    test_cfg['transformation'] = False
+
+    if cfg['dataset'] == "middlebury":
+        training_loader = MiddleburyGenerator(cfg['training_sample'], cfg['training_image'], cfg)
+        testing_loader = MiddleburyGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
+
+    if cfg['dataset'] == "data_fusion_contest":
+        training_loader = DataFusionContestGenerator(cfg['training_sample'], cfg['training_image'], cfg)
+        testing_loader = DataFusionContestGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
+
     training_generator = data.DataLoader(training_loader, **params)
-    testing_loader = MiddleburyGenerator(cfg['testing'], cfg['image'], cfg)
     testing_generator = data.DataLoader(testing_loader, **params)
 
     nb_epoch = 14
@@ -166,6 +218,10 @@ def train_mc_cnn_acc(cfg, output_dir):
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
         net.train()
+
+        # Change the seed at each epoch
+        SEED = epoch
+
         for it, batch in enumerate(training_generator, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
