@@ -19,7 +19,7 @@ def readme():
 
 
 setup(name='mc_cnn',
-      version='0.0.1',
+      version='x.y.z',
       description='MC-CNN is a neural network for learning a similarity measure on image patches',
       long_description=readme(),
       url='https://gitlab.cnes.fr/OutilsCommuns/CorrelateurChaine3D/mc-cnn',
