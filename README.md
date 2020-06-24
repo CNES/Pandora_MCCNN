@@ -2,16 +2,17 @@
 
 MC-CNN [1] est un réseau de neurones qui produit un coût de mise en correspondance entre deux imagettes.
 
-## Installation pour les utilisateurs sur le cluster HAL du CNES
+## Installation
 
+```bash
+    pip install mc-cnn
+``` 
 
-```sh
-u@m $ module purge
-u@m $ module load python/3.7.2 gdal/2.1.1
-u@m $ virtualenv myEnv --no-site-packages
-u@m $ source myEnv/bin/activate
-(myEnv) u@m $ git clone git@gitlab.cnes.fr:OutilsCommuns/CorrelateurChaine3D/mc-cnn.git
-(myEnv) u@m $ pip install -e mc-cnn
+**From sources**
+
+```bash
+    git clone https://gitlab.cnes.fr/OutilsCommuns/CorrelateurChaine3D/mc-cnn.git
+    pip install -e mc-cnn
 ```
 
 ## Utilisation
