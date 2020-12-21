@@ -430,6 +430,7 @@ good-names=i,
            p1,
            p2,
            gt,
+           cv_GT,
            _
 
 # Good variable names regexes, separated by a comma. If names match any regex,
