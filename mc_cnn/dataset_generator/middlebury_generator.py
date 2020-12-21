@@ -7,13 +7,15 @@ This module contains all functions to load and preprocess dataset
 """
 
 import random
+import math
 from torch.utils import data
 import h5py
 import numpy as np
-import math
 import cv2
 
 
+# pylint: disable=too-many-instance-attributes
+# -> because I see no other way to inherit from a class suffering from too many instace attributes
 class MiddleburyGenerator(data.Dataset):
     """
     Generate middlebury dataset
@@ -80,8 +82,8 @@ class MiddleburyGenerator(data.Dataset):
         """
         # Make patch
         id_image = int(self.data[index, 0])
-        y = int(self.data[index, 1])
-        x = int(self.data[index, 2])
+        row = int(self.data[index, 1])
+        col = int(self.data[index, 2])
         disp = int(self.data[index, 3])
         id_data = self.id_image.index(id_image)
 
@@ -109,23 +111,23 @@ class MiddleburyGenerator(data.Dataset):
             nb_exposures = self.image[id_data][light_r].shape[0]
             exp_r = random.randint(0, nb_exposures-1)
 
-        w = int(self.patch_size / 2)
+        patch_radius = int(self.patch_size / 2)
 
-        x_pos = -1
+        col_pos = -1
         width = self.image[id_data][light_r].shape[3] - int(self.patch_size / 2)
         # Create the positive example = x - d + pos, with pos [-pos, pos]
-        while x_pos < 0 or x_pos >= width:
-            x_pos = int((x - disp) + np.random.uniform(-self.pos, self.pos))
+        while col_pos < 0 or col_pos >= width:
+            col_pos = int((col - disp) + np.random.uniform(-self.pos, self.pos))
 
-        x_neg = -1
+        col_neg = -1
         # Create the negative example = x - d + neg, with neg [ neg_low, neg_high]
-        while x_neg < 0 or x_neg >= width:
-            x_neg = int((x - disp) + np.random.uniform(self.neg_low, self.neg_high))
+        while col_neg < 0 or col_neg >= width:
+            col_neg = int((col - disp) + np.random.uniform(self.neg_low, self.neg_high))
 
         if self.transformation:
             # Calculates random data augmentation
-            s = np.random.uniform(self.scale, 1)
-            scale = [s * np.random.uniform(self.hscale, 1), s]
+            scale_samples = np.random.uniform(self.scale, 1)
+            scale = [scale_samples * np.random.uniform(self.hscale, 1), scale_samples]
             hshear = np.random.uniform(-self.hshear, self.hshear)
             trans = [np.random.uniform(-self.trans, self.trans), np.random.uniform(-self.trans, self.trans)]
             phi = np.random.uniform(-self.rotate * math.pi / 180., self.rotate * math.pi / 180.)
@@ -133,7 +135,7 @@ class MiddleburyGenerator(data.Dataset):
             contrast = np.random.uniform(1. / self.contrast, self.contrast)
 
             # Make the left augmented patch
-            left = self.data_augmentation(self.image[id_data][light_l][exp_l, 0, :, :], y, x, scale, phi,
+            left = self.data_augmentation(self.image[id_data][light_l][exp_l, 0, :, :], row, col, scale, phi,
                                                trans, hshear, brightness, contrast)
 
             scale__ = [scale[0] * np.random.uniform(self.d_hscale, 1), scale[1]]
@@ -144,37 +146,45 @@ class MiddleburyGenerator(data.Dataset):
             contrast_ = contrast * np.random.uniform(1 / self.d_contrast, self.d_contrast)
 
             # Make the right positive augmented patch
-            right_pos = self.data_augmentation(self.image[id_data][light_r][exp_r, 1, :, :], y, x_pos, scale__, phi_,
+            right_pos = self.data_augmentation(self.image[id_data][light_r][exp_r, 1, :, :],
+                                               row, col_pos, scale__, phi_,
                                                trans_, hshear_, brightness_, contrast_)
 
             # Make the right negative augmented patch
-            right_neg = self.data_augmentation(self.image[id_data][light_r][exp_r, 1, :, :], y, x_neg, scale__, phi_,
+            right_neg = self.data_augmentation(self.image[id_data][light_r][exp_r, 1, :, :],
+                                               row, col_neg, scale__, phi_,
                                                trans_, hshear_, brightness_, contrast_)
 
         else:
             # Make the left patch
-            left = self.image[id_data][light_l][exp_l, 0, y - w: y + w + 1, x - w: x + w + 1]
+            left = self.image[id_data][light_l][exp_l, 0,
+                                               row - patch_radius: row + patch_radius + 1,
+                                               col - patch_radius: col + patch_radius + 1]
             # Make the right positive patch
-            right_pos = self.image[id_data][light_r][exp_r, 1, y - w: y + w + 1, x_pos - w: w + x_pos + 1]
+            right_pos = self.image[id_data][light_r][exp_r, 1,
+                                                     row - patch_radius: row + patch_radius + 1,
+                                                     col_pos - patch_radius: patch_radius + col_pos + 1]
             # Make the right negative patch
-            right_neg = self.image[id_data][light_r][exp_r, 1, y - w: y + w + 1, x_neg - w: w + x_neg + 1]
+            right_neg = self.image[id_data][light_r][exp_r, 1,
+                                                     row - patch_radius: row + patch_radius + 1,
+                                                     col_neg - patch_radius: patch_radius + col_neg + 1]
 
         return np.stack((left, right_pos, right_neg), axis=0)
 
     def __len__(self):
         """
-        Return the total number of samples
+        Return the total number of samples.
 
         """
         return self.data.shape[0]
 
-    def data_augmentation(self, src, y, x, scale, phi, trans, hshear, brightness, contrast):
+    def data_augmentation(self, src, row, col, scale, phi, trans, hshear, brightness, contrast):
         """
-        Return augmented patch
+        Return augmented patch.
 
         :param src: source image
-        :param y: center of the patch
-        :param x: center of the patch
+        :param row: row center of the patch
+        :param col: col center of the patch
         :param scale: scale factor
         :param phi: rotation factor
         :param trans:translation factor
@@ -184,18 +194,18 @@ class MiddleburyGenerator(data.Dataset):
         :return: the augmented patch
         :rtype: np.array(self.patch_size, self.patch_size)
         """
-        m = [1, 0, -x, 0, 1, -y]
-        m = self.mul32([1, 0, trans[0], 0, 1, trans[1]], m)
-        m = self.mul32([scale[0], 0, 0, 0, scale[1], 0], m)
-        c = math.cos(phi)
-        s = math.sin(phi)
-        m = self.mul32([c, s, 0, -s, c, 0], m)
-        m = self.mul32([1, hshear, 0, 0, 1, 0], m)
-        m = self.mul32([1, 0, (self.patch_size - 1) / 2, 0, 1, (self.patch_size - 1) / 2], m)
+        homo_matrix = [1, 0, -col, 0, 1, -row]
+        homo_matrix = self.mul32([1, 0, trans[0], 0, 1, trans[1]], homo_matrix)
+        homo_matrix = self.mul32([scale[0], 0, 0, 0, scale[1], 0], homo_matrix)
+        cos_phi = math.cos(phi)
+        sin_phi = math.sin(phi)
+        homo_matrix = self.mul32([cos_phi, sin_phi, 0, -sin_phi, cos_phi, 0], homo_matrix)
+        homo_matrix = self.mul32([1, hshear, 0, 0, 1, 0], homo_matrix)
+        homo_matrix = self.mul32([1, 0, (self.patch_size - 1) / 2, 0, 1, (self.patch_size - 1) / 2], homo_matrix)
 
-        m = np.reshape(m, (2,3))
+        homo_matrix = np.reshape(homo_matrix, (2,3))
 
-        dst = cv2.warpAffine(src, m, (self.patch_size, self.patch_size))
+        dst = cv2.warpAffine(src, homo_matrix, (self.patch_size, self.patch_size))
         dst *= contrast
         dst += brightness
         return dst
