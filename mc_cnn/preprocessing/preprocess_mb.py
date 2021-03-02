@@ -87,41 +87,41 @@ def read_im(fname, downsample):
 
 
 @njit(parallel=True)
-def compute_mask(disp0, disp0y, disp1, patch_size):
+def compute_mask(left_disp, left_row_disp, right_disp, patch_size):
     """
     Apply cross-checking, and invalidate pixels with incomplete patch
 
-    :param disp0: Left disparity
-    :type disp0: numpy.array (row, col)
-    :param disp0y: Left column disparity
-    :type disp0y: numpy.array (row, col)
-    :param disp1: Right disparity
-    :type disp1: numpy.array (row, col)
+    :param left_disp: Left disparity
+    :type left_disp: numpy.array (row, col)
+    :param left_row_disp: Left column disparity
+    :type left_row_disp: numpy.array (row, col)
+    :param right_disp: Right disparity
+    :type right_disp: numpy.array (row, col)
     :param patch_size: patch size
     :type patch_size: int
     :return: Result of the cross-checking with the convention : invalid pixels = 0, valid pixels = 1
     :rtype : numpy.array (row, col)
     """
-    row, col = disp0.shape
+    row, col = left_disp.shape
     mask = np.zeros((row, col), dtype=np.float32)
     rad = int(patch_size / 2)
-    # 6 = maximum negative displacement
+    # 6 = maximum negative displacement for creating negative exemple during training
     rad += 6
 
     for row_idx in prange(rad, row-rad):  # pylint: disable=not-an-iterable
         for col_idx in prange(rad, col-rad):  # pylint: disable=not-an-iterable
-            disp_left_x = disp0[row_idx, col_idx]
+            disp_left_x = left_disp[row_idx, col_idx]
 
             disp_left_y = 0
-            if disp0y is not None:
-                disp_left_y = disp0y[row_idx, col_idx]
+            if left_row_disp is not None:
+                disp_left_y = left_row_disp[row_idx, col_idx]
 
             if disp_left_x != np.inf:
                 idx_right_x = int(col_idx + (-1 * disp_left_x))
                 idx_right_y = int(row_idx + disp_left_y)
 
                 if rad < idx_right_x < (col-rad) and rad < idx_right_y < (row-rad):
-                    disp_right_x = disp1[idx_right_y, idx_right_x]
+                    disp_right_x = right_disp[idx_right_y, idx_right_x]
                     if abs(disp_left_x - disp_right_x) < 1:
                         mask[row_idx, col_idx] = 1
     return mask
@@ -157,6 +157,7 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
 # pylint: disable=too-many-locals
 # pylint: disable=too-many-branches
 # pylint: disable=too-many-statements
+# pylint: disable=too-many-function-args
 def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_dir):
     """
     Preprocess and create middlebury hdf5 database
@@ -229,21 +230,21 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
             im_tensor.append(np.concatenate(imgs).reshape(num_exp, 2, left.shape[1], left.shape[2]))
 
         # Read ground truth disparity
-        disp0, __ = load_pfm(os.path.join(base1, 'disp0.pfm'))
+        left_disp, __ = load_pfm(os.path.join(base1, 'disp0.pfm'))
         # Downsample
-        disp0 = disp0[::2, ::2]
-        disp1, __ = load_pfm(os.path.join(base1, 'disp1.pfm'))
+        left_disp = left_disp[::2, ::2]
+        right_disp, __ = load_pfm(os.path.join(base1, 'disp1.pfm'))
         # Downsample
-        disp1 = disp1[::2, ::2]
+        right_disp = right_disp[::2, ::2]
 
         # Left GT y-disparities
-        disp0y, __ = load_pfm(os.path.join(base1, 'disp0y.pfm'))
+        left_row_disp, __ = load_pfm(os.path.join(base1, 'disp0y.pfm'))
         # Downsample
-        disp0y = disp0y[::2, ::2]
+        left_row_disp = left_row_disp[::2, ::2]
 
         # Remove occluded pixels
-        mask = compute_mask(disp0, disp0y, disp1, patch_size)
-        disp0[mask != 1] = 0
+        mask = compute_mask(left_disp, left_row_disp, right_disp, patch_size)
+        left_disp[mask != 1] = 0
 
         non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
@@ -251,7 +252,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         # 4 = the image index, row, col, disparity for the pixel p(row, col)
         data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
                                 non_zero_y_idx, non_zero_x_idx,
-                                disp0[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
 
         if num_image in test_ds_range:
             save_dataset(im_tensor, data, num_image, img_file, testing_file)
@@ -279,25 +280,25 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
             # im_tensor[0].shape = (3, 2, row, col )
             im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        disp0 = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
-        disp1 = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
+        left_disp = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
+        right_disp = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
-        disp0 /= 2
-        disp1 /= 2
+        left_disp /= 2
+        right_disp /= 2
 
-        disp0[disp0 == 0] = np.inf
-        disp1[disp1 == 0] = np.inf
+        left_disp[left_disp == 0] = np.inf
+        right_disp[right_disp == 0] = np.inf
 
-        mask = compute_mask(disp0, None, disp1, patch_size)
-        disp0[mask != 1] = 0
+        mask = compute_mask(left_disp, None, right_disp, patch_size)
+        left_disp[mask != 1] = 0
 
         non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
         data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
                                 non_zero_y_idx,
                                 non_zero_x_idx,
-                                disp0[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
         save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
@@ -323,25 +324,25 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
             # im_tensor[0].shape = (3, 2, row, col )
             im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        disp0 = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
-        disp1 = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
+        left_disp = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
+        right_disp = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
-        disp0 /= 2
-        disp1 /= 2
+        left_disp /= 2
+        right_disp /= 2
 
-        disp0[disp0 == 0] = np.inf
-        disp1[disp1 == 0] = np.inf
+        left_disp[left_disp == 0] = np.inf
+        right_disp[right_disp == 0] = np.inf
 
-        mask = compute_mask(disp0, None, disp1, patch_size)
-        disp0[mask != 1] = 0
+        mask = compute_mask(left_disp, None, right_disp, patch_size)
+        left_disp[mask != 1] = 0
 
         non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
         data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
                                 non_zero_y_idx,
                                 non_zero_x_idx,
-                                disp0[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
         save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
@@ -360,25 +361,25 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         imgs.append(right)
         im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        disp0 = rasterio.open(base1 + '/disp2.pgm').read().astype(np.float32)
-        disp1 = rasterio.open(base1 + '/disp6.pgm').read().astype(np.float32)
+        left_disp = rasterio.open(base1 + '/disp2.pgm').read().astype(np.float32)
+        right_disp = rasterio.open(base1 + '/disp6.pgm').read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
-        disp0 /= 2
-        disp1 /= 2
+        left_disp /= 2
+        right_disp /= 2
         # Disparity 0 is invalid
-        disp0[disp0 == 0] = np.inf
-        disp1[disp1 == 0] = np.inf
+        left_disp[left_disp == 0] = np.inf
+        right_disp[right_disp == 0] = np.inf
 
-        mask = compute_mask(disp0, None, disp1, patch_size)
-        disp0[mask != 1] = 0
+        mask = compute_mask(left_disp, None, right_disp, patch_size)
+        left_disp[mask != 1] = 0
 
         non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
         data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
                                 non_zero_y_idx,
                                 non_zero_x_idx,
-                                disp0[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
         save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
@@ -405,19 +406,19 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
             imgs.append(right)
             im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-            disp0 = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.
-            disp1 = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.
+            left_disp = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.
+            right_disp = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.
 
-            mask = compute_mask(disp0, None, disp1, patch_size)
+            mask = compute_mask(left_disp, None, right_disp, patch_size)
 
-            disp0[mask != 1] = 0
+            left_disp[mask != 1] = 0
 
             non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
             data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
                                     non_zero_y_idx,
                                     non_zero_x_idx,
-                                    disp0[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+                                    left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
             save_dataset(im_tensor, data, num_image, img_file, training_file)
             num_image += 1
 
