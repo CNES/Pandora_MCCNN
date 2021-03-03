@@ -1,63 +1,73 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright: (c) 2019 Centre National d'Etudes Spatiales
+
+"""
+This module contains all functions to generate the training and testing dataset on the Data Fusion Contest generated
+with Beefrost
+"""
+
 import os
+import glob
+import argparse
 import numpy as np
 import h5py
 from osgeo import gdal
-import glob
 from numba import njit
-import argparse
 
 
 @njit()
-def compute_mask(disp, mask_ref, mask_sec, patch_size):
+def compute_mask(disp_map, mask_ref, mask_sec, patch_size):
     """
-    Masks invalid pixels
+    Masks invalid pixels : pixel outside epipolar image
 
-    :param disp: disparity map
-    :type disp: 2D numpy array
-    :param mask_ref: reference mask
+    :param disp_map: disparity map
+    :type disp_map: 2D numpy array
+    :param mask_ref: left epipolar image mask : with the convention 0 is valid pixel in epipolar image
     :type mask_ref: 2D numpy array
-    :param mask_sec: secondary mask
+    :param mask_sec: right epipolar image mask : with the convention 0 is valid pixel in epipolar image
     :type mask_sec: 2D numpy array
     :param patch_size: patch size
     :type patch_size: int
-    :return: the disparity map with invalid pixels = -999
+    :return: the disparity map with invalid pixels = -9999
     :rtype: 2D numpy array
     """
     radius = int(patch_size / 2)
-    row, col = disp.shape
+    nb_row, nb_col = disp_map.shape
 
-    for r in range(row):
-        for c in range(col):
-            d = disp[r, c]
-            patch_ref = mask_ref[(r - radius):(r + radius + 1), (c - radius):(c + radius + 1)]
-            x1 = int(c + d)
-            patch_sec = mask_sec[(r - radius):(r + radius + 1), (x1 - radius):(x1 + radius + 1)]
+    for row in range(radius, nb_row - radius):
+        for col in range(radius, nb_col - radius):
+            disp = disp_map[row, col]
+            # Matching in the right image
+            match = int(col + disp)
 
-            # Patch outside epipolar image
-            if np.sum(patch_ref != 0) != 0:
-                disp[r, c] = -9999
+            # Negative matching for training, with maximum negative displacement for creating negative example
+            neg_match = match - 6
 
-            # Patch outside epipolar image
-            if np.sum(patch_sec != 0) != 0:
-                disp[r, c] = -9999
+            # If negative example is inside right epipolar image
+            if radius < neg_match < (nb_col - radius) and radius < neg_match < (nb_row - radius):
+                patch_ref = mask_ref[(row - radius):(row + radius + 1), (col - radius):(col + radius + 1)]
+                patch_sec = mask_sec[(row - radius):(row + radius + 1), (match - radius):(match + radius + 1)]
 
-            # Dataset neg high can be -6
-            x1 -= 6
-            patch_sec = mask_sec[(r - radius):(r + radius + 1), (x1 - radius):(x1 + radius + 1)]
+                # Invalid patch : outside left epipolar image
+                if np.sum(patch_ref != 0) != 0:
+                    disp_map[row, col] = -9999
 
-            # Patch outside epipolar image
-            if np.sum(patch_sec != 0) != 0:
-                disp[r, c] = -9999
+                # Invalid patch : outside right epipolar image
+                if np.sum(patch_sec != 0) != 0:
+                    disp_map[row, col] = -9999
 
-            x1 = int(c + d)
+                neg_patch_sec = mask_sec[(row - radius):(row + radius + 1),
+                                         (neg_match - radius):(neg_match + radius + 1)]
 
-            if disp != -999:
-                # Negative patch outside image
-                if ((r - radius) > 0) and ((r + radius + 1) < row) and ((x1 - radius) > 0) and (
-                        (x1 + radius + 1) < col) and ((c - radius) > 0) and ((c + radius + 1) < col):
-                    disp[r, c] = -9999
+                # Invalid patch : outside right epipolar image
+                if np.sum(neg_patch_sec != 0) != 0:
+                    disp_map[row, col] = -9999
+            # Negative example cannot be created
+            else:
+                disp_map[row, col] = -9999
 
-    return disp
+    return disp_map
 
 
 def save_dataset(img, sample, img_name, img_file, sample_file):
@@ -92,10 +102,10 @@ def fusion_contest(input_dir, output):
     :param output: output directory
     :type output: string
     """
-    img_file = h5py.File(os.path.join(output, 'images_training_dataset_fusion_contest_ours_.hdf5'), 'w')
-    training_file = h5py.File(os.path.join(output, 'training_dataset_fusion_contest_ours_.hdf5'), 'w')
-    img_testing_file = h5py.File(os.path.join(output, 'images_testing_dataset_fusion_contest_ours_.hdf5'), 'w')
-    testing_file = h5py.File(os.path.join(output, 'testing_dataset_fusion_contest_ours_.hdf5'), 'w')
+    img_file = h5py.File(os.path.join(output, 'images_training_dataset_fusion_contest.hdf5'), 'w')
+    training_file = h5py.File(os.path.join(output, 'training_dataset_fusion_contest.hdf5'), 'w')
+    img_testing_file = h5py.File(os.path.join(output, 'images_testing_dataset_fusion_contest.hdf5'), 'w')
+    testing_file = h5py.File(os.path.join(output, 'testing_dataset_fusion_contest.hdf5'), 'w')
 
     gt = glob.glob(input_dir + '/*/left_epipolar_disp.tif')
 
@@ -124,14 +134,14 @@ def fusion_contest(input_dir, output):
 
         # Mask disparities
         mask_disp = compute_mask(dsp, left_mask, right_mask, 11)
-        # Remove invalid disp
+        # Remove invalid pixels : invalidated by cross-checking mask and with invalid disparity
         mask_disp[np.where(cross_checking == 255)] = -9999
         mask_disp[np.where(mask_dsp == 255)] = -9999
 
         # Change the disparity convention to ref(x,y) = sec(x-d,y)
         mask_disp *= -1
         # Remove invalid disparity
-        y, x = np.where(mask_disp != 9999)
+        valid_row, valid_col = np.where(mask_disp != 9999)
 
         # Red band selection
         left = np.squeeze(left[0, :, :])
@@ -145,7 +155,8 @@ def fusion_contest(input_dir, output):
 
         # data np.array of shape ( number of valid pixels the current image, 4 )
         # 4 = number of the image, row, col, disparity for the pixel p(row, col)
-        valid_disp = np.column_stack((np.zeros_like(y) + num_image, y, x, mask_disp[y, x])).astype(np.float32)
+        valid_disp = np.column_stack((np.zeros_like(valid_row) + num_image, valid_row, valid_col,
+                                      mask_disp[valid_row, valid_col])).astype(np.float32)
 
         # img of shape (2, 2048, 2048, 3)
         img = np.stack((left, right), axis=0)
@@ -156,10 +167,16 @@ def fusion_contest(input_dir, output):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Script for creating the data fusion contest database, creation files: '
-                                                 '- training_dataset_fusion_contest_ours_.hdf5, testing_dataset_fusion_contest_ours_.hdf5 which contains the '
-                                                 'coordinates of the valid pixels and their disparity'
-                                                 '- images_training_dataset_fusion_contest_ours_.hdf5 and images_testing_dataset_fusion_contest_ours_ which contains the red band normalized images ')
+    parser = argparse.ArgumentParser(description='Script for creating the training data fusion contest database. '
+                                                 'it will create the following files: '
+                                                 '- training_dataset_fusion_contest.hdf5, which contains training'
+                                                 ' coordinates of the valid pixels and their disparity.'
+                                                 '- testing_dataset_fusion_contest.hdf5, which contains testing '
+                                                 'coordinates of the valid pixels and their disparity.'
+                                                 '- images_training_dataset_fusion_contest.hdf5, which contains the red'
+                                                 ' band normalized training images'
+                                                 '- images_testing_dataset_fusion_contest.hdf5, which contains the red'
+                                                 ' band normalized testing images')
     parser.add_argument('input_data', help='Path to the input directory containing the data')
     parser.add_argument('output_dir', help='Path to the output directory ')
     args = parser.parse_args()
