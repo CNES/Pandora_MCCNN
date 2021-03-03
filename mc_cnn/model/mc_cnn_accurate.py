@@ -12,16 +12,17 @@ import numpy as np
 
 
 class AccMcCnn(nn.Module):
-    def __init__(self):
-        """
-        Define the mc_cnn accurate neural network
+    """
+    Define the mc_cnn accurate neural network for training
 
-        """
-        super(AccMcCnn, self).__init__()
+    """
+    def __init__(self):
+        super().__init__()
         self.in_channels = 1
         self.num_conv_feature_maps = 112
         self.conv_kernel_size = 3
 
+        # Extract images features
         self.conv_blocks = nn.Sequential(
             nn.Conv2d(in_channels=self.in_channels, out_channels=self.num_conv_feature_maps,
                       kernel_size=self.conv_kernel_size),
@@ -40,6 +41,7 @@ class AccMcCnn(nn.Module):
             nn.ReLU()
         )
 
+        # Compute similarity score
         self.fl_blocks = nn.Sequential(
             nn.Linear(in_features=224, out_features=384),
             nn.ReLU(),
@@ -51,6 +53,7 @@ class AccMcCnn(nn.Module):
             nn.Sigmoid()
         )
 
+    # pylint: disable=arguments-differ
     def forward(self, sample):
         """
         Forward function
@@ -58,9 +61,10 @@ class AccMcCnn(nn.Module):
         :param sample: normalized patch
         :type sample: torch ( batch_size, 3, 11, 11) with : 3 is the left patch, right positive patch, right negative
         patch, 11 the patch size
-        :return: left, right positive and right negative features
-        :rtype : tuple(positive similarity score, negative similarity score)
+        :return: similarity score for positive sample, similarity score for negative sample
+        :rtype : tuple(torch.Tensor, torch.Tensor)
         """
+        # Extract images features
         left = self.conv_blocks(sample[:, 0:1, :, :])
         # left of shape : torch.Size([batch_size, 112, 1, 1])
 
@@ -70,6 +74,7 @@ class AccMcCnn(nn.Module):
         neg = self.conv_blocks(sample[:, 2:3, :, :])
         # neg of shape : torch.Size([batch_size, 112, 1, 1])
 
+        # Compute similarity score
         # Positive output
         pos_sample = torch.cat((left, pos), dim=1)
         pos_sample = torch.squeeze(pos_sample)
@@ -84,16 +89,17 @@ class AccMcCnn(nn.Module):
 
 
 class AccMcCnnInfer(nn.Module):
-    def __init__(self):
-        """
-        Define the mc_cnn accurate neural network for inference
+    """
+    Define the mc_cnn accurate neural network for inference
 
-        """
-        super(AccMcCnnInfer, self).__init__()
+    """
+    def __init__(self):
+        super().__init__()
         self.in_channels = 1
         self.num_conv_feature_maps = 112
         self.conv_kernel_size = 3
 
+        # Extract images features
         self.conv_blocks = nn.Sequential(
             nn.Conv2d(in_channels=self.in_channels, out_channels=self.num_conv_feature_maps,
                       kernel_size=self.conv_kernel_size),
@@ -112,6 +118,7 @@ class AccMcCnnInfer(nn.Module):
             nn.ReLU()
         )
 
+        # Compute similarity score
         self.fl_blocks = nn.Sequential(
             nn.Linear(in_features=224, out_features=384),
             nn.ReLU(),
@@ -123,6 +130,7 @@ class AccMcCnnInfer(nn.Module):
             nn.Sigmoid()
         )
 
+    # pylint: disable=arguments-differ
     def forward(self, ref, sec, disp_min, disp_max):
         """
         Extract reference and secondary features and computes the cost volume for a pair of images
@@ -145,11 +153,13 @@ class AccMcCnnInfer(nn.Module):
             ref_features = self.conv_blocks(ref.unsqueeze(0).unsqueeze(0))
             sec_features = self.conv_blocks(sec.unsqueeze(0).unsqueeze(0))
 
-            cv = self.computes_cost_volume_mc_cnn_accurate(ref_features, sec_features, disp_min, disp_max, self.compute_cost_mc_cnn_accurate)
+            cv = self.computes_cost_volume_mc_cnn_accurate(ref_features, sec_features, disp_min, disp_max,
+                                                           self.compute_cost_mc_cnn_accurate)
 
             return cv
 
-    def computes_cost_volume_mc_cnn_accurate(self, ref_features, sec_features, disp_min, disp_max, measure):
+    @staticmethod
+    def computes_cost_volume_mc_cnn_accurate(ref_features, sec_features, disp_min, disp_max, measure):
         """
         Computes the cost volume using the reference and secondary features computing by mc_cnn accurate
 
@@ -175,12 +185,13 @@ class AccMcCnnInfer(nn.Module):
         with torch.no_grad():
             for disp in disparity_range:
                 # range in the reference image
-                p = (max(0 - disp, 0), min(nx_ref - disp, nx_ref))
+                left = (max(0 - disp, 0), min(nx_ref - disp, nx_ref))
                 # range in the secondary image
-                q = (max(0 + disp, 0), min(nx_sec + disp, nx_sec))
-                d = int(disp - disp_min)
+                right = (max(0 + disp, 0), min(nx_sec + disp, nx_sec))
+                index_d = int(disp - disp_min)
 
-                cv[d, p[0]:p[1], :] = np.swapaxes(measure(ref_features[:, :, :, p[0]:p[1]], sec_features[:, :, :, q[0]:q[1]]), 0, 1)
+                cv[index_d, left[0]:left[1], :] = np.swapaxes(measure(ref_features[:, :, :, left[0]:left[1]],
+                                                                      sec_features[:, :, :, right[0]:right[1]]), 0, 1)
 
         # The minus sign converts the similarity score to a matching cost
         cv *= -1
