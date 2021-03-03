@@ -7,8 +7,8 @@ This module contains functions to test mc-cnn fast and accurate
 """
 
 
-import torch
 import numpy as np
+import torch
 import torch.nn as nn
 
 from mc_cnn.model.mc_cnn_fast import FastMcCnn
@@ -32,11 +32,11 @@ def point_interval(ref_features, sec_features, disp):
     _, _, nx_sec = sec_features.shape
 
     # range in the reference image
-    p = (max(0 - disp, 0), min(nx_ref - disp, nx_ref))
+    left = (max(0 - disp, 0), min(nx_ref - disp, nx_ref))
     # range in the secondary image
-    q = (max(0 + disp, 0), min(nx_sec + disp, nx_sec))
+    right = (max(0 + disp, 0), min(nx_sec + disp, nx_sec))
 
-    return p, q
+    return left, right
 
 
 def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
@@ -60,7 +60,7 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
     :return: the cost volume ( similarity score is converted to a matching cost )
     :rtype: 3D np.array (row, col, disp)
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Create the network
     net = FastMcCnn()
@@ -107,9 +107,12 @@ def computes_cost_volume_mc_cnn_fast(ref_features, sec_features, disp_min, disp_
     cos = nn.CosineSimilarity(dim=0, eps=1e-6)
 
     for disp in disparity_range:
-        p, q = point_interval(ref_features, sec_features, disp)
-        d = int(disp - disp_min)
-        cv[d, p[0]:p[1], :] = np.swapaxes((cos(ref_features[:, :, p[0]:p[1]], sec_features[:, :, q[0]:q[1]]).cpu().detach().numpy()), 0, 1)
+        # Columns range in left and right image
+        left, right = point_interval(ref_features, sec_features, disp)
+        ind_d = int(disp - disp_min)
+        cv[ind_d, left[0]:left[1], :] = np.swapaxes((cos(ref_features[:, :, left[0]:left[1]],
+                                                     sec_features[:, :, right[0]:right[1]]).cpu().detach().numpy()),
+                                                    0, 1)
 
     # Releases cache memory
     torch.cuda.empty_cache()
@@ -141,7 +144,7 @@ def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
     :return: the cost volume ( similarity score is converted to a matching cost )
     :rtype: 3D np.array (row, col, disp)
     """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Create the network
     net = AccMcCnnInfer()
