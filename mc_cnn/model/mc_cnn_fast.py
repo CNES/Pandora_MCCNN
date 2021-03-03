@@ -12,12 +12,12 @@ import torch.nn.functional as F
 
 
 class FastMcCnn(nn.Module):
-    def __init__(self):
-        """
-        Define the mc_cnn fast neural network
+    """
+    Define the mc_cnn fast neural network
 
-        """
-        super(FastMcCnn, self).__init__()
+    """
+    def __init__(self):
+        super().__init__()
         self.in_channels = 1
         self.num_conv_feature_maps = 64
         self.conv_kernel_size = 3
@@ -39,30 +39,28 @@ class FastMcCnn(nn.Module):
                       kernel_size=self.conv_kernel_size),
         )
 
+    # pylint: disable=arguments-differ
+    # pylint: disable=no-else-return
     def forward(self, sample, training):
         """
         Forward function
 
         :param sample: sample
         :type sample:
-        if training mode :
-            - normalized patch : torch ( batch_size, 3, 11, 11) with : 3 is the left patch, right positive patch, right negative
-               patch, 11 the patch
-        else:
-            - normalized image torch(row, col)
-
+            - if training mode :
+                - normalized patch : torch ( batch_size, 3, 11, 11) with : 3 is the left patch, right positive patch,
+                    right negative patch, 11 the patch
+            - else :
+                - normalized image torch(row, col)
         :param training: training mode
         :type training: bool
         :return:
-        if training mode :
-            - left, right positive and right negative features
-        else:
-            - extracted features
+
+            - if training mode : left, right positive and right negative features
+            - else : extracted features
         :rtype :
-        if training mode :
-            - tuple([batch_size, 64, 1, 1], [batch_size, 64, 1, 1], [batch_size, 64, 1, 1])
-        else:
-            - torch(64, row, col)
+            - if training mode : tuple([batch_size, 64, 1, 1], [batch_size, 64, 1, 1], [batch_size, 64, 1, 1])
+            - else : torch(64, row, col)
         """
         if training:
             left = self.conv_blocks(sample[:, 0:1, :, :])
