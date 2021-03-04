@@ -16,6 +16,8 @@ import cv2
 
 # pylint: disable=too-many-instance-attributes
 # -> because I see no other way to inherit from a class suffering from too many instace attributes
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-arguments
 class MiddleburyGenerator(data.Dataset):
     """
     Generate middlebury dataset
@@ -180,7 +182,7 @@ class MiddleburyGenerator(data.Dataset):
 
     def data_augmentation(self, src, row, col, scale, phi, trans, hshear, brightness, contrast):
         """
-        Return augmented patch.
+        Return augmented patch : apply affine transformations
 
         :param src: source image
         :param row: row center of the patch
@@ -194,22 +196,25 @@ class MiddleburyGenerator(data.Dataset):
         :return: the augmented patch
         :rtype: np.array(self.patch_size, self.patch_size)
         """
-        homo_matrix = [1, 0, -col, 0, 1, -row]
-        homo_matrix = self.mul32([1, 0, trans[0], 0, 1, trans[1]], homo_matrix)
-        homo_matrix = self.mul32([scale[0], 0, 0, 0, scale[1], 0], homo_matrix)
+        homo_matrix = np.array([[1, 0, -col], [0, 1, -row], [0, 0, 1]])
+        translation_matrix = np.array([[1, 0, trans[0]], [0, 1, trans[1]], [0, 0, 1]])
+        homo_matrix = np.matmul(translation_matrix, homo_matrix)
+
+        scale_matrix = np.array([[scale[0], 0, 0], [0, scale[1], 0], [0, 0, 1]])
+        homo_matrix = np.matmul(scale_matrix, homo_matrix)
+
         cos_phi = math.cos(phi)
         sin_phi = math.sin(phi)
-        homo_matrix = self.mul32([cos_phi, sin_phi, 0, -sin_phi, cos_phi, 0], homo_matrix)
-        homo_matrix = self.mul32([1, hshear, 0, 0, 1, 0], homo_matrix)
-        homo_matrix = self.mul32([1, 0, (self.patch_size - 1) / 2, 0, 1, (self.patch_size - 1) / 2], homo_matrix)
+        rotate_matrix = np.array([[cos_phi, sin_phi, 0], [-sin_phi, cos_phi, 0], [0, 0, 1]])
+        homo_matrix = np.matmul(rotate_matrix, homo_matrix)
 
-        homo_matrix = np.reshape(homo_matrix, (2,3))
+        shear_matrix = np.array([[1, hshear, 0], [0, 1, 0], [0, 0, 1]])
+        homo_matrix = np.matmul(shear_matrix, homo_matrix)
+
+        translation_matrix = np.array([[1, 0, (self.patch_size - 1) / 2], [0, 1, (self.patch_size - 1) / 2]])
+        homo_matrix = np.matmul(translation_matrix, homo_matrix)
 
         dst = cv2.warpAffine(src, homo_matrix, (self.patch_size, self.patch_size))
         dst *= contrast
         dst += brightness
         return dst
-
-    def mul32(self, a, b):
-        return a[0]*b[0]+a[1]*b[3], a[0]*b[1]+a[1]*b[4], a[0]*b[2]+a[1]*b[5]+a[2], a[3]*b[0]+a[4]*b[3], \
-               a[3]*b[1]+a[4]*b[4], a[3]*b[2]+a[4]*b[5]+a[5]
