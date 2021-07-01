@@ -8,8 +8,8 @@ This module contains all functions to generate the training and testing dataset 
 
 import argparse
 import os
-import numpy as np
 import re
+import numpy as np
 from numba import njit, prange
 import h5py
 import rasterio
@@ -30,7 +30,7 @@ def load_pfm(fname):
     scale = None
     endian = None
 
-    with open(fname, "rb") as file:
+    with open(fname, 'rb') as file:
         header = file.readline().rstrip().decode('latin-1')
         if header == 'PF':
             color = True
@@ -68,62 +68,62 @@ def read_im(fname, downsample):
     :return: data of the file
     :rtype : np.array (1, row, col)
     """
-    x = rasterio.open(fname).read()
+    image = rasterio.open(fname).read()
 
     if downsample:
-        x = x[:, ::2, ::2]
+        image = image[:, ::2, ::2]
 
     # Gray conversion : [Stereo Matching by Training a Convolutional NeuralNetwork to Compare Image Patches]
     # Our initial experiments suggested that using color information does not improve the quality of the disparity maps
     # therefore, we converted all color images to grayscale.
-    if len(x.shape) == 3:
-        x = x.transpose(1, 2, 0)
-        x = np.dot(x[:, :, :], [0.299, 0.587, 0.114])
+    if len(image.shape) == 3:
+        image = image.transpose(1, 2, 0)
+        image = np.dot(image[:, :, :], [0.299, 0.587, 0.114])
 
     # Normalize
-    x = (x - x.mean()) / x.std()
+    image = (image - image.mean()) / image.std()
 
-    return x[None]
+    return image[None]
 
 
 @njit(parallel=True)
-def compute_mask(disp0, disp0y, disp1, patch_size):
+def compute_mask(left_disp, left_row_disp, right_disp, patch_size):
     """
     Apply cross-checking, and invalidate pixels with incomplete patch
 
-    :param disp0: Left disparity
-    :type disp0: numpy.array (row, col)
-    :param disp0y: Left column disparity
-    :type disp0y: numpy.array (row, col)
-    :param disp1: Right disparity
-    :type disp1: numpy.array (row, col)
+    :param left_disp: Left disparity
+    :type left_disp: numpy.array (row, col)
+    :param left_row_disp: Left column disparity
+    :type left_row_disp: numpy.array (row, col)
+    :param right_disp: Right disparity
+    :type right_disp: numpy.array (row, col)
     :param patch_size: patch size
     :type patch_size: int
     :return: Result of the cross-checking with the convention : invalid pixels = 0, valid pixels = 1
     :rtype : numpy.array (row, col)
     """
-    row, col = disp0.shape
+    row, col = left_disp.shape
     mask = np.zeros((row, col), dtype=np.float32)
     rad = int(patch_size / 2)
-    # 6 = maximum negative displacement
+    # 6 = maximum negative displacement for creating negative exemple during training
     rad += 6
 
-    for r in prange(rad, row-rad):
-        for c in prange(rad, col-rad):
-            dx = disp0[r, c]
+    for row_idx in prange(rad, row-rad):  # pylint: disable=not-an-iterable
+        for col_idx in prange(rad, col-rad):  # pylint: disable=not-an-iterable
+            disp_left_x = left_disp[row_idx, col_idx]
 
-            dy = 0
-            if disp0y is not None:
-                dy = disp0y[r, c]
+            disp_left_y = 0
+            if left_row_disp is not None:
+                disp_left_y = left_row_disp[row_idx, col_idx]
 
-            if dx != np.inf:
-                x1 = int(c + (-1 * dx))
-                y1 = int(r + dy)
+            if disp_left_x != np.inf:
+                idx_right_x = int(col_idx + (-1 * disp_left_x))
+                idx_right_y = int(row_idx + disp_left_y)
 
-                if rad < x1 < (col-rad) and rad < y1 < (row-rad):
-                    dx1 = disp1[y1, x1]
-                    if abs(dx - dx1) < 1:
-                        mask[r, c] = 1
+                if rad < idx_right_x < (col-rad) and rad < idx_right_y < (row-rad):
+                    disp_right_x = right_disp[idx_right_y, idx_right_x]
+                    if abs(disp_left_x - disp_right_x) < 1:
+                        mask[row_idx, col_idx] = 1
     return mask
 
 
@@ -148,13 +148,17 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
     :type sample_file: hdf5 file
     """
     grp = img_file.create_group(str(num_img))
-    for light in range(len(img)):
-        dset = grp.create_dataset(str(light), data=img[light])
+    for light,__ in enumerate(img):
+        __ = grp.create_dataset(str(light), data=img[light])
 
     sample_file.create_dataset(str(num_img), data=sample)
 
 
-def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_dir):
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-branches
+# pylint: disable=too-many-statements
+# pylint: disable=too-many-function-args
+def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_dir):
     """
     Preprocess and create middlebury hdf5 database
 
@@ -181,7 +185,7 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
 
     # Testing dataset = 'Adirondack-imperfect', 'Backpack-imperfect', 'Bicycle1-imperfect', 'Cable-imperfect',
     # 'Classroom1-imperfect', 'Couch-imperfect', 'Flowers-imperfect'
-    te = np.arange(0, 7)
+    test_ds_range = np.arange(0, 7)
 
     # Training dataset = 'Jadeplant-imperfect', 'Mask-imperfect', 'Motorcycle-imperfect',
     # 'Piano-imperfect', 'Pipes-imperfect', 'Playroom-imperfect', 'Playtable-imperfect', 'Recycle-imperfect',
@@ -190,22 +194,22 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
 
     num_image = 0
 
-    for dir in sorted(os.listdir(in_dir_2014)):
+    for directory in sorted(os.listdir(in_dir_2014)):
 
-        base1 = os.path.join(in_dir_2014, dir)
+        base1 = os.path.join(in_dir_2014, directory)
 
         left = read_im(os.path.join(base1, 'im0.png'), True)
         right = read_im(os.path.join(base1, 'im1.png'), True)
-        # XX[0].shape = (1, 2, row, col)
-        XX = [np.expand_dims(np.concatenate((left, right)), axis=0)]
+        # im_tensor[0].shape = (1, 2, row, col)
+        im_tensor = [np.expand_dims(np.concatenate((left, right)), axis=0)]
 
-        right_E = read_im(os.path.join(base1, 'im1E.png'), True)
-        # XX[1].shape = (1, 2, row, col)
-        XX.append(np.expand_dims(np.concatenate((left, right_E)), axis=0))
+        right_exp = read_im(os.path.join(base1, 'im1E.png'), True)
+        # im_tensor[1].shape = (1, 2, row, col)
+        im_tensor.append(np.expand_dims(np.concatenate((left, right_exp)), axis=0))
 
-        right_L = read_im(os.path.join(base1, 'im1L.png'), True)
-        # XX[2].shape = (1, 2, row, col)
-        XX.append(np.expand_dims(np.concatenate((left, right_L)), axis=0))
+        right_lum = read_im(os.path.join(base1, 'im1L.png'), True)
+        # im_tensor[2].shape = (1, 2, row, col)
+        im_tensor.append(np.expand_dims(np.concatenate((left, right_lum)), axis=0))
 
         base2 = os.path.join(base1, 'ambient')
         num_light = len(os.listdir(base2))
@@ -217,48 +221,50 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
             exp = os.listdir(base4)
             num_exp = int(len(exp) / 2)
 
-            for e in range(0, num_exp):
-                left = read_im(base4 + '/im0e' + str(e) + '.png', True)
-                right = read_im(base4 + '/im1e' + str(e) + '.png', True)
+            for elem in range(0, num_exp):
+                left = read_im(base4 + '/im0e' + str(elem) + '.png', True)
+                right = read_im(base4 + '/im1e' + str(elem) + '.png', True)
                 imgs.append(np.concatenate((left, right)))
 
-            # XX[3:].shape = (number of exposures, 2, row, col)
-            XX.append(np.concatenate(imgs).reshape(num_exp, 2, left.shape[1], left.shape[2]))
+            # im_tensor[3:].shape = (number of exposures, 2, row, col)
+            im_tensor.append(np.concatenate(imgs).reshape(num_exp, 2, left.shape[1], left.shape[2]))
 
         # Read ground truth disparity
-        disp0, scale0 = load_pfm(os.path.join(base1, 'disp0.pfm'))
+        left_disp, __ = load_pfm(os.path.join(base1, 'disp0.pfm'))
         # Downsample
-        disp0 = disp0[::2, ::2]
-        disp1, scale1 = load_pfm(os.path.join(base1, 'disp1.pfm'))
+        left_disp = left_disp[::2, ::2]
+        right_disp, __ = load_pfm(os.path.join(base1, 'disp1.pfm'))
         # Downsample
-        disp1 = disp1[::2, ::2]
+        right_disp = right_disp[::2, ::2]
 
         # Left GT y-disparities
-        disp0y, scale0y = load_pfm(os.path.join(base1, 'disp0y.pfm'))
+        left_row_disp, __ = load_pfm(os.path.join(base1, 'disp0y.pfm'))
         # Downsample
-        disp0y = disp0y[::2, ::2]
+        left_row_disp = left_row_disp[::2, ::2]
 
         # Remove occluded pixels
-        mask = compute_mask(disp0, disp0y, disp1, patch_size)
-        disp0[mask != 1] = 0
+        mask = compute_mask(left_disp, left_row_disp, right_disp, patch_size)
+        left_disp[mask != 1] = 0
 
-        y, x = np.nonzero(mask)
+        non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
         # data np.array of shape ( number of valid pixels for all the images, 4 )
         # 4 = the image index, row, col, disparity for the pixel p(row, col)
-        data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
+        data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
+                                non_zero_y_idx, non_zero_x_idx,
+                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
 
-        if num_image in te:
-            save_dataset(XX, data, num_image, img_file, testing_file)
+        if num_image in test_ds_range:
+            save_dataset(im_tensor, data, num_image, img_file, testing_file)
         else:
-            save_dataset(XX, data, num_image, img_file, training_file)
+            save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
     # --------------- Middlebury 2006 dataset ---------------
-    for dir in sorted(os.listdir(in_dir_2006)):
-        XX = []
+    for directory in sorted(os.listdir(in_dir_2006)):
+        im_tensor = []
 
-        base1 = os.path.join(in_dir_2006, dir)
+        base1 = os.path.join(in_dir_2006, directory)
 
         for light in range(3):
             imgs = []
@@ -270,34 +276,37 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
                 imgs.append(right)
 
             _, height, width = imgs[0].shape
-            # XX is a list of size = 1 + number of light
-            # XX[0].shape = (3, 2, row, col )
-            XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+            # im_tensor is a list of size = 1 + number of light
+            # im_tensor[0].shape = (3, 2, row, col )
+            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        disp0 = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
-        disp1 = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
+        left_disp = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
+        right_disp = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
-        disp0 /= 2
-        disp1 /= 2
+        left_disp /= 2
+        right_disp /= 2
 
-        disp0[disp0 == 0] = np.inf
-        disp1[disp1 == 0] = np.inf
+        left_disp[left_disp == 0] = np.inf
+        right_disp[right_disp == 0] = np.inf
 
-        mask = compute_mask(disp0, None, disp1, patch_size)
-        disp0[mask != 1] = 0
+        mask = compute_mask(left_disp, None, right_disp, patch_size)
+        left_disp[mask != 1] = 0
 
-        y, x = np.nonzero(mask)
+        non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
-        data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
-        save_dataset(XX, data, num_image, img_file, training_file)
+        data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
+                                non_zero_y_idx,
+                                non_zero_x_idx,
+                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+        save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
-    
-    # --------------- Middlebury 2005 dataset ---------------
-    for dir in sorted(os.listdir(in_dir_2005)):
-        XX = []
 
-        base1 = os.path.join(in_dir_2005, dir)
+    # --------------- Middlebury 2005 dataset ---------------
+    for directory in sorted(os.listdir(in_dir_2005)):
+        im_tensor = []
+
+        base1 = os.path.join(in_dir_2005, directory)
         if not os.path.isfile(base1 + '/disp1.png'):
             continue
 
@@ -311,34 +320,37 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
                 imgs.append(right)
 
             _, height, width = imgs[0].shape
-            # XX is a list of size = 1 + number of light
-            # XX[0].shape = (3, 2, row, col )
-            XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+            # im_tensor is a list of size = 1 + number of light
+            # im_tensor[0].shape = (3, 2, row, col )
+            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        disp0 = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
-        disp1 = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
+        left_disp = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
+        right_disp = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
-        disp0 /= 2
-        disp1 /= 2
+        left_disp /= 2
+        right_disp /= 2
 
-        disp0[disp0 == 0] = np.inf
-        disp1[disp1 == 0] = np.inf
+        left_disp[left_disp == 0] = np.inf
+        right_disp[right_disp == 0] = np.inf
 
-        mask = compute_mask(disp0, None, disp1, patch_size)
-        disp0[mask != 1] = 0
+        mask = compute_mask(left_disp, None, right_disp, patch_size)
+        left_disp[mask != 1] = 0
 
-        y, x = np.nonzero(mask)
+        non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
-        data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
-        save_dataset(XX, data, num_image, img_file, training_file)
+        data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
+                                non_zero_y_idx,
+                                non_zero_x_idx,
+                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+        save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
-    
-    # --------------- Middlebury 2003 dataset ---------------
-    for dir in ('conesH', 'teddyH'):
-        base1 = os.path.join(in_dir_2003, dir)
 
-        XX = []
+    # --------------- Middlebury 2003 dataset ---------------
+    for directory in ('conesH', 'teddyH'):
+        base1 = os.path.join(in_dir_2003, directory)
+
+        im_tensor = []
         imgs = []
 
         left = read_im(base1 + '/im2.ppm', False)
@@ -347,40 +359,43 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
 
         imgs.append(left)
         imgs.append(right)
-        XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+        im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        disp0 = rasterio.open(base1 + '/disp2.pgm').read().astype(np.float32)
-        disp1 = rasterio.open(base1 + '/disp6.pgm').read().astype(np.float32)
+        left_disp = rasterio.open(base1 + '/disp2.pgm').read().astype(np.float32)
+        right_disp = rasterio.open(base1 + '/disp6.pgm').read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
-        disp0 /= 2
-        disp1 /= 2
+        left_disp /= 2
+        right_disp /= 2
         # Disparity 0 is invalid
-        disp0[disp0 == 0] = np.inf
-        disp1[disp1 == 0] = np.inf
+        left_disp[left_disp == 0] = np.inf
+        right_disp[right_disp == 0] = np.inf
 
-        mask = compute_mask(disp0, None, disp1, patch_size)
-        disp0[mask != 1] = 0
+        mask = compute_mask(left_disp, None, right_disp, patch_size)
+        left_disp[mask != 1] = 0
 
-        y, x = np.nonzero(mask)
+        non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
-        data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
-        save_dataset(XX, data, num_image, img_file, training_file)
+        data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
+                                non_zero_y_idx,
+                                non_zero_x_idx,
+                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+        save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
     # --------------- Middlebury 2001 dataset ---------------
-    for dir in sorted(os.listdir(in_dir_2001)):
-        if dir == 'tsukuba':
+    for directory in sorted(os.listdir(in_dir_2001)):
+        if directory == 'tsukuba':
             continue
-        elif dir == 'map':
+        if directory == 'map':
             fname_disp0, fname_disp1, fname_x0, fname_x1 = 'disp0.pgm', 'disp1.pgm', 'im0.pgm', 'im1.pgm'
         else:
             fname_disp0, fname_disp1, fname_x0, fname_x1 = 'disp2.pgm', 'disp6.pgm', 'im2.ppm', 'im6.ppm'
 
-        base2 = os.path.join(in_dir_2001, dir)
+        base2 = os.path.join(in_dir_2001, directory)
         if os.path.isfile(os.path.join(base2, fname_disp0)):
 
-            XX = []
+            im_tensor = []
             imgs = []
 
             left = read_im(os.path.join(base2, fname_x0), False)
@@ -389,19 +404,22 @@ def mb(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_d
 
             imgs.append(left)
             imgs.append(right)
-            XX.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-            disp0 = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.
-            disp1 = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.
+            left_disp = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.
+            right_disp = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.
 
-            mask = compute_mask(disp0, None, disp1, patch_size)
+            mask = compute_mask(left_disp, None, right_disp, patch_size)
 
-            disp0[mask != 1] = 0
+            left_disp[mask != 1] = 0
 
-            y, x = np.nonzero(mask)
+            non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
-            data = np.column_stack((np.zeros_like(y) + num_image, y, x, disp0[y, x])).astype(np.float32)
-            save_dataset(XX, data, num_image, img_file, training_file)
+            data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
+                                    non_zero_y_idx,
+                                    non_zero_x_idx,
+                                    left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+            save_dataset(im_tensor, data, num_image, img_file, training_file)
             num_image += 1
 
 
@@ -418,4 +436,9 @@ if __name__ == '__main__':
     parser.add_argument('output_dir', help='Path to the output directory ')
     args = parser.parse_args()
 
-    mb(args.input_dir_2014, args.input_dir_2006, args.input_dir_2005, args.input_dir_2003, args.input_dir_2001, args.output_dir)
+    middleburry(args.input_dir_2014,
+                args.input_dir_2006,
+                args.input_dir_2005,
+                args.input_dir_2003,
+                args.input_dir_2001,
+                args.output_dir)

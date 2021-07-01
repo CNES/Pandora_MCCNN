@@ -6,24 +6,20 @@
 This module contains all functions to train mc-cnn fast and accurate networks
 """
 
-import torch
-from torch import nn, optim
-from torch.utils import data
 import argparse
 import os
 import errno
 import json
-import numpy as np
 import copy
+import torch
+from torch import nn, optim
+from torch.utils import data
+
 
 from mc_cnn.model.mc_cnn_accurate import AccMcCnn
 from mc_cnn.model.mc_cnn_fast import FastMcCnn
 from mc_cnn.dataset_generator.middlebury_generator import MiddleburyGenerator
 from mc_cnn.dataset_generator.datas_fusion_contest_generator import DataFusionContestGenerator
-
-
-# Global variable that control the random seed
-SEED = 0
 
 
 def mkdir_p(path):
@@ -37,27 +33,6 @@ def mkdir_p(path):
             pass
         else:
             raise
-
-
-def _init_fn(worker_id):
-    """
-    Set the init function in order to have multiple worker in the dataloader
-    """
-    np.random.seed(SEED + worker_id)
-
-
-def set_seed():
-    """
-    Set up the random seed
-
-    """
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed(SEED)
-    torch.cuda.manual_seed_all(SEED)  # if you are using multi-GPU.
-    np.random.seed(SEED)  # Numpy module.
-    torch.manual_seed(SEED)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
 
 
 def train_mc_cnn_fast(cfg, output_dir):
@@ -92,11 +67,11 @@ def train_mc_cnn_fast(cfg, output_dir):
     test_cfg = copy.deepcopy(cfg)
     test_cfg['transformation'] = False
 
-    if cfg['dataset'] == "middlebury":
+    if cfg['dataset'] == 'middlebury':
         training_loader = MiddleburyGenerator(cfg['training_sample'], cfg['training_image'], cfg)
         testing_loader = MiddleburyGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
 
-    if cfg['dataset'] == "data_fusion_contest":
+    if cfg['dataset'] == 'data_fusion_contest':
         training_loader = DataFusionContestGenerator(cfg['training_sample'], cfg['training_image'], cfg)
         testing_loader = DataFusionContestGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
 
@@ -115,10 +90,7 @@ def train_mc_cnn_fast(cfg, output_dir):
         test_epoch_loss = 0.0
         net.train()
 
-        # Change the seed at each epoch
-        SEED = epoch
-
-        for it, batch in enumerate(training_generator, 0):
+        for _, batch in enumerate(training_generator, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -139,7 +111,7 @@ def train_mc_cnn_fast(cfg, output_dir):
         scheduler.step(epoch)
 
         net.eval()
-        for it, batch in enumerate(testing_generator, 0):
+        for _, batch in enumerate(testing_generator, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -198,11 +170,11 @@ def train_mc_cnn_acc(cfg, output_dir):
     test_cfg = copy.deepcopy(cfg)
     test_cfg['transformation'] = False
 
-    if cfg['dataset'] == "middlebury":
+    if cfg['dataset'] == 'middlebury':
         training_loader = MiddleburyGenerator(cfg['training_sample'], cfg['training_image'], cfg)
         testing_loader = MiddleburyGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
 
-    if cfg['dataset'] == "data_fusion_contest":
+    if cfg['dataset'] == 'data_fusion_contest':
         training_loader = DataFusionContestGenerator(cfg['training_sample'], cfg['training_image'], cfg)
         testing_loader = DataFusionContestGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
 
@@ -219,10 +191,7 @@ def train_mc_cnn_acc(cfg, output_dir):
         test_epoch_loss = 0.0
         net.train()
 
-        # Change the seed at each epoch
-        SEED = epoch
-
-        for it, batch in enumerate(training_generator, 0):
+        for _, batch in enumerate(training_generator, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -243,7 +212,7 @@ def train_mc_cnn_acc(cfg, output_dir):
         scheduler.step(epoch)
 
         net.eval()
-        for it, batch in enumerate(testing_generator, 0):
+        for _, batch in enumerate(testing_generator, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -276,33 +245,34 @@ def read_config_file(config_file):
 
     :param config_file: path to a json file containing the algorithm parameters
     :type config_file: string
-    :return:
+    :return: the configuration
+    :rtype: dict
     """
-    with open(config_file, 'r') as f:
-        user_cfg = json.load(f)
-    return user_cfg
+    with open(config_file, 'r') as file:
+        user_configuration = json.load(file)
+    return user_configuration
 
 
-def save_cfg(output, user_cfg):
+def save_cfg(output, configuration):
     """
     Save user configuration in the json file : config.json
 
     :param output: output directory
-    :param user_cfg: user configuration
+    :param configuration: user configuration
     """
-    with open(os.path.join(output, 'config.json'), 'w') as f:
-        json.dump(user_cfg, f, indent=2)
+    with open(os.path.join(output, 'config.json'), 'w') as file:
+        json.dump(configuration, file, indent=2)
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('injson', help="Input json file")
+    parser.add_argument('injson', help='Input json file')
     parser.add_argument('outdir', help='Output directory')
     args = parser.parse_args()
 
     user_cfg = read_config_file(args.injson)
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 
     if user_cfg['network'] == 'fast':
         train_mc_cnn_fast(user_cfg, args.outdir)
