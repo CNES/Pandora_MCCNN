@@ -51,7 +51,7 @@ REQUIREMENTS_DEV = {
 
 
 def readme():
-    with copen('README.md', 'r', 'utf-8') as file:
+    with copen("README.md", "r", "utf-8") as file:
         return file.read()
 
 

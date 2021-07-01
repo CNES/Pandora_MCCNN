@@ -77,23 +77,23 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
     :return: the cost volume ( similarity score is converted to a matching cost )
     :rtype: 3D np.array (row, col, disp)
     """
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Create the network
     net = FastMcCnn()
     # Load the network
-    net.load_state_dict(torch.load(model_path, map_location=device)['model'])
+    net.load_state_dict(torch.load(model_path, map_location=device)["model"])
     net.to(device)
     net.eval()
 
     # Normalize images
-    ref = img_ref['im'].copy(deep=True).data
+    ref = img_ref["im"].copy(deep=True).data
     ref = (ref - ref.mean()) / ref.std()
 
-    sec = img_sec['im'].copy(deep=True).data
+    sec = img_sec["im"].copy(deep=True).data
     sec = (sec - sec.mean()) / sec.std()
 
-    # Extracts the image features by propagating the images in the mc_cnn fast network
+    # Extracts the image features by propagating the images in the mc_cnn fast network
     # Right and left features of shape : (64, row-10, col-10)
     ref_features = net(torch.from_numpy(ref).to(device=device, dtype=torch.float), training=False)
     sec_features = net(torch.from_numpy(sec).to(device=device, dtype=torch.float), training=False)
@@ -127,9 +127,16 @@ def computes_cost_volume_mc_cnn_fast(ref_features, sec_features, disp_min, disp_
         # Columns range in left and right image
         left, right = point_interval(ref_features, sec_features, disp)
         ind_d = int(disp - disp_min)
-        cv[ind_d, left[0]:left[1], :] = np.swapaxes((cos(ref_features[:, :, left[0]:left[1]],
-                                                     sec_features[:, :, right[0]:right[1]]).cpu().detach().numpy()),
-                                                    0, 1)
+        cv[ind_d, left[0] : left[1], :] = np.swapaxes(
+            (
+                cos(ref_features[:, :, left[0] : left[1]], sec_features[:, :, right[0] : right[1]])
+                .cpu()
+                .detach()
+                .numpy()
+            ),
+            0,
+            1,
+        )
 
     # Releases cache memory
     torch.cuda.empty_cache()
@@ -161,24 +168,28 @@ def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
     :return: the cost volume ( similarity score is converted to a matching cost )
     :rtype: 3D np.array (row, col, disp)
     """
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Create the network
     net = AccMcCnnInfer()
     # Load the network
-    net.load_state_dict(torch.load(model_path, map_location=device)['model'])
+    net.load_state_dict(torch.load(model_path, map_location=device)["model"])
     net.to(device)
     net.eval()
 
     # Normalize images
-    ref = img_ref['im'].copy(deep=True).data
+    ref = img_ref["im"].copy(deep=True).data
     ref = (ref - ref.mean()) / ref.std()
 
-    sec = img_sec['im'].copy(deep=True).data
+    sec = img_sec["im"].copy(deep=True).data
     sec = (sec - sec.mean()) / sec.std()
 
-    cv = net(torch.from_numpy(ref).to(device=device, dtype=torch.float),
-             torch.from_numpy(sec).to(device=device, dtype=torch.float), disp_min, disp_max)
+    cv = net(
+        torch.from_numpy(ref).to(device=device, dtype=torch.float),
+        torch.from_numpy(sec).to(device=device, dtype=torch.float),
+        disp_min,
+        disp_max,
+    )
     # Releases cache memory
     torch.cuda.empty_cache()
     return cv

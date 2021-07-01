@@ -33,6 +33,7 @@ class AccMcCnn(nn.Module):
     Define the mc_cnn accurate neural network for training
 
     """
+
     def __init__(self):
         super().__init__()
         self.in_channels = 1
@@ -41,21 +42,34 @@ class AccMcCnn(nn.Module):
 
         # Extract images features
         self.conv_blocks = nn.Sequential(
-            nn.Conv2d(in_channels=self.in_channels, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.in_channels, out_channels=self.num_conv_feature_maps, kernel_size=self.conv_kernel_size
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
-            nn.ReLU()
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
+            nn.ReLU(),
         )
 
         # Compute similarity score
@@ -67,7 +81,7 @@ class AccMcCnn(nn.Module):
             nn.Linear(in_features=384, out_features=384),
             nn.ReLU(),
             nn.Linear(in_features=384, out_features=1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     # pylint: disable=arguments-differ
@@ -110,6 +124,7 @@ class AccMcCnnInfer(nn.Module):
     Define the mc_cnn accurate neural network for inference
 
     """
+
     def __init__(self):
         super().__init__()
         self.in_channels = 1
@@ -118,21 +133,34 @@ class AccMcCnnInfer(nn.Module):
 
         # Extract images features
         self.conv_blocks = nn.Sequential(
-            nn.Conv2d(in_channels=self.in_channels, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.in_channels, out_channels=self.num_conv_feature_maps, kernel_size=self.conv_kernel_size
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
-            nn.ReLU()
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
+            nn.ReLU(),
         )
 
         # Compute similarity score
@@ -144,7 +172,7 @@ class AccMcCnnInfer(nn.Module):
             nn.Linear(in_features=384, out_features=384),
             nn.ReLU(),
             nn.Linear(in_features=384, out_features=1),
-            nn.Sigmoid()
+            nn.Sigmoid(),
         )
 
     # pylint: disable=arguments-differ
@@ -170,8 +198,9 @@ class AccMcCnnInfer(nn.Module):
             ref_features = self.conv_blocks(ref.unsqueeze(0).unsqueeze(0))
             sec_features = self.conv_blocks(sec.unsqueeze(0).unsqueeze(0))
 
-            cv = self.computes_cost_volume_mc_cnn_accurate(ref_features, sec_features, disp_min, disp_max,
-                                                           self.compute_cost_mc_cnn_accurate)
+            cv = self.computes_cost_volume_mc_cnn_accurate(
+                ref_features, sec_features, disp_min, disp_max, self.compute_cost_mc_cnn_accurate
+            )
 
             return cv
 
@@ -207,8 +236,9 @@ class AccMcCnnInfer(nn.Module):
                 right = (max(0 + disp, 0), min(nx_sec + disp, nx_sec))
                 index_d = int(disp - disp_min)
 
-                cv[index_d, left[0]:left[1], :] = np.swapaxes(measure(ref_features[:, :, :, left[0]:left[1]],
-                                                                      sec_features[:, :, :, right[0]:right[1]]), 0, 1)
+                cv[index_d, left[0] : left[1], :] = np.swapaxes(
+                    measure(ref_features[:, :, :, left[0] : left[1]], sec_features[:, :, :, right[0] : right[1]]), 0, 1
+                )
 
         # The minus sign converts the similarity score to a matching cost
         cv *= -1

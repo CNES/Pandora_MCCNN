@@ -124,8 +124,8 @@ disable=print-statement,
         inconsistent-return-statements,
         unnecessary-lambda,
         invalid-unary-operand-type,
-        broad-except
-
+        broad-except,
+        duplicate-code
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

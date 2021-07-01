@@ -29,7 +29,7 @@ import glob
 import argparse
 import numpy as np
 import h5py
-from osgeo import gdal
+import rasterio
 from numba import njit
 
 
@@ -63,8 +63,8 @@ def compute_mask(disp_map, mask_ref, mask_sec, patch_size):
 
             # If negative example is inside right epipolar image
             if radius < neg_match < (nb_col - radius) and radius < neg_match < (nb_row - radius):
-                patch_ref = mask_ref[(row - radius):(row + radius + 1), (col - radius):(col + radius + 1)]
-                patch_sec = mask_sec[(row - radius):(row + radius + 1), (match - radius):(match + radius + 1)]
+                patch_ref = mask_ref[(row - radius) : (row + radius + 1), (col - radius) : (col + radius + 1)]
+                patch_sec = mask_sec[(row - radius) : (row + radius + 1), (match - radius) : (match + radius + 1)]
 
                 # Invalid patch : outside left epipolar image
                 if np.sum(patch_ref != 0) != 0:
@@ -74,8 +74,9 @@ def compute_mask(disp_map, mask_ref, mask_sec, patch_size):
                 if np.sum(patch_sec != 0) != 0:
                     disp_map[row, col] = -9999
 
-                neg_patch_sec = mask_sec[(row - radius):(row + radius + 1),
-                                         (neg_match - radius):(neg_match + radius + 1)]
+                neg_patch_sec = mask_sec[
+                    (row - radius) : (row + radius + 1), (neg_match - radius) : (neg_match + radius + 1)
+                ]
 
                 # Invalid patch : outside right epipolar image
                 if np.sum(neg_patch_sec != 0) != 0:
@@ -119,12 +120,12 @@ def fusion_contest(input_dir, output):
     :param output: output directory
     :type output: string
     """
-    img_file = h5py.File(os.path.join(output, 'images_training_dataset_fusion_contest.hdf5'), 'w')
-    training_file = h5py.File(os.path.join(output, 'training_dataset_fusion_contest.hdf5'), 'w')
-    img_testing_file = h5py.File(os.path.join(output, 'images_testing_dataset_fusion_contest.hdf5'), 'w')
-    testing_file = h5py.File(os.path.join(output, 'testing_dataset_fusion_contest.hdf5'), 'w')
+    img_file = h5py.File(os.path.join(output, "images_training_dataset_fusion_contest.hdf5"), "w")
+    training_file = h5py.File(os.path.join(output, "training_dataset_fusion_contest.hdf5"), "w")
+    img_testing_file = h5py.File(os.path.join(output, "images_testing_dataset_fusion_contest.hdf5"), "w")
+    testing_file = h5py.File(os.path.join(output, "testing_dataset_fusion_contest.hdf5"), "w")
 
-    gt = glob.glob(input_dir + '/*/left_epipolar_disp.tif')
+    gt = glob.glob(input_dir + "/*/left_epipolar_disp.tif")
 
     nb_img = len(gt)
     # Shuffle the file list
@@ -137,17 +138,17 @@ def fusion_contest(input_dir, output):
     end_training = int(nb_img * 0.9)
 
     for num_image in range(nb_img):
-        name_image = gt[num_image].split(input_dir)[1].split('/')[1]
-        path_image = gt[num_image].split('left_epipolar_disp.tif')[0]
+        name_image = gt[num_image].split(input_dir)[1].split("/")[1]
+        path_image = gt[num_image].split("left_epipolar_disp.tif")[0]
 
         # Read images
-        left = gdal.Open(os.path.join(path_image, 'left_epipolar_image.tif')).ReadAsArray()
-        left_mask = gdal.Open(os.path.join(path_image,  'left_epipolar_mask.tif')).ReadAsArray()
-        right = gdal.Open(os.path.join(path_image, 'right_epipolar_image.tif')).ReadAsArray()
-        right_mask = gdal.Open(os.path.join(path_image, 'right_epipolar_mask.tif')).ReadAsArray()
-        dsp = gdal.Open(gt[num_image]).ReadAsArray()
-        mask_dsp = gdal.Open(os.path.join(path_image, 'left_epipolar_disp_mask.tif')).ReadAsArray()
-        cross_checking = gdal.Open(os.path.join(path_image, 'valid_disp.tif')).ReadAsArray()
+        left = rasterio.open(os.path.join(path_image, "left_epipolar_image.tif")).read(1)
+        left_mask = rasterio.open(os.path.join(path_image, "left_epipolar_mask.tif")).read(1)
+        right = rasterio.open(os.path.join(path_image, "right_epipolar_image.tif")).read(1)
+        right_mask = rasterio.open(os.path.join(path_image, "right_epipolar_mask.tif")).read(1)
+        dsp = rasterio.open(gt[num_image]).read(1)
+        mask_dsp = rasterio.open(os.path.join(path_image, "left_epipolar_disp_mask.tif")).read(1)
+        cross_checking = rasterio.open(os.path.join(path_image, "valid_disp.tif")).read(1)
 
         # Mask disparities
         mask_disp = compute_mask(dsp, left_mask, right_mask, 11)
@@ -155,7 +156,7 @@ def fusion_contest(input_dir, output):
         mask_disp[np.where(cross_checking == 255)] = -9999
         mask_disp[np.where(mask_dsp == 255)] = -9999
 
-        # Change the disparity convention to ref(x,y) = sec(x-d,y)
+        # Change the disparity convention to ref(x,y) = sec(x-d,y)
         mask_disp *= -1
         # Remove invalid disparity
         valid_row, valid_col = np.where(mask_disp != 9999)
@@ -172,8 +173,9 @@ def fusion_contest(input_dir, output):
 
         # data np.array of shape ( number of valid pixels the current image, 4 )
         # 4 = number of the image, row, col, disparity for the pixel p(row, col)
-        valid_disp = np.column_stack((np.zeros_like(valid_row) + num_image, valid_row, valid_col,
-                                      mask_disp[valid_row, valid_col])).astype(np.float32)
+        valid_disp = np.column_stack(
+            (np.zeros_like(valid_row) + num_image, valid_row, valid_col, mask_disp[valid_row, valid_col])
+        ).astype(np.float32)
 
         # img of shape (2, 2048, 2048, 3)
         img = np.stack((left, right), axis=0)
@@ -183,19 +185,21 @@ def fusion_contest(input_dir, output):
             save_dataset(img, valid_disp, name_image, img_file, training_file)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Script for creating the training data fusion contest database. '
-                                                 'it will create the following files: '
-                                                 '- training_dataset_fusion_contest.hdf5, which contains training'
-                                                 ' coordinates of the valid pixels and their disparity.'
-                                                 '- testing_dataset_fusion_contest.hdf5, which contains testing '
-                                                 'coordinates of the valid pixels and their disparity.'
-                                                 '- images_training_dataset_fusion_contest.hdf5, which contains the red'
-                                                 ' band normalized training images'
-                                                 '- images_testing_dataset_fusion_contest.hdf5, which contains the red'
-                                                 ' band normalized testing images')
-    parser.add_argument('input_data', help='Path to the input directory containing the data')
-    parser.add_argument('output_dir', help='Path to the output directory ')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Script for creating the training data fusion contest database. "
+        "it will create the following files: "
+        "- training_dataset_fusion_contest.hdf5, which contains training"
+        " coordinates of the valid pixels and their disparity."
+        "- testing_dataset_fusion_contest.hdf5, which contains testing "
+        "coordinates of the valid pixels and their disparity."
+        "- images_training_dataset_fusion_contest.hdf5, which contains the red"
+        " band normalized training images"
+        "- images_testing_dataset_fusion_contest.hdf5, which contains the red"
+        " band normalized testing images"
+    )
+    parser.add_argument("input_data", help="Path to the input directory containing the data")
+    parser.add_argument("output_dir", help="Path to the output directory ")
     args = parser.parse_args()
 
     fusion_contest(args.input_data, args.output_dir)
