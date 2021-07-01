@@ -81,3 +81,8 @@ Copyright (c) 2001, 2002 Enthought, Inc. All rights reserved.
 Copyright (c) 2003-2019 SciPy Developers. All rights reserved.
 Website: https://www.scipy.org/scipylib/
 License: BSD 3 Clause.
+
+This software includes code that have been developed by Jure Zbontar
+Copyright (c) 2015, Jure Zbontar <jure.zbontar@gmail.com>
+Website: https://github.com/jzbontar/mc-cnn
+License: BSD 2 Clause.
