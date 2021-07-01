@@ -28,15 +28,26 @@ from codecs import open as copen
 from setuptools import setup, find_packages
 
 
-requirements = ['numpy',
+REQUIREMENTS = ['numpy',
                 'numba',
                 'rasterio',
                 'torch',
                 'torchvision',
                 'h5py',
                 'opencv-python',
-                'scipy',
-                'nose2']
+                'scipy',]
+
+SETUP_REQUIREMENTS = ["setuptools-scm"]
+
+REQUIREMENTS_DEV = {
+    "dev": [
+        "pytest",
+        "pytest-cov",
+        "pylint",
+        "pre-commit",
+        "black",
+    ],
+}
 
 
 def readme():
@@ -45,13 +56,15 @@ def readme():
 
 
 setup(name='mc_cnn',
-      version='x.y.z',
+      use_scm_version=True,
       description='MC-CNN is a neural network for learning a similarity measure on image patches',
       long_description=readme(),
       long_description_content_type='text/markdown',
       url='https://gitlab.cnes.fr/OutilsCommuns/CorrelateurChaine3D/mc-cnn',
       author='CNES',
       author_email='myriam.cournet@cnes.fr',
-      license='',
-      install_requires=requirements,
+      license="Apache License 2.0",
+      install_requires=REQUIREMENTS,
+      setup_requires=SETUP_REQUIREMENTS,
+      extras_require=REQUIREMENTS_DEV,
       packages=find_packages())
