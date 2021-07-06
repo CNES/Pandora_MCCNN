@@ -1,0 +1,88 @@
+MCCNN Copyright (c) 2021 Centre National d'Etudes Spatiales (CNES).
+
+This software is distributed under the Apache Software License (ASL) v2.0, see
+LICENSE file or http://www.apache.org/licenses/LICENSE-2.0 for details.
+
+MCCNN depends on or includes source code from the following third-party
+software:
+
+Python: programming language that lets you work quickly and integrate systems more effectively.
+Copyright (c) 2001-2020 Python Software Foundation. All Rights reserved.
+Website: http://python.org/
+License: Python Software License.
+
+NumPy: The fundamental package for scientific computing with Python.
+Copyright (c) 2005-2020, NumPy Developers.
+Website: https://numpy.org/
+License: BSD 3 Clause.
+
+Setuptools: build system
+Copyright (C) 2016 Jason R Coombs <jaraco@jaraco.com>
+Website: https://setuptools.readthedocs.io/
+License: MIT.
+
+Sphinx-doc: Tool to create documentation for Python projects
+Copyright (c) 2007-2019 by the Sphinx team
+Website: https://www.sphinx-doc.org/
+License: BSD 2 Clause.
+
+Nose2: Testing module for Python codes
+Copyright (c) 2012, Jason Pellerin
+Copyright (c) 2001-2012
+Python Software Foundation
+Website: https://github.com/nose-devs/nose2
+License: BSD 2 Clause.
+
+Rasterio: access to geospatial raster data
+Copyright (c) 2016, MapBox All rights reserved.
+Website: https://github.com/mapbox/rasterio
+License: BSD 3 Clause.
+
+Numba: NumPy aware dynamic Python compiler using LLVM
+Copyright (c) 2012, Anaconda, Inc.
+Website: https://numba.pydata.org/
+License: BSD 2 Clause.
+
+Pytorch: An open source machine learning framework that accelerates the path from research prototyping to production deployment
+Copyright (c) 2016-     Facebook, Inc            (Adam Paszke)
+Copyright (c) 2014-     Facebook, Inc            (Soumith Chintala)
+Copyright (c) 2011-2014 Idiap Research Institute (Ronan Collobert)
+Copyright (c) 2012-2014 Deepmind Technologies    (Koray Kavukcuoglu)
+Copyright (c) 2011-2012 NEC Laboratories America (Koray Kavukcuoglu)
+Copyright (c) 2011-2013 NYU                      (Clement Farabet)
+Copyright (c) 2006-2010 NEC Laboratories America (Ronan Collobert, Leon Bottou, Iain Melvin, Jason Weston)
+Copyright (c) 2006      Idiap Research Institute (Samy Bengio)
+Copyright (c) 2001-2004 Idiap Research Institute (Ronan Collobert, Samy Bengio, Johnny Mariethoz)Website: https://pytorch.org/
+License: BSD 3 Clause.
+
+Torchvision: package consists of popular datasets, model architectures, and common image transformations for computer vision.
+Copyright (c) 2016, Soumith Chintala.
+Website: https://pytorch.org/vision/stable/index.html
+License: BSD 3 Clause.
+
+HDF5 (Hierarchical Data Format 5) Software Library and Utilities
+Copyright (c) 2008 Andrew Collette and contributors
+Website: https://www.h5py.org/
+License: Python Software License.
+
+OpenCV: Open Source Computer Vision Library
+Copyright (c) 2000-2019, Intel Corporation, all rights reserved.
+Copyright (c) 2009-2011, Willow Garage Inc., all rights reserved.
+Copyright (c) 2009-2016, NVIDIA Corporation, all rights reserved.
+Copyright (c) 2010-2013, Advanced Micro Devices, Inc., all rights reserved.
+Copyright (c) 2015-2016, OpenCV Foundation, all rights reserved.
+Copyright (c) 2015-2016, Itseez Inc., all rights reserved.
+Copyright (c) 2019-2020, Xperience AI, all rights reserved.
+Website: https://opencv.org/
+License: BSD 3 Clause.
+
+SciPy: open-source software for mathematics, science, and engineering.
+Copyright (c) 2001, 2002 Enthought, Inc. All rights reserved.
+Copyright (c) 2003-2019 SciPy Developers. All rights reserved.
+Website: https://www.scipy.org/scipylib/
+License: BSD 3 Clause.
+
+This software includes code that have been developed by Jure Zbontar
+Copyright (c) 2015, Jure Zbontar <jure.zbontar@gmail.com>
+Website: https://github.com/jzbontar/mc-cnn
+License: BSD 2 Clause.
