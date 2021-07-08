@@ -48,29 +48,29 @@ def load_pfm(fname):
     scale = None
     endian = None
 
-    with open(fname, 'rb') as file:
-        header = file.readline().rstrip().decode('latin-1')
-        if header == 'PF':
+    with open(fname, "rb") as file:
+        header = file.readline().rstrip().decode("latin-1")
+        if header == "PF":
             color = True
-        elif header == 'Pf':
+        elif header == "Pf":
             color = False
         else:
-            raise Exception('Not a PFM file.')
+            raise Exception("Not a PFM file.")
 
-        dim_match = re.match(r'^(\d+)\s(\d+)\s$', file.readline().decode('latin-1'))
+        dim_match = re.match(r"^(\d+)\s(\d+)\s$", file.readline().decode("latin-1"))
         if dim_match:
             width, height = map(int, dim_match.groups())
         else:
-            raise Exception('Malformed PFM header.')
+            raise Exception("Malformed PFM header.")
 
-        scale = float(file.readline().rstrip().decode('latin-1'))
+        scale = float(file.readline().rstrip().decode("latin-1"))
         if scale < 0:  # little-endian
-            endian = '<'
+            endian = "<"
             scale = -scale
         else:
-            endian = '>'  # big-endian
+            endian = ">"  # big-endian
 
-        data = np.fromfile(file, endian + 'f')
+        data = np.fromfile(file, endian + "f")
         shape = (height, width, 3) if color else (height, width)
     return np.flipud(np.reshape(data, shape)), scale
 
@@ -126,8 +126,8 @@ def compute_mask(left_disp, left_row_disp, right_disp, patch_size):
     # 6 = maximum negative displacement for creating negative exemple during training
     rad += 6
 
-    for row_idx in prange(rad, row-rad):  # pylint: disable=not-an-iterable
-        for col_idx in prange(rad, col-rad):  # pylint: disable=not-an-iterable
+    for row_idx in prange(rad, row - rad):  # pylint: disable=not-an-iterable
+        for col_idx in prange(rad, col - rad):  # pylint: disable=not-an-iterable
             disp_left_x = left_disp[row_idx, col_idx]
 
             disp_left_y = 0
@@ -138,7 +138,7 @@ def compute_mask(left_disp, left_row_disp, right_disp, patch_size):
                 idx_right_x = int(col_idx + (-1 * disp_left_x))
                 idx_right_y = int(row_idx + disp_left_y)
 
-                if rad < idx_right_x < (col-rad) and rad < idx_right_y < (row-rad):
+                if rad < idx_right_x < (col - rad) and rad < idx_right_y < (row - rad):
                     disp_right_x = right_disp[idx_right_y, idx_right_x]
                     if abs(disp_left_x - disp_right_x) < 1:
                         mask[row_idx, col_idx] = 1
@@ -166,7 +166,7 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
     :type sample_file: hdf5 file
     """
     grp = img_file.create_group(str(num_img))
-    for light,__ in enumerate(img):
+    for light, __ in enumerate(img):
         __ = grp.create_dataset(str(light), data=img[light])
 
     sample_file.create_dataset(str(num_img), data=sample)
@@ -195,9 +195,9 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
     """
     patch_size = 11
     # Creating hdf5 file
-    img_file = h5py.File(os.path.join(output_dir, 'images.hdf5'), 'w')
-    training_file = h5py.File(os.path.join(output_dir, 'training_dataset.hdf5'), 'w')
-    testing_file = h5py.File(os.path.join(output_dir, 'testing_dataset.hdf5'), 'w')
+    img_file = h5py.File(os.path.join(output_dir, "images.hdf5"), "w")
+    training_file = h5py.File(os.path.join(output_dir, "training_dataset.hdf5"), "w")
+    testing_file = h5py.File(os.path.join(output_dir, "testing_dataset.hdf5"), "w")
 
     # --------------- Middlebury 2014 dataset ---------------
 
@@ -216,47 +216,47 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
         base1 = os.path.join(in_dir_2014, directory)
 
-        left = read_im(os.path.join(base1, 'im0.png'), True)
-        right = read_im(os.path.join(base1, 'im1.png'), True)
+        left = read_im(os.path.join(base1, "im0.png"), True)
+        right = read_im(os.path.join(base1, "im1.png"), True)
         # im_tensor[0].shape = (1, 2, row, col)
         im_tensor = [np.expand_dims(np.concatenate((left, right)), axis=0)]
 
-        right_exp = read_im(os.path.join(base1, 'im1E.png'), True)
+        right_exp = read_im(os.path.join(base1, "im1E.png"), True)
         # im_tensor[1].shape = (1, 2, row, col)
         im_tensor.append(np.expand_dims(np.concatenate((left, right_exp)), axis=0))
 
-        right_lum = read_im(os.path.join(base1, 'im1L.png'), True)
+        right_lum = read_im(os.path.join(base1, "im1L.png"), True)
         # im_tensor[2].shape = (1, 2, row, col)
         im_tensor.append(np.expand_dims(np.concatenate((left, right_lum)), axis=0))
 
-        base2 = os.path.join(base1, 'ambient')
+        base2 = os.path.join(base1, "ambient")
         num_light = len(os.listdir(base2))
 
         for light in range(num_light):
             imgs = []
 
-            base4 = os.path.join(base2, 'L{}'.format(light + 1))
+            base4 = os.path.join(base2, "L{}".format(light + 1))
             exp = os.listdir(base4)
             num_exp = int(len(exp) / 2)
 
             for elem in range(0, num_exp):
-                left = read_im(base4 + '/im0e' + str(elem) + '.png', True)
-                right = read_im(base4 + '/im1e' + str(elem) + '.png', True)
+                left = read_im(base4 + "/im0e" + str(elem) + ".png", True)
+                right = read_im(base4 + "/im1e" + str(elem) + ".png", True)
                 imgs.append(np.concatenate((left, right)))
 
             # im_tensor[3:].shape = (number of exposures, 2, row, col)
             im_tensor.append(np.concatenate(imgs).reshape(num_exp, 2, left.shape[1], left.shape[2]))
 
         # Read ground truth disparity
-        left_disp, __ = load_pfm(os.path.join(base1, 'disp0.pfm'))
+        left_disp, __ = load_pfm(os.path.join(base1, "disp0.pfm"))
         # Downsample
         left_disp = left_disp[::2, ::2]
-        right_disp, __ = load_pfm(os.path.join(base1, 'disp1.pfm'))
+        right_disp, __ = load_pfm(os.path.join(base1, "disp1.pfm"))
         # Downsample
         right_disp = right_disp[::2, ::2]
 
         # Left GT y-disparities
-        left_row_disp, __ = load_pfm(os.path.join(base1, 'disp0y.pfm'))
+        left_row_disp, __ = load_pfm(os.path.join(base1, "disp0y.pfm"))
         # Downsample
         left_row_disp = left_row_disp[::2, ::2]
 
@@ -268,9 +268,14 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
         # data np.array of shape ( number of valid pixels for all the images, 4 )
         # 4 = the image index, row, col, disparity for the pixel p(row, col)
-        data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
-                                non_zero_y_idx, non_zero_x_idx,
-                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+        data = np.column_stack(
+            (
+                np.zeros_like(non_zero_y_idx) + num_image,
+                non_zero_y_idx,
+                non_zero_x_idx,
+                left_disp[non_zero_y_idx, non_zero_x_idx],
+            )
+        ).astype(np.float32)
 
         if num_image in test_ds_range:
             save_dataset(im_tensor, data, num_image, img_file, testing_file)
@@ -287,9 +292,9 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         for light in range(3):
             imgs = []
             for exp in (0, 1, 2):
-                base3 = os.path.join(base1, 'Illum{}/Exp{}'.format(light + 1, exp))
-                left = read_im(os.path.join(base3, 'view1.png'), False)
-                right = read_im(os.path.join(base3, 'view5.png'), False)
+                base3 = os.path.join(base1, "Illum{}/Exp{}".format(light + 1, exp))
+                left = read_im(os.path.join(base3, "view1.png"), False)
+                right = read_im(os.path.join(base3, "view5.png"), False)
                 imgs.append(left)
                 imgs.append(right)
 
@@ -298,8 +303,8 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
             # im_tensor[0].shape = (3, 2, row, col )
             im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        left_disp = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
-        right_disp = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
+        left_disp = rasterio.open(base1 + "/disp1.png").read().astype(np.float32)
+        right_disp = rasterio.open(base1 + "/disp5.png").read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
         left_disp /= 2
@@ -313,10 +318,14 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
         non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
-        data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
-                                non_zero_y_idx,
-                                non_zero_x_idx,
-                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+        data = np.column_stack(
+            (
+                np.zeros_like(non_zero_y_idx) + num_image,
+                non_zero_y_idx,
+                non_zero_x_idx,
+                left_disp[non_zero_y_idx, non_zero_x_idx],
+            )
+        ).astype(np.float32)
         save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
@@ -325,15 +334,15 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         im_tensor = []
 
         base1 = os.path.join(in_dir_2005, directory)
-        if not os.path.isfile(base1 + '/disp1.png'):
+        if not os.path.isfile(base1 + "/disp1.png"):
             continue
 
         for light in range(3):
             imgs = []
             for exp in (0, 1, 2):
-                base3 = os.path.join(base1, 'Illum{}/Exp{}'.format(light + 1, exp))
-                left = read_im(os.path.join(base3, 'view1.png'), False)
-                right = read_im(os.path.join(base3, 'view5.png'), False)
+                base3 = os.path.join(base1, "Illum{}/Exp{}".format(light + 1, exp))
+                left = read_im(os.path.join(base3, "view1.png"), False)
+                right = read_im(os.path.join(base3, "view5.png"), False)
                 imgs.append(left)
                 imgs.append(right)
 
@@ -342,8 +351,8 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
             # im_tensor[0].shape = (3, 2, row, col )
             im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        left_disp = rasterio.open(base1 + '/disp1.png').read().astype(np.float32)
-        right_disp = rasterio.open(base1 + '/disp5.png').read().astype(np.float32)
+        left_disp = rasterio.open(base1 + "/disp1.png").read().astype(np.float32)
+        right_disp = rasterio.open(base1 + "/disp5.png").read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
         left_disp /= 2
@@ -357,30 +366,34 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
         non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
-        data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
-                                non_zero_y_idx,
-                                non_zero_x_idx,
-                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+        data = np.column_stack(
+            (
+                np.zeros_like(non_zero_y_idx) + num_image,
+                non_zero_y_idx,
+                non_zero_x_idx,
+                left_disp[non_zero_y_idx, non_zero_x_idx],
+            )
+        ).astype(np.float32)
         save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
     # --------------- Middlebury 2003 dataset ---------------
-    for directory in ('conesH', 'teddyH'):
+    for directory in ("conesH", "teddyH"):
         base1 = os.path.join(in_dir_2003, directory)
 
         im_tensor = []
         imgs = []
 
-        left = read_im(base1 + '/im2.ppm', False)
-        right = read_im(base1 + '/im6.ppm', False)
+        left = read_im(base1 + "/im2.ppm", False)
+        right = read_im(base1 + "/im6.ppm", False)
         _, height, width = left.shape
 
         imgs.append(left)
         imgs.append(right)
         im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-        left_disp = rasterio.open(base1 + '/disp2.pgm').read().astype(np.float32)
-        right_disp = rasterio.open(base1 + '/disp6.pgm').read().astype(np.float32)
+        left_disp = rasterio.open(base1 + "/disp2.pgm").read().astype(np.float32)
+        right_disp = rasterio.open(base1 + "/disp6.pgm").read().astype(np.float32)
 
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
         left_disp /= 2
@@ -394,21 +407,25 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
         non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
-        data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
-                                non_zero_y_idx,
-                                non_zero_x_idx,
-                                left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+        data = np.column_stack(
+            (
+                np.zeros_like(non_zero_y_idx) + num_image,
+                non_zero_y_idx,
+                non_zero_x_idx,
+                left_disp[non_zero_y_idx, non_zero_x_idx],
+            )
+        ).astype(np.float32)
         save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
     # --------------- Middlebury 2001 dataset ---------------
     for directory in sorted(os.listdir(in_dir_2001)):
-        if directory == 'tsukuba':
+        if directory == "tsukuba":
             continue
-        if directory == 'map':
-            fname_disp0, fname_disp1, fname_x0, fname_x1 = 'disp0.pgm', 'disp1.pgm', 'im0.pgm', 'im1.pgm'
+        if directory == "map":
+            fname_disp0, fname_disp1, fname_x0, fname_x1 = "disp0.pgm", "disp1.pgm", "im0.pgm", "im1.pgm"
         else:
-            fname_disp0, fname_disp1, fname_x0, fname_x1 = 'disp2.pgm', 'disp6.pgm', 'im2.ppm', 'im6.ppm'
+            fname_disp0, fname_disp1, fname_x0, fname_x1 = "disp2.pgm", "disp6.pgm", "im2.ppm", "im6.ppm"
 
         base2 = os.path.join(in_dir_2001, directory)
         if os.path.isfile(os.path.join(base2, fname_disp0)):
@@ -424,8 +441,8 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
             imgs.append(right)
             im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
-            left_disp = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.
-            right_disp = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.
+            left_disp = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.0
+            right_disp = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.0
 
             mask = compute_mask(left_disp, None, right_disp, patch_size)
 
@@ -433,30 +450,38 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
             non_zero_y_idx, non_zero_x_idx = np.nonzero(mask)
 
-            data = np.column_stack((np.zeros_like(non_zero_y_idx) + num_image,
-                                    non_zero_y_idx,
-                                    non_zero_x_idx,
-                                    left_disp[non_zero_y_idx, non_zero_x_idx])).astype(np.float32)
+            data = np.column_stack(
+                (
+                    np.zeros_like(non_zero_y_idx) + num_image,
+                    non_zero_y_idx,
+                    non_zero_x_idx,
+                    left_disp[non_zero_y_idx, non_zero_x_idx],
+                )
+            ).astype(np.float32)
             save_dataset(im_tensor, data, num_image, img_file, training_file)
             num_image += 1
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Script for creating the middlebury database, creation of files : '
-                                                 '- training_dataset.hdf5, testing_dataset.hdf5 which contains the '
-                                                 'coordinates of the valid pixels and their disparity '
-                                                 '- images.hdf5 which contains the grayscale and normalized images ')
-    parser.add_argument('input_dir_2014', help='Path to the input directory containing the 2014 Middlebury dataset')
-    parser.add_argument('input_dir_2006', help='Path to the input directory containing the 2006 Middlebury dataset')
-    parser.add_argument('input_dir_2005', help='Path to the input directory containing the 2005 Middlebury dataset')
-    parser.add_argument('input_dir_2003', help='Path to the input directory containing the 2003 Middlebury dataset')
-    parser.add_argument('input_dir_2001', help='Path to the input directory containing the 2001 Middlebury dataset')
-    parser.add_argument('output_dir', help='Path to the output directory ')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Script for creating the middlebury database, creation of files : "
+        "- training_dataset.hdf5, testing_dataset.hdf5 which contains the "
+        "coordinates of the valid pixels and their disparity "
+        "- images.hdf5 which contains the grayscale and normalized images "
+    )
+    parser.add_argument("input_dir_2014", help="Path to the input directory containing the 2014 Middlebury dataset")
+    parser.add_argument("input_dir_2006", help="Path to the input directory containing the 2006 Middlebury dataset")
+    parser.add_argument("input_dir_2005", help="Path to the input directory containing the 2005 Middlebury dataset")
+    parser.add_argument("input_dir_2003", help="Path to the input directory containing the 2003 Middlebury dataset")
+    parser.add_argument("input_dir_2001", help="Path to the input directory containing the 2001 Middlebury dataset")
+    parser.add_argument("output_dir", help="Path to the output directory ")
     args = parser.parse_args()
 
-    middleburry(args.input_dir_2014,
-                args.input_dir_2006,
-                args.input_dir_2005,
-                args.input_dir_2003,
-                args.input_dir_2001,
-                args.output_dir)
+    middleburry(
+        args.input_dir_2014,
+        args.input_dir_2006,
+        args.input_dir_2005,
+        args.input_dir_2003,
+        args.input_dir_2001,
+        args.output_dir,
+    )

@@ -3,3 +3,18 @@ repos:
     rev: master
     hooks:
       - id: nbstripout
+  - repo: local
+    hooks:
+    -   id: pylint
+        name: PyLint
+        entry: python -m pylint --rcfile=.pylintrc
+        language: system
+        files: \.py$
+        stages: [commit]
+    -   id: black
+        name: black
+        entry: black --line-length=120
+        language: system
+        files: \.py$
+        stages: [ commit ]
+        types: [ python ]

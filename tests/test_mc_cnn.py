@@ -49,10 +49,10 @@ class TestMCCNN(unittest.TestCase):
         self.sec_img_0 = np.tile(np.arange(13, dtype=np.float32), (13, 1)) + 1
 
         self.ref_img_1 = np.tile(np.arange(13, dtype=np.float32), (13, 1))
-        self.sec_img_2 = np.tile(np.arange(13,  dtype=np.float32), (13, 1)) - 1
+        self.sec_img_2 = np.tile(np.arange(13, dtype=np.float32), (13, 1)) - 1
 
     def test_computes_cost_volume_mc_cnn_fast(self):
-        """"
+        """ "
         Test the computes_cost_volume_mc_cnn_fast function
 
         """
@@ -85,7 +85,7 @@ class TestMCCNN(unittest.TestCase):
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
     def test_computes_cost_volume_mc_cnn_fast_negative_disp(self):
-        """"
+        """ "
         Test the computes_cost_volume_mc_cnn_fast function with negative disparities
 
         """
@@ -116,7 +116,7 @@ class TestMCCNN(unittest.TestCase):
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
     def test_computes_cost_volume_mc_cnn_fast_positive_disp(self):
-        """"
+        """ "
         Test the computes_cost_volume_mc_cnn_fast function with positive disparities
 
         """
@@ -153,7 +153,7 @@ class TestMCCNN(unittest.TestCase):
         return torch.sum(abs(ref_features[0, :, :, :] - sec_features[0, :, :, :]), dim=0)
 
     def test_computes_cost_volume_mc_cnn_accurate(self):
-        """"
+        """ "
         Test the computes_cost_volume_mc_cnn_accurate function
 
         """
@@ -186,7 +186,7 @@ class TestMCCNN(unittest.TestCase):
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
     def test_computes_cost_volume_mc_cnn_accuratenegative_disp(self):
-        """"
+        """ "
         Test the computes_cost_volume_mc_cnn_accurate function with negative disparities
 
         """
@@ -217,7 +217,7 @@ class TestMCCNN(unittest.TestCase):
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
     def test_computes_cost_volume_mc_cnn_accurate_positive_disp(self):
-        """"
+        """ "
         Test the computes_cost_volume_mc_cnn_accurate function with positive disparities
 
         """
@@ -247,7 +247,7 @@ class TestMCCNN(unittest.TestCase):
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
-    # pylint: disable=invalid-name 
+    # pylint: disable=invalid-name
     # -> because changing the name here loses the reference to the actual name of the checked function
     def test_MiddleburyGenerator(self):
         """
@@ -291,71 +291,100 @@ class TestMCCNN(unittest.TestCase):
         """
 
         # Positive disparity
-        cfg = {"data_augmentation": False, "dataset_neg_low": 1, "dataset_neg_high": 1, "dataset_pos": 0,
-               "augmentation_param": {"vertical_disp": 0, "scale": 0.8, "hscale": 0.8, "hshear": 0.1, "trans": 0,
-                                      "rotate": 28, "brightness": 1.3, "contrast": 1.1, "d_hscale": 0.9,
-                                      "d_hshear": 0.3, "d_vtrans": 1, "d_rotate": 3, "d_brightness": 0.7,
-                                      "d_contrast": 1.1}}
+        cfg = {
+            "data_augmentation": False,
+            "dataset_neg_low": 1,
+            "dataset_neg_high": 1,
+            "dataset_pos": 0,
+            "augmentation_param": {
+                "vertical_disp": 0,
+                "scale": 0.8,
+                "hscale": 0.8,
+                "hshear": 0.1,
+                "trans": 0,
+                "rotate": 28,
+                "brightness": 1.3,
+                "contrast": 1.1,
+                "d_hscale": 0.9,
+                "d_hshear": 0.3,
+                "d_vtrans": 1,
+                "d_rotate": 3,
+                "d_brightness": 0.7,
+                "d_contrast": 1.1,
+            },
+        }
 
         training_loader = MiddleburyGenerator("tests/sample_middlebury.hdf5", "tests/images_middlebury.hdf5", cfg)
-        # Patch of shape 3, 11, 11
+        # Patch of shape 3, 11, 11
         # With the firt dimension = left patch, right positive patch, right negative patch
         patch = training_loader.__getitem__(0)
 
         x_ref_patch = 6
         y_ref_patch = 5
         patch_size = 5
-        gt_ref_patch = self.ref_img_0[y_ref_patch - patch_size: y_ref_patch + patch_size + 1,
-                                      x_ref_patch - patch_size: x_ref_patch + patch_size + 1]
+        gt_ref_patch = self.ref_img_0[
+            y_ref_patch - patch_size : y_ref_patch + patch_size + 1,
+            x_ref_patch - patch_size : x_ref_patch + patch_size + 1,
+        ]
 
-        # disp = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
+        # disp = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
         disp = 1
         x_sec_pos_patch = x_ref_patch - disp
         y_sec_pos_patch = 5
-        gt_sec_pos_patch = self.sec_img_0[y_sec_pos_patch - patch_size: y_sec_pos_patch + patch_size + 1,
-                                          x_sec_pos_patch - patch_size: x_sec_pos_patch + patch_size + 1]
+        gt_sec_pos_patch = self.sec_img_0[
+            y_sec_pos_patch - patch_size : y_sec_pos_patch + patch_size + 1,
+            x_sec_pos_patch - patch_size : x_sec_pos_patch + patch_size + 1,
+        ]
 
-        # dataset_neg_low & dataset_neg_high = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
+        # dataset_neg_low & dataset_neg_high = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
         dataset_neg = 1
         x_sec_neg_patch = x_ref_patch - disp + dataset_neg
         y_sec_neg_patch = 5
-        gt_sec_neg_patch = self.sec_img_0[y_sec_neg_patch - patch_size: y_sec_neg_patch + patch_size + 1,
-                                          x_sec_neg_patch - patch_size: x_sec_neg_patch + patch_size + 1]
+        gt_sec_neg_patch = self.sec_img_0[
+            y_sec_neg_patch - patch_size : y_sec_neg_patch + patch_size + 1,
+            x_sec_neg_patch - patch_size : x_sec_neg_patch + patch_size + 1,
+        ]
 
         gt_path = np.stack((gt_ref_patch, gt_sec_pos_patch, gt_sec_neg_patch), axis=0)
 
         # Check if the calculated patch is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_array_equal(patch, gt_path)
 
-        # negative disparity
+        # negative disparity
         patch = training_loader.__getitem__(2)
 
         x_ref_patch = 5
         y_ref_patch = 7
         patch_size = 5
-        gt_ref_patch = self.ref_img_0[y_ref_patch - patch_size: y_ref_patch + patch_size + 1,
-                                      x_ref_patch - patch_size: x_ref_patch + patch_size + 1]
+        gt_ref_patch = self.ref_img_0[
+            y_ref_patch - patch_size : y_ref_patch + patch_size + 1,
+            x_ref_patch - patch_size : x_ref_patch + patch_size + 1,
+        ]
 
-        # disp = -1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
+        # disp = -1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
         disp = -1
         x_sec_pos_patch = x_ref_patch - disp
         y_sec_pos_patch = 5
-        gt_sec_pos_patch = self.sec_img_0[y_sec_pos_patch - patch_size: y_sec_pos_patch + patch_size + 1,
-                                          x_sec_pos_patch - patch_size: x_sec_pos_patch + patch_size + 1]
+        gt_sec_pos_patch = self.sec_img_0[
+            y_sec_pos_patch - patch_size : y_sec_pos_patch + patch_size + 1,
+            x_sec_pos_patch - patch_size : x_sec_pos_patch + patch_size + 1,
+        ]
 
-        # dataset_neg_low & dataset_neg_high = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
+        # dataset_neg_low & dataset_neg_high = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
         dataset_neg = 1
         x_sec_neg_patch = x_ref_patch - disp + dataset_neg
         y_sec_neg_patch = 5
-        gt_sec_neg_patch = self.sec_img_0[y_sec_neg_patch - patch_size: y_sec_neg_patch + patch_size + 1,
-                                          x_sec_neg_patch - patch_size: x_sec_neg_patch + patch_size + 1]
+        gt_sec_neg_patch = self.sec_img_0[
+            y_sec_neg_patch - patch_size : y_sec_neg_patch + patch_size + 1,
+            x_sec_neg_patch - patch_size : x_sec_neg_patch + patch_size + 1,
+        ]
 
         gt_path = np.stack((gt_ref_patch, gt_sec_pos_patch, gt_sec_neg_patch), axis=0)
 
         # Check if the calculated patch is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_array_equal(patch, gt_path)
 
-    # pylint: disable=invalid-name 
+    # pylint: disable=invalid-name
     # -> because changing the name here loses the reference to the actual name of the checked function
     def test_DataFusionContestGenerator(self):
         """
@@ -390,64 +419,92 @@ class TestMCCNN(unittest.TestCase):
         sampl_file.create_dataset(str(1), data=x1)
         """
         # Positive disparity
-        cfg = {"data_augmentation": False, "dataset_neg_low": 1, "dataset_neg_high": 1, "dataset_pos": 0,
-               "vertical_disp": 0,
-               "augmentation_param": {"scale": 0.8, "hscale": 0.8, "hshear": 0.1, "trans": 0,
-                                      "rotate": 28, "brightness": 1.3, "contrast": 1.1, "d_hscale": 0.9,
-                                      "d_hshear": 0.3, "d_vtrans": 1, "d_rotate": 3, "d_brightness": 0.7,
-                                      "d_contrast": 1.1}}
+        cfg = {
+            "data_augmentation": False,
+            "dataset_neg_low": 1,
+            "dataset_neg_high": 1,
+            "dataset_pos": 0,
+            "vertical_disp": 0,
+            "augmentation_param": {
+                "scale": 0.8,
+                "hscale": 0.8,
+                "hshear": 0.1,
+                "trans": 0,
+                "rotate": 28,
+                "brightness": 1.3,
+                "contrast": 1.1,
+                "d_hscale": 0.9,
+                "d_hshear": 0.3,
+                "d_vtrans": 1,
+                "d_rotate": 3,
+                "d_brightness": 0.7,
+                "d_contrast": 1.1,
+            },
+        }
 
         training_loader = DataFusionContestGenerator("tests/sample_dfc.hdf5", "tests/images_dfc.hdf5", cfg)
-        # Patch of shape 3, 11, 11
+        # Patch of shape 3, 11, 11
         # With the firt dimension = left patch, right positive patch, right negative patch
         patch = training_loader.__getitem__(0)
 
         x_ref_patch = 6
         y_ref_patch = 5
         patch_size = 5
-        gt_ref_patch = self.ref_img_0[y_ref_patch - patch_size : y_ref_patch + patch_size + 1,
-                                      x_ref_patch - patch_size : x_ref_patch + patch_size + 1]
+        gt_ref_patch = self.ref_img_0[
+            y_ref_patch - patch_size : y_ref_patch + patch_size + 1,
+            x_ref_patch - patch_size : x_ref_patch + patch_size + 1,
+        ]
 
-        # disp = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
+        # disp = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
         disp = 1
         x_sec_pos_patch = x_ref_patch - disp
         y_sec_pos_patch = 5
-        gt_sec_pos_patch = self.sec_img_0[y_sec_pos_patch - patch_size: y_sec_pos_patch + patch_size + 1,
-                                          x_sec_pos_patch - patch_size: x_sec_pos_patch + patch_size + 1]
+        gt_sec_pos_patch = self.sec_img_0[
+            y_sec_pos_patch - patch_size : y_sec_pos_patch + patch_size + 1,
+            x_sec_pos_patch - patch_size : x_sec_pos_patch + patch_size + 1,
+        ]
 
-        # dataset_neg_low & dataset_neg_high = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
+        # dataset_neg_low & dataset_neg_high = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
         dataset_neg = 1
         x_sec_neg_patch = x_ref_patch - disp + dataset_neg
         y_sec_neg_patch = 5
-        gt_sec_neg_patch = self.sec_img_0[y_sec_neg_patch - patch_size : y_sec_neg_patch + patch_size + 1,
-                                          x_sec_neg_patch - patch_size : x_sec_neg_patch + patch_size + 1]
+        gt_sec_neg_patch = self.sec_img_0[
+            y_sec_neg_patch - patch_size : y_sec_neg_patch + patch_size + 1,
+            x_sec_neg_patch - patch_size : x_sec_neg_patch + patch_size + 1,
+        ]
         gt_path = np.stack((gt_ref_patch, gt_sec_pos_patch, gt_sec_neg_patch), axis=0)
 
         # Check if the calculated patch is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_array_equal(patch, gt_path)
 
-        # negative disparity
+        # negative disparity
         patch = training_loader.__getitem__(2)
 
         x_ref_patch = 5
         y_ref_patch = 7
         patch_size = 5
-        gt_ref_patch = self.ref_img_1[y_ref_patch - patch_size: y_ref_patch + patch_size + 1,
-                                      x_ref_patch - patch_size: x_ref_patch + patch_size + 1]
+        gt_ref_patch = self.ref_img_1[
+            y_ref_patch - patch_size : y_ref_patch + patch_size + 1,
+            x_ref_patch - patch_size : x_ref_patch + patch_size + 1,
+        ]
 
-        # disp = -1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
+        # disp = -1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
         disp = -1
         x_sec_pos_patch = x_ref_patch - disp
         y_sec_pos_patch = 7
-        gt_sec_pos_patch = self.sec_img_2[y_sec_pos_patch - patch_size: y_sec_pos_patch + patch_size + 1,
-                                          x_sec_pos_patch - patch_size: x_sec_pos_patch + patch_size + 1]
+        gt_sec_pos_patch = self.sec_img_2[
+            y_sec_pos_patch - patch_size : y_sec_pos_patch + patch_size + 1,
+            x_sec_pos_patch - patch_size : x_sec_pos_patch + patch_size + 1,
+        ]
 
-        # dataset_neg_low & dataset_neg_high = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
+        # dataset_neg_low & dataset_neg_high = 1, with middlebury image convention img_ref(x,y) = img_sec(x-d,y)
         dataset_neg = 1
         x_sec_neg_patch = x_ref_patch - disp + dataset_neg
         y_sec_neg_patch = 7
-        gt_sec_neg_patch = self.sec_img_2[y_sec_neg_patch - patch_size: y_sec_neg_patch + patch_size + 1,
-                                          x_sec_neg_patch - patch_size: x_sec_neg_patch + patch_size + 1]
+        gt_sec_neg_patch = self.sec_img_2[
+            y_sec_neg_patch - patch_size : y_sec_neg_patch + patch_size + 1,
+            x_sec_neg_patch - patch_size : x_sec_neg_patch + patch_size + 1,
+        ]
 
         gt_path = np.stack((gt_ref_patch, gt_sec_pos_patch, gt_sec_neg_patch), axis=0)
 

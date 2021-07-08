@@ -46,7 +46,7 @@ def mkdir_p(path):
     """
     try:
         os.makedirs(path)
-    except OSError as exc:   # requires Python > 2.5
+    except OSError as exc:  # requires Python > 2.5
         if exc.errno == errno.EEXIST and os.path.isdir(path):
             pass
         else:
@@ -70,7 +70,7 @@ def train_mc_cnn_fast(cfg, output_dir):
     net = FastMcCnn()
     net.to(device)
 
-    criterion = nn.MarginRankingLoss(margin=0.2, reduction='mean')
+    criterion = nn.MarginRankingLoss(margin=0.2, reduction="mean")
 
     optimizer = optim.SGD(net.parameters(), lr=0.002, momentum=0.9)
 
@@ -79,19 +79,19 @@ def train_mc_cnn_fast(cfg, output_dir):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 9, gamma=0.1)
 
     batch_size = 128
-    params = {'batch_size': batch_size, 'shuffle': True}
+    params = {"batch_size": batch_size, "shuffle": True}
 
     # Testing configuration : deactivate data augmentation
     test_cfg = copy.deepcopy(cfg)
-    test_cfg['transformation'] = False
+    test_cfg["transformation"] = False
 
-    if cfg['dataset'] == 'middlebury':
-        training_loader = MiddleburyGenerator(cfg['training_sample'], cfg['training_image'], cfg)
-        testing_loader = MiddleburyGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
+    if cfg["dataset"] == "middlebury":
+        training_loader = MiddleburyGenerator(cfg["training_sample"], cfg["training_image"], cfg)
+        testing_loader = MiddleburyGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
 
-    if cfg['dataset'] == 'data_fusion_contest':
-        training_loader = DataFusionContestGenerator(cfg['training_sample'], cfg['training_image'], cfg)
-        testing_loader = DataFusionContestGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
+    if cfg["dataset"] == "data_fusion_contest":
+        training_loader = DataFusionContestGenerator(cfg["training_sample"], cfg["training_image"], cfg)
+        testing_loader = DataFusionContestGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
 
     training_generator = data.DataLoader(training_loader, **params)
     testing_generator = data.DataLoader(testing_loader, **params)
@@ -102,7 +102,7 @@ def train_mc_cnn_fast(cfg, output_dir):
     training_loss = []
     testing_loss = []
     for epoch in range(nb_epoch):
-        print('-------- Fast epoch' + str(epoch) + ' ------------')
+        print("-------- Fast epoch" + str(epoch) + " ------------")
 
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
@@ -147,13 +147,17 @@ def train_mc_cnn_fast(cfg, output_dir):
         testing_loss.append(test_epoch_loss / len(testing_loader))
 
         # Save the network, optimizer, scheduler at each epoch
-        torch.save({'model': net.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'scheduler': scheduler.state_dict(),
-                    'epoch': epoch,
-                    'train_epoch_loss': train_epoch_loss / len(training_loader),
-                    'test_epoch_loss': test_epoch_loss / len(testing_loader)},
-                   os.path.join(output_dir, 'mc_cnn_fast_epoch' + str(epoch) + '.pt'))
+        torch.save(
+            {
+                "model": net.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict(),
+                "epoch": epoch,
+                "train_epoch_loss": train_epoch_loss / len(training_loader),
+                "test_epoch_loss": test_epoch_loss / len(testing_loader),
+            },
+            os.path.join(output_dir, "mc_cnn_fast_epoch" + str(epoch) + ".pt"),
+        )
 
 
 def train_mc_cnn_acc(cfg, output_dir):
@@ -173,7 +177,7 @@ def train_mc_cnn_acc(cfg, output_dir):
     net = AccMcCnn()
     net.to(device)
 
-    criterion = nn.BCELoss(reduction='mean')
+    criterion = nn.BCELoss(reduction="mean")
 
     optimizer = optim.SGD(net.parameters(), lr=0.003, momentum=0.9)
 
@@ -182,19 +186,19 @@ def train_mc_cnn_acc(cfg, output_dir):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, gamma=0.1)
 
     batch_size = 128
-    params = {'batch_size': batch_size, 'shuffle': True}
+    params = {"batch_size": batch_size, "shuffle": True}
 
     # Testing configuration : deactivate data augmentation
     test_cfg = copy.deepcopy(cfg)
-    test_cfg['transformation'] = False
+    test_cfg["transformation"] = False
 
-    if cfg['dataset'] == 'middlebury':
-        training_loader = MiddleburyGenerator(cfg['training_sample'], cfg['training_image'], cfg)
-        testing_loader = MiddleburyGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
+    if cfg["dataset"] == "middlebury":
+        training_loader = MiddleburyGenerator(cfg["training_sample"], cfg["training_image"], cfg)
+        testing_loader = MiddleburyGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
 
-    if cfg['dataset'] == 'data_fusion_contest':
-        training_loader = DataFusionContestGenerator(cfg['training_sample'], cfg['training_image'], cfg)
-        testing_loader = DataFusionContestGenerator(cfg['testing_sample'], cfg['testing_image'], test_cfg)
+    if cfg["dataset"] == "data_fusion_contest":
+        training_loader = DataFusionContestGenerator(cfg["training_sample"], cfg["training_image"], cfg)
+        testing_loader = DataFusionContestGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
 
     training_generator = data.DataLoader(training_loader, **params)
     testing_generator = data.DataLoader(testing_loader, **params)
@@ -203,7 +207,7 @@ def train_mc_cnn_acc(cfg, output_dir):
     training_loss = []
     testing_loss = []
     for epoch in range(nb_epoch):
-        print('-------- Accurate epoch' + str(epoch) + ' ------------')
+        print("-------- Accurate epoch" + str(epoch) + " ------------")
 
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
@@ -248,13 +252,17 @@ def train_mc_cnn_acc(cfg, output_dir):
         testing_loss.append(test_epoch_loss / len(testing_loader))
 
         # Save the network, optimizer, scheduler at each epoch
-        torch.save({'model': net.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'scheduler': scheduler.state_dict(),
-                    'epoch': epoch,
-                    'train_epoch_loss': train_epoch_loss / len(training_loader),
-                    'test_epoch_loss': test_epoch_loss / len(testing_loader)},
-                   os.path.join(output_dir, 'mc_cnn_acc_epoch' + str(epoch) + '.pt'))
+        torch.save(
+            {
+                "model": net.state_dict(),
+                "optimizer": optimizer.state_dict(),
+                "scheduler": scheduler.state_dict(),
+                "epoch": epoch,
+                "train_epoch_loss": train_epoch_loss / len(training_loader),
+                "test_epoch_loss": test_epoch_loss / len(testing_loader),
+            },
+            os.path.join(output_dir, "mc_cnn_acc_epoch" + str(epoch) + ".pt"),
+        )
 
 
 def read_config_file(config_file):
@@ -266,7 +274,7 @@ def read_config_file(config_file):
     :return: the configuration
     :rtype: dict
     """
-    with open(config_file, 'r') as file:
+    with open(config_file, "r") as file:
         user_configuration = json.load(file)
     return user_configuration
 
@@ -278,21 +286,21 @@ def save_cfg(output, configuration):
     :param output: output directory
     :param configuration: user configuration
     """
-    with open(os.path.join(output, 'config.json'), 'w') as file:
+    with open(os.path.join(output, "config.json"), "w") as file:
         json.dump(configuration, file, indent=2)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('injson', help='Input json file')
-    parser.add_argument('outdir', help='Output directory')
+    parser.add_argument("injson", help="Input json file")
+    parser.add_argument("outdir", help="Output directory")
     args = parser.parse_args()
 
     user_cfg = read_config_file(args.injson)
 
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    if user_cfg['network'] == 'fast':
+    if user_cfg["network"] == "fast":
         train_mc_cnn_fast(user_cfg, args.outdir)
     else:
         train_mc_cnn_acc(user_cfg, args.outdir)

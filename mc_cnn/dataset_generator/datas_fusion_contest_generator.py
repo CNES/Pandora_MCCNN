@@ -37,6 +37,7 @@ class DataFusionContestGenerator(data.Dataset):
     """
     Generate data fusion dataset for training
     """
+
     def __init__(self, sample_hdf, image_hdf, cfg):
         """
         Initialization
@@ -47,8 +48,8 @@ class DataFusionContestGenerator(data.Dataset):
         self.image = []
         # Corespondance between the index of the image in self.image, and the image number of the hdf5 file
         self.id_image = []
-        sample_file = h5py.File(sample_hdf, 'r')
-        image_file = h5py.File(image_hdf, 'r')
+        sample_file = h5py.File(sample_hdf, "r")
+        image_file = h5py.File(image_hdf, "r")
 
         for dst in sample_file.keys():
             if self.data is None:
@@ -58,24 +59,24 @@ class DataFusionContestGenerator(data.Dataset):
             self.image.append(image_file[dst][:])
             self.id_image.append(int(sample_file[dst][0, 0]))
 
-        self.neg_low = float(cfg['dataset_neg_low'])
-        self.neg_high = float(cfg['dataset_neg_high'])
-        self.pos = float(cfg['dataset_pos'])
-        self.disp_vert = float(cfg['vertical_disp'])
-        self.transformation = cfg['data_augmentation']
-        self.scale = float(cfg['augmentation_param']['scale'])
-        self.hscale = float(cfg['augmentation_param']['hscale'])
-        self.hshear = float(cfg['augmentation_param']['hshear'])
-        self.trans = float(cfg['augmentation_param']['trans'])
-        self.rotate = float(cfg['augmentation_param']['rotate'])
-        self.brightness = float(cfg['augmentation_param']['brightness'])
-        self.contrast = float(cfg['augmentation_param']['contrast'])
-        self.d_hscale = float(cfg['augmentation_param']['d_hscale'])
-        self.d_hshear = float(cfg['augmentation_param']['d_hshear'])
-        self.d_vtrans = float(cfg['augmentation_param']['d_vtrans'])
-        self.d_rotate = float(cfg['augmentation_param']['d_rotate'])
-        self.d_brightness = float(cfg['augmentation_param']['d_brightness'])
-        self.d_contrast = float(cfg['augmentation_param']['d_contrast'])
+        self.neg_low = float(cfg["dataset_neg_low"])
+        self.neg_high = float(cfg["dataset_neg_high"])
+        self.pos = float(cfg["dataset_pos"])
+        self.disp_vert = float(cfg["vertical_disp"])
+        self.transformation = cfg["data_augmentation"]
+        self.scale = float(cfg["augmentation_param"]["scale"])
+        self.hscale = float(cfg["augmentation_param"]["hscale"])
+        self.hshear = float(cfg["augmentation_param"]["hshear"])
+        self.trans = float(cfg["augmentation_param"]["trans"])
+        self.rotate = float(cfg["augmentation_param"]["rotate"])
+        self.brightness = float(cfg["augmentation_param"]["brightness"])
+        self.contrast = float(cfg["augmentation_param"]["contrast"])
+        self.d_hscale = float(cfg["augmentation_param"]["d_hscale"])
+        self.d_hshear = float(cfg["augmentation_param"]["d_hshear"])
+        self.d_vtrans = float(cfg["augmentation_param"]["d_vtrans"])
+        self.d_rotate = float(cfg["augmentation_param"]["d_rotate"])
+        self.d_brightness = float(cfg["augmentation_param"]["d_brightness"])
+        self.d_contrast = float(cfg["augmentation_param"]["d_contrast"])
 
     def __getitem__(self, index):
         """
@@ -116,33 +117,40 @@ class DataFusionContestGenerator(data.Dataset):
             scale = [rand_scale * np.random.uniform(self.hscale, 1), rand_scale]
             hshear = np.random.uniform(-self.hshear, self.hshear)
             trans = [np.random.uniform(-self.trans, self.trans), np.random.uniform(-self.trans, self.trans)]
-            phi = np.random.uniform(-self.rotate * math.pi / 180., self.rotate * math.pi / 180.)
+            phi = np.random.uniform(-self.rotate * math.pi / 180.0, self.rotate * math.pi / 180.0)
             brightness = np.random.uniform(-self.brightness, self.brightness)
-            contrast = np.random.uniform(1. / self.contrast, self.contrast)
+            contrast = np.random.uniform(1.0 / self.contrast, self.contrast)
 
-            left = self.data_augmentation(self.image[id_data][0, :, :], row, col, scale, phi,
-                                          trans, hshear, brightness, contrast)
+            left = self.data_augmentation(
+                self.image[id_data][0, :, :], row, col, scale, phi, trans, hshear, brightness, contrast
+            )
 
             scale__ = [scale[0] * np.random.uniform(self.d_hscale, 1), scale[1]]
             hshear_ = hshear + np.random.uniform(-self.d_hshear, self.d_hshear)
             trans_ = [trans[0], trans[1] + np.random.uniform(-self.d_vtrans, self.d_vtrans)]
-            phi_ = phi + np.random.uniform(-self.d_rotate * math.pi / 180., self.d_rotate * math.pi / 180.)
+            phi_ = phi + np.random.uniform(-self.d_rotate * math.pi / 180.0, self.d_rotate * math.pi / 180.0)
             brightness_ = brightness + np.random.uniform(-self.d_brightness, self.d_brightness)
             contrast_ = contrast * np.random.uniform(1 / self.d_contrast, self.d_contrast)
 
-            right_pos = self.data_augmentation(self.image[id_data][1, :, :], y_disp, x_pos, scale__, phi_,
-                                               trans_, hshear_, brightness_, contrast_)
+            right_pos = self.data_augmentation(
+                self.image[id_data][1, :, :], y_disp, x_pos, scale__, phi_, trans_, hshear_, brightness_, contrast_
+            )
 
-            right_neg = self.data_augmentation(self.image[id_data][1, :, :], y_disp, x_neg, scale__, phi_,
-                                               trans_, hshear_, brightness_, contrast_)
+            right_neg = self.data_augmentation(
+                self.image[id_data][1, :, :], y_disp, x_neg, scale__, phi_, trans_, hshear_, brightness_, contrast_
+            )
 
         else:
             # Make the left patch
-            left = self.image[id_data][0, row - radius: row + radius + 1, col - radius: col + radius + 1]
+            left = self.image[id_data][0, row - radius : row + radius + 1, col - radius : col + radius + 1]
             # Make the right positive patch
-            right_pos = self.image[id_data][1, y_disp - radius: y_disp + radius + 1, x_pos - radius: radius + x_pos + 1]
+            right_pos = self.image[id_data][
+                1, y_disp - radius : y_disp + radius + 1, x_pos - radius : radius + x_pos + 1
+            ]
             # Make the right negative patch
-            right_neg = self.image[id_data][1, y_disp - radius: y_disp + radius + 1, x_neg - radius: radius + x_neg + 1]
+            right_neg = self.image[id_data][
+                1, y_disp - radius : y_disp + radius + 1, x_neg - radius : radius + x_neg + 1
+            ]
 
         return np.stack((left, right_pos, right_neg), axis=0)
 

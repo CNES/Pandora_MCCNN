@@ -33,6 +33,7 @@ class FastMcCnn(nn.Module):
     Define the mc_cnn fast neural network
 
     """
+
     def __init__(self):
         super().__init__()
         self.in_channels = 1
@@ -40,20 +41,33 @@ class FastMcCnn(nn.Module):
         self.conv_kernel_size = 3
 
         self.conv_blocks = nn.Sequential(
-            nn.Conv2d(in_channels=self.in_channels, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.in_channels, out_channels=self.num_conv_feature_maps, kernel_size=self.conv_kernel_size
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
             nn.ReLU(),
-            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps,
-                      kernel_size=self.conv_kernel_size),
+            nn.Conv2d(
+                in_channels=self.num_conv_feature_maps,
+                out_channels=self.num_conv_feature_maps,
+                kernel_size=self.conv_kernel_size,
+            ),
         )
 
     # pylint: disable=arguments-differ
