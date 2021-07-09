@@ -1,78 +1,59 @@
-# MC-CNN
+<h1 align="center"> MCCNN </h1>
 
-MC-CNN [1] est un réseau de neurones qui produit un coût de mise en correspondance entre deux imagettes.
+<h4 align="center">MCCNN neural network for stereo matching cost.</h4>
 
-## Installation
+<p align="center">
+  <a><img src="https://github.com/CNES/Pandora_MCCNN/actions/workflows/mccnn_ci.yml/badge.svg?branch=master"></a>
+  <a href="https://opensource.org/licenses/Apache-2.0/"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"></a>
+</p>
+
+<p align="center">
+  <a href="#overview">Overview</a> •
+  <a href="#install">Install</a> •
+    <a href="#usage">Usage</a> •
+  <a href="#related">Related</a> •
+  <a href="#references">References</a>
+</p>
+
+## Overview
+
+Pytorch implementation of [[MCCNN]](#1.) neural network which computes a similarity measure on pair of small image patches.
+
+[Pandora](https://github.com/CNES/Pandora) stereo matching framework is designed to provide some state of the art stereo algorithms and to add others one as plugins.  
+This [Pandora plugin](https://pandora.readthedocs.io/userguide/plugin.html) aims to compute the cost volume using the similarity measure produced by MC-CNN neural network [[MCCNN]](#1.), with the [MCCNN](https://github.com/CNES/Pandora_MCCNN) library.
+
+## Install
+
+**MCCNN** is available on Pypi and can be installed by:
 
 ```bash
-    pip install mc-cnn
-``` 
-
-**From sources**
-
-```bash
-    git clone https://gitlab.cnes.fr/OutilsCommuns/CorrelateurChaine3D/mc-cnn.git
-    pip install -e mc-cnn
+pip install MCCNN
 ```
 
-## Utilisation
+## Usage
 
-### Création des bases d'apprentissage
-
-Les scripts du dossier preprocessing, permettent de créer des bases d'apprentissage hdf5.
-
-### Entrainement des réseaux mc-cnn fast et accurate
+Documentation explains how to train and use MCCNN convolutional neural network.
+To generate it, please execute the following commands:
 
 ```bash
-    python mc_cnn/train.py -h
-    usage: train.py [-h] injson outdir
-    
-    positional arguments:
-      injson      Input json file
-      outdir      Output directory
-    
-    optional arguments:
-      -h, --help  show this help message and exit
+pip install MCCNN[doc]
+python setup.py build_sphinx
 ```
 
-Le fichier injson contient les paramètres d'entrainement, il est de la forme : 
+Let's see [pandora_plugin_mccnn](https://github.com/CNES/Pandora_plugin_mccnn) for real life example.
 
- ```json
-     {
-        "network": "accurate",
-        "dataset": "middlebury",
-        "training_sample": "training_dataset.hdf5",
-        "training_image": "images.hdf5",
-        "testing_sample": "testing_dataset.hdf5",
-        "testing_image": "images.hdf5",
-        "dataset_neg_low": 1.5,
-        "dataset_neg_high": 18,
-        "dataset_pos": 0.5,
-        "data_augmentation": false,
-    
-        "augmentation_param":{
-          "scale": 0.8,
-          "hscale": 0.8,
-          "hshear": 0.1,
-          "trans": 0,
-          "rotate": 28,
-          "brightness": 1.3,
-          "contrast": 1.1,
-          "d_hscale": 0.9,
-          "d_hshear": 0.3,
-          "d_vtrans": 1,
-          "d_rotate": 3,
-          "d_brightness": 0.7,
-          "d_contrast": 1.1
-        }
-    }
- ```
+## Related
 
-Des exemples sont disponibles dans le dossier training_config.
-
-### Utilisation des réseaux mc-cnn fast et accurate
-
-L'utilisation des réseaux mc-cnn fast et accurate se fait via Pandora, avec le plugin [plugin_MC-CNN](https://gitlab.cnes.fr/OutilsCommuns/CorrelateurChaine3D/pandora_plugins/plugin_mc-cnn).
+[Pandora](https://github.com/CNES/Pandora) - A stereo matching framework  
+[Plugin_mccnn](https://github.com/CNES/Pandora_plugin_mccnn) - Stereo Matching Algorithm plugin for Pandora  
 
 
-[1][ŽBONTAR, Jure et LECUN, Yann. Stereo matching by training a convolutional neural network to compare image patches. The journal of machine learning research, 2016, vol. 17, no 1, p. 2287-2318.]
+## References
+
+Please cite the following paper when using MCCNN:
+   
+*Cournet, M., Sarrazin, E., Dumas, L., Michel, J., Guinet, J., Youssefi, D., Defonte, V., Fardet, Q., 2020. Ground-truth generation and disparity estimation for optical satellite imagery. ISPRS - International Archives of the Photogrammetry, Remote Sensing and Spatial Information Sciences.*
+
+<a id="1.">[MCCNN]</a> 
+*Zbontar, J., & LeCun, Y. (2016). Stereo matching by training a convolutional neural network to compare image patches. J. Mach. Learn. Res., 17(1), 2287-2318.*
+
