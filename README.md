@@ -10,7 +10,8 @@
 <p align="center">
   <a href="#overview">Overview</a> •
   <a href="#install">Install</a> •
-    <a href="#usage">Usage</a> •
+  <a href="#usage">Usage</a> •
+  <a href="#usage">Pretrained Weights for MCCNN networks</a> •
   <a href="#related">Related</a> •
   <a href="#references">References</a>
 </p>
@@ -18,9 +19,6 @@
 ## Overview
 
 Pytorch implementation of [[MCCNN]](#1.) neural network which computes a similarity measure on pair of small image patches.
-
-[Pandora](https://github.com/CNES/Pandora) stereo matching framework is designed to provide some state of the art stereo algorithms and to add others one as plugins.  
-This [Pandora plugin](https://pandora.readthedocs.io/userguide/plugin.html) aims to compute the cost volume using the similarity measure produced by MC-CNN neural network [[MCCNN]](#1.), with the [MCCNN](https://github.com/CNES/Pandora_MCCNN) library.
 
 ## Install
 
@@ -42,10 +40,20 @@ python setup.py build_sphinx
 
 Let's see [pandora_plugin_mccnn](https://github.com/CNES/Pandora_plugin_mccnn) for real life example.
 
-## Related
+## Pretrained Weights for MCCNN networks
 
-[Pandora](https://github.com/CNES/Pandora) - A stereo matching framework  
-[Plugin_mccnn](https://github.com/CNES/Pandora_plugin_mccnn) - Stereo Matching Algorithm plugin for Pandora  
+Pretrained weights for mc-cnn fast and mc-cnn accurate neural networks are available in the weights directory :
+-  mc_cnn_fast_mb_weights.pt and mc_cnn_accurate_mb_weights.pt are the weights of the pretrained networks on the Middlebury dataset [[Middlebury]](#Middlebury)
+-  mc_cnn_fast_data_fusion_contest.pt and mc_cnn_accurate_data_fusion_contest.pt are the weights of the pretrained networks on the Data Fusion Contest dataset [[DFC]](#DFC)
+
+To download the pretrained weights:
+
+```bash
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/weights/mc_cnn_fast_mb_weights.pt
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/weights/mc_cnn_fast_data_fusion_contest.pt
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/weights/mc_cnn_accurate_mb_weights.pt
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/weights/mc_cnn_accurate_data_fusion_contest.pt
+```
 
 
 ## References
@@ -57,3 +65,8 @@ Please cite the following paper when using MCCNN:
 <a id="1.">[MCCNN]</a> 
 *Zbontar, J., & LeCun, Y. (2016). Stereo matching by training a convolutional neural network to compare image patches. J. Mach. Learn. Res., 17(1), 2287-2318.*
 
+<a id="Middlebury">[Middlebury]</a> 
+*Scharstein, D., Hirschmüller, H., Kitajima, Y., Krathwohl, G., Nešić, N., Wang, X., & Westling, P. (2014, September). High-resolution stereo datasets with subpixel-accurate ground truth. In German conference on pattern recognition (pp. 31-42). Springer, Cham.*
+
+<a id="DFC">[DFC]</a> 
+*Bosch, M., Foster, K., Christie, G., Wang, S., Hager, G. D., & Brown, M. (2019, January). Semantic stereo for incidental satellite images. In 2019 IEEE Winter Conference on Applications of Computer Vision (WACV) (pp. 1524-1532). IEEE.*
