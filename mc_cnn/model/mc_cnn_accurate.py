@@ -91,9 +91,9 @@ class AccMcCnn(nn.Module):
 
         :param sample: normalized patch
         :type sample: torch ( batch_size, 3, 11, 11) with : 3 is the left patch, right positive patch, right negative
-        patch, 11 the patch size
+            patch, 11 the patch size
         :return: similarity score for positive sample, similarity score for negative sample
-        :rtype : tuple(torch.Tensor, torch.Tensor)
+        :rtype: tuple(torch.Tensor, torch.Tensor)
         """
         # Extract images features
         left = self.conv_blocks(sample[:, 0:1, :, :])

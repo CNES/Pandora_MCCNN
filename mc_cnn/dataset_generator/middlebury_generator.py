@@ -231,7 +231,7 @@ class MiddleburyGenerator(data.Dataset):
         :param col: col center of the patch
         :param scale: scale factor
         :param phi: rotation factor
-        :param trans:translation factor
+        :param trans: translation factor
         :param hshear: shear factor in horizontal direction
         :param brightness: brightness
         :param contrast: contrast

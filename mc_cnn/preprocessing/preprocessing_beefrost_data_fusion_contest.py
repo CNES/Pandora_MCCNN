@@ -93,13 +93,14 @@ def save_dataset(img, sample, img_name, img_file, sample_file):
     Save the sample in hdf5 files :
         - images are saved in the img_file file: creation of a dataset for each image pair
         - sample are saved in the sample_file file : creation of dataset containing valid pixels
+
     The dataset name is the ground truth file ( exemple : JAX_004_009_007_LEFT_DSP.tif )
 
     :param img: images
     :type img: np.array (2, 1024, 1024, 3) ( 2 = left image, right image)
     :param sample: samples of the image
     :type sample: np.array(number of valid pixels for all the images, 4).
-    The last dimension is : number of the image, row, col, disparity for the pixel p(row, col)
+        The last dimension is : number of the image, row, col, disparity for the pixel p(row, col)
     :param img_name: name of the current image pair ( name of the gt disparity )
     :type img_name: string
     :param img_file: image database file
