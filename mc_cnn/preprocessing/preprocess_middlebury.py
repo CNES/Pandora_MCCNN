@@ -84,7 +84,7 @@ def read_im(fname, downsample):
     :param downsample: downsample the image
     :type downsample: bool
     :return: data of the file
-    :rtype : np.array (1, row, col)
+    :rtype: np.array (1, row, col)
     """
     image = rasterio.open(fname).read()
 
@@ -118,7 +118,7 @@ def compute_mask(left_disp, left_row_disp, right_disp, patch_size):
     :param patch_size: patch size
     :type patch_size: int
     :return: Result of the cross-checking with the convention : invalid pixels = 0, valid pixels = 1
-    :rtype : numpy.array (row, col)
+    :rtype: numpy.array (row, col)
     """
     row, col = left_disp.shape
     mask = np.zeros((row, col), dtype=np.float32)
@@ -149,15 +149,15 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
     """
     Save the dataset in hdf5 files :
         - images are saved in the img_file file: creation of a group of name num_img that contains number of exposures
-        dataset
+            dataset
         - sample are saved in the sample_file file : creation of dataset name num_img
 
     :param img: images
     :type img: list( np.array(number of exposures, 2, row, col)). Size of the list is the number of illuminations of
-    the 2 views
+        the 2 views
     :param sample: samples of the image
     :type sample: np.array(number of valid pixels for all the images, 4).
-    The last dimension is : the image index (num_img), row, col, disparity for the pixel p(row, col)
+        The last dimension is : the image index (num_img), row, col, disparity for the pixel p(row, col)
     :param num_img: image number
     :type num_img: int
     :param img_file: image database file

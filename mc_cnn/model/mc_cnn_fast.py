@@ -89,7 +89,7 @@ class FastMcCnn(nn.Module):
 
             - if training mode : left, right positive and right negative features
             - else : extracted features
-        :rtype :
+        :rtype:
             - if training mode : tuple([batch_size, 64, 1, 1], [batch_size, 64, 1, 1], [batch_size, 64, 1, 1])
             - else : torch(64, row, col)
         """

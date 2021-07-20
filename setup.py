@@ -27,15 +27,25 @@ and setup elements to configure and identify the software.
 from codecs import open as copen
 from setuptools import setup, find_packages
 
+cmdclass = {}
+try:
+    from sphinx.setup_command import BuildDoc
 
-REQUIREMENTS = ['numpy',
-                'numba',
-                'rasterio',
-                'torch',
-                'torchvision',
-                'h5py',
-                'opencv-python',
-                'scipy',]
+    cmdclass["build_sphinx"] = BuildDoc
+except ImportError:
+    print("WARNING: sphinx not available. Doc cannot be built")
+
+
+REQUIREMENTS = [
+    "numpy",
+    "numba",
+    "rasterio",
+    "torch",
+    "torchvision",
+    "h5py",
+    "opencv-python",
+    "scipy",
+]
 
 SETUP_REQUIREMENTS = ["setuptools-scm"]
 
@@ -47,6 +57,7 @@ REQUIREMENTS_DEV = {
         "pre-commit",
         "black",
     ],
+    "docs": ["sphinx", "sphinx_rtd_theme", "sphinx_autoapi"],
 }
 
 
@@ -55,16 +66,26 @@ def readme():
         return file.read()
 
 
-setup(name='mc_cnn',
-      use_scm_version=True,
-      description='MC-CNN is a neural network for learning a similarity measure on image patches',
-      long_description=readme(),
-      long_description_content_type='text/markdown',
-      url='https://gitlab.cnes.fr/OutilsCommuns/CorrelateurChaine3D/mc-cnn',
-      author='CNES',
-      author_email='myriam.cournet@cnes.fr',
-      license="Apache License 2.0",
-      install_requires=REQUIREMENTS,
-      setup_requires=SETUP_REQUIREMENTS,
-      extras_require=REQUIREMENTS_DEV,
-      packages=find_packages())
+setup(
+    name="MCCNN",
+    use_scm_version=True,
+    description="MCCNN is a neural network for learning a similarity measure on image patches",
+    long_description=readme(),
+    long_description_content_type="text/markdown",
+    url="https://github.com/CNES/Pandora_MCCNN",
+    author="CNES",
+    author_email="myriam.cournet@cnes.fr",
+    license="Apache License 2.0",
+    packages=find_packages(),
+    install_requires=REQUIREMENTS,
+    extras_require=REQUIREMENTS_DEV,
+    include_package_data=True,
+    cmdclass=cmdclass,
+    command_options={
+        "build_sphinx": {
+            "build_dir": ("setup.py", "doc/build/"),
+            "source_dir": ("setup.py", "doc/sources/"),
+            "warning_is_error": ("setup.py", True),
+        }
+    },
+)

@@ -61,12 +61,10 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
     Computes the cost volume for a pair of images with mc-cnn fast
 
     :param img_ref: reference Dataset image
-    :type img_ref:
-    xarray.Dataset containing :
+    :type img_ref: xarray.Dataset containing :
         - im : 2D (row, col) xarray.DataArray
     :param img_sec: secondary Dataset image
-    :type img_sec:
-    xarray.Dataset containing :
+    :type img_sec: xarray.Dataset containing :
         - im : 2D (row, col) xarray.DataArray
     :param disp_min: minimum disparity
     :type disp_min: int
@@ -152,12 +150,10 @@ def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
     Computes the cost volume for a pair of images with mc-cnn accurate
 
     :param img_ref: reference Dataset image
-    :type img_ref:
-    xarray.Dataset containing :
+    :type img_ref: xarray.Dataset containing :
         - im : 2D (row, col) xarray.DataArray
     :param img_sec: secondary Dataset image
-    :type img_sec:
-    xarray.Dataset containing :
+    :type img_sec: xarray.Dataset containing :
         - im : 2D (row, col) xarray.DataArray
     :param disp_min: minimum disparity
     :type disp_min: int
