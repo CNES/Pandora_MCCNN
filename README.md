@@ -3,7 +3,7 @@
 <h4 align="center">MCCNN neural network for stereo matching cost.</h4>
 
 <p align="center">
-  <a><img src="https://github.com/CNES/Pandora_MCCNN/actions/workflows/mccnn_ci.yml/badge.svg?branch=master"></a>
+  <a href="https://github.com/CNES/Pandora_MCCNN/actions"> <img src="https://github.com/CNES/Pandora_MCCNN/actions/workflows/mccnn_ci.yml/badge.svg?branch=master"></a>
   <a href="https://opensource.org/licenses/Apache-2.0/"><img src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"></a>
 </p>
 
