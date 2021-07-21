@@ -77,6 +77,7 @@ setup(
     author_email="myriam.cournet@cnes.fr",
     license="Apache License 2.0",
     packages=find_packages(),
+    setup_requires=SETUP_REQUIREMENTS,
     install_requires=REQUIREMENTS,
     extras_require=REQUIREMENTS_DEV,
     include_package_data=True,
