@@ -172,10 +172,7 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
     sample_file.create_dataset(str(num_img), data=sample)
 
 
-# pylint: disable=too-many-locals
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-statements
-# pylint: disable=too-many-function-args
+# pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-function-args
 def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_dir):
     """
     Preprocess and create middlebury hdf5 database
@@ -299,8 +296,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
                 imgs.append(right)
 
             _, height, width = imgs[0].shape
-            # im_tensor is a list of size = 1 + number of light
-            # im_tensor[0].shape = (3, 2, row, col )
+            # im_tensor is a list of size = 1 + number of light, im_tensor[0].shape = (3, 2, row, col )
             im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
 
         left_disp = rasterio.open(base1 + "/disp1.png").read().astype(np.float32)
