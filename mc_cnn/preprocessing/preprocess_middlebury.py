@@ -215,15 +215,12 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
         left = read_im(os.path.join(base1, "im0.png"), True)
         right = read_im(os.path.join(base1, "im1.png"), True)
-        # im_tensor[0].shape = (1, 2, row, col)
         im_tensor = [np.expand_dims(np.concatenate((left, right)), axis=0)]
 
         right_exp = read_im(os.path.join(base1, "im1E.png"), True)
-        # im_tensor[1].shape = (1, 2, row, col)
         im_tensor.append(np.expand_dims(np.concatenate((left, right_exp)), axis=0))
 
         right_lum = read_im(os.path.join(base1, "im1L.png"), True)
-        # im_tensor[2].shape = (1, 2, row, col)
         im_tensor.append(np.expand_dims(np.concatenate((left, right_lum)), axis=0))
 
         base2 = os.path.join(base1, "ambient")
@@ -241,7 +238,6 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
                 right = read_im(base4 + "/im1e" + str(elem) + ".png", True)
                 imgs.append(np.concatenate((left, right)))
 
-            # im_tensor[3:].shape = (number of exposures, 2, row, col)
             im_tensor.append(np.concatenate(imgs).reshape(num_exp, 2, left.shape[1], left.shape[2]))
 
         # Read ground truth disparity
