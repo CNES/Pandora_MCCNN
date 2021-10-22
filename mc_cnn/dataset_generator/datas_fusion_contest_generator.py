@@ -31,8 +31,7 @@ import h5py
 import cv2
 
 
-# pylint: disable=too-many-instance-attributes
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-instance-attributes, too-many-arguments
 class DataFusionContestGenerator(data.Dataset):
     """
     Generate data fusion dataset for training
