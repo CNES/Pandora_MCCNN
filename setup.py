@@ -25,63 +25,26 @@ and setup elements to configure and identify the software.
 """
 
 from codecs import open as copen
-from setuptools import setup, find_packages
+from setuptools import setup
 
-cmdclass = {}
+CMDCLASS = {}
+
 try:
     from sphinx.setup_command import BuildDoc
 
-    cmdclass["build_sphinx"] = BuildDoc
+    CMDCLASS["build_sphinx"] = BuildDoc
 except ImportError:
     print("WARNING: sphinx not available. Doc cannot be built")
 
 
-REQUIREMENTS = [
-    "numpy",
-    "numba",
-    "rasterio",
-    "torch",
-    "torchvision",
-    "h5py",
-    "opencv-python",
-    "scipy",
-]
-
-SETUP_REQUIREMENTS = ["setuptools-scm"]
-
-REQUIREMENTS_DEV = {
-    "dev": [
-        "pytest",
-        "pytest-cov",
-        "pylint",
-        "pre-commit",
-        "black",
-    ],
-    "docs": ["sphinx", "sphinx_rtd_theme", "sphinx_autoapi"],
-}
-
-
 def readme():
-    with copen("README.md", "r", "utf-8") as file:
-        return file.read()
+    with copen("README.md", "r", "utf-8") as fstream:
+        return fstream.read()
 
 
 setup(
-    name="MCCNN",
     use_scm_version=True,
-    description="MCCNN is a neural network for learning a similarity measure on image patches",
     long_description=readme(),
-    long_description_content_type="text/markdown",
-    url="https://github.com/CNES/Pandora_MCCNN",
-    author="CNES",
-    author_email="myriam.cournet@cnes.fr",
-    license="Apache License 2.0",
-    packages=find_packages(),
-    setup_requires=SETUP_REQUIREMENTS,
-    install_requires=REQUIREMENTS,
-    extras_require=REQUIREMENTS_DEV,
-    include_package_data=True,
-    cmdclass=cmdclass,
     command_options={
         "build_sphinx": {
             "build_dir": ("setup.py", "doc/build/"),
