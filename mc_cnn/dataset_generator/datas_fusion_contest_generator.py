@@ -50,7 +50,7 @@ class DataFusionContestGenerator(data.Dataset):
         sample_file = h5py.File(sample_hdf, "r")
         image_file = h5py.File(image_hdf, "r")
 
-        for dst in sample_file.keys():
+        for dst in sample_file:
             if self.data is None:
                 self.data = sample_file[dst][:]
             else:

@@ -274,7 +274,7 @@ def read_config_file(config_file):
     :return: the configuration
     :rtype: dict
     """
-    with open(config_file, "r") as file:
+    with open(config_file, "r", encoding="utf-8") as file:
         user_configuration = json.load(file)
     return user_configuration
 
@@ -286,7 +286,7 @@ def save_cfg(output, configuration):
     :param output: output directory
     :param configuration: user configuration
     """
-    with open(os.path.join(output, "config.json"), "w") as file:
+    with open(os.path.join(output, "config.json"), "w", encoding="utf-8") as file:
         json.dump(configuration, file, indent=2)
 
 
