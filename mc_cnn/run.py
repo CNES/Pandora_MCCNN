@@ -26,7 +26,7 @@ This module contains functions to test mc-cnn fast and accurate
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 
 from mc_cnn.model.mc_cnn_fast import FastMcCnn
 from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer

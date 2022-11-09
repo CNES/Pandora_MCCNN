@@ -26,7 +26,7 @@ This module contains functions to test the cost volume create by mc_cnn
 import unittest
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 
 from mc_cnn.run import computes_cost_volume_mc_cnn_fast
 from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
@@ -34,7 +34,7 @@ from mc_cnn.dataset_generator.middlebury_generator import MiddleburyGenerator
 from mc_cnn.dataset_generator.datas_fusion_contest_generator import DataFusionContestGenerator
 
 
-# pylint: disable=no-self-use
+# load-plugins=pylint.extensions.no_self_use
 class TestMCCNN(unittest.TestCase):
     """
     TestMCCNN class allows to test the cost volume create by mc_cnn
@@ -317,7 +317,7 @@ class TestMCCNN(unittest.TestCase):
         training_loader = MiddleburyGenerator("tests/sample_middlebury.hdf5", "tests/images_middlebury.hdf5", cfg)
         # Patch of shape 3, 11, 11
         # With the firt dimension = left patch, right positive patch, right negative patch
-        patch = training_loader.__getitem__(0)
+        patch = training_loader[0]
 
         x_ref_patch = 6
         y_ref_patch = 5
@@ -351,7 +351,7 @@ class TestMCCNN(unittest.TestCase):
         np.testing.assert_array_equal(patch, gt_path)
 
         # negative disparity
-        patch = training_loader.__getitem__(2)
+        patch = training_loader[2]
 
         x_ref_patch = 5
         y_ref_patch = 7
@@ -445,7 +445,7 @@ class TestMCCNN(unittest.TestCase):
         training_loader = DataFusionContestGenerator("tests/sample_dfc.hdf5", "tests/images_dfc.hdf5", cfg)
         # Patch of shape 3, 11, 11
         # With the firt dimension = left patch, right positive patch, right negative patch
-        patch = training_loader.__getitem__(0)
+        patch = training_loader[0]
 
         x_ref_patch = 6
         y_ref_patch = 5
@@ -478,7 +478,7 @@ class TestMCCNN(unittest.TestCase):
         np.testing.assert_array_equal(patch, gt_path)
 
         # negative disparity
-        patch = training_loader.__getitem__(2)
+        patch = training_loader[2]
 
         x_ref_patch = 5
         y_ref_patch = 7

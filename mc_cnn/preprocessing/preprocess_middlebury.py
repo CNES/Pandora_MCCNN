@@ -167,7 +167,7 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
     """
     grp = img_file.create_group(str(num_img))
     for light, __ in enumerate(img):
-        __ = grp.create_dataset(str(light), data=img[light])
+        __ = grp.create_dataset(str(light), data=img[light])  # pylint: disable=unnecessary-list-index-lookup
 
     sample_file.create_dataset(str(num_img), data=sample)
 
@@ -229,7 +229,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         for light in range(num_light):
             imgs = []
 
-            base4 = os.path.join(base2, "L{}".format(light + 1))
+            base4 = os.path.join(base2, "L" + str(light + 1))
             exp = os.listdir(base4)
             num_exp = int(len(exp) / 2)
 
@@ -285,7 +285,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         for light in range(3):
             imgs = []
             for exp in (0, 1, 2):
-                base3 = os.path.join(base1, "Illum{}/Exp{}".format(light + 1, exp))
+                base3 = os.path.join(base1, "Illum" + str(light + 1) + "Exp" + str(exp))
                 left = read_im(os.path.join(base3, "view1.png"), False)
                 right = read_im(os.path.join(base3, "view5.png"), False)
                 imgs.append(left)
@@ -332,7 +332,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         for light in range(3):
             imgs = []
             for exp in (0, 1, 2):
-                base3 = os.path.join(base1, "Illum{}/Exp{}".format(light + 1, exp))
+                base3 = os.path.join(base1, "Illum" + str(light + 1) + "Exp" + str(exp))
                 left = read_im(os.path.join(base3, "view1.png"), False)
                 right = read_im(os.path.join(base3, "view5.png"), False)
                 imgs.append(left)

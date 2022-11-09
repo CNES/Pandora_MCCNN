@@ -57,7 +57,7 @@ class MiddleburyGenerator(data.Dataset):
 
         # Load the training / testing dataset
         with h5py.File(file, "r") as h5_file:
-            for dst in h5_file.keys():
+            for dst in h5_file:
                 if self.data is None:
                     self.data = h5_file[dst][:]
                 else:

@@ -23,7 +23,7 @@
 This module contains the mc-cnn fast network
 """
 
-import torch.nn as nn
+from torch import nn
 import torch
 import torch.nn.functional as F
 
