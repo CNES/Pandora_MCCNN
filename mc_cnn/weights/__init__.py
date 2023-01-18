@@ -27,15 +27,10 @@ This module contains all functions to access MC-CNN weights
 import importlib_resources
 
 AVAILABLE_WEIGHTS = {
-    "fast": {
-        "middlebury": "mc_cnn_fast_mb_weights.pt",
-        "dfc": "mc_cnn_fast_data_fusion_contest.pt"
-    },
-    "accurate": {
-        "middlebury": "mc_cnn_accurate_mb_weights.pt",
-        "dfc": "mc_cnn_accurate_data_fusion_contest.pt"
-    }
+    "fast": {"middlebury": "mc_cnn_fast_mb_weights.pt", "dfc": "mc_cnn_fast_data_fusion_contest.pt"},
+    "accurate": {"middlebury": "mc_cnn_accurate_mb_weights.pt", "dfc": "mc_cnn_accurate_data_fusion_contest.pt"},
 }
+
 
 def get_weights(arch="fast", training_dataset="middlebury"):
     """
