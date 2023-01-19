@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (c) 2015, Jure Zbontar <jure.zbontar@gmail.com>
 # Copyright (c) 2021 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
@@ -21,27 +20,7 @@
 # limitations under the License.
 #
 """
-This module contains all functions to access MC-CNN weights
+Init file for model package
 """
 
-import importlib_resources
-
-AVAILABLE_WEIGHTS = {
-    "fast": {"middlebury": "mc_cnn_fast_mb_weights.pt", "dfc": "mc_cnn_fast_data_fusion_contest.pt"},
-    "accurate": {"middlebury": "mc_cnn_accurate_mb_weights.pt", "dfc": "mc_cnn_accurate_data_fusion_contest.pt"},
-}
-
-
-def get_weights(arch="fast", training_dataset="middlebury"):
-    """
-    Return the absolute path of MC-CNN weights according to network and training parameters
-
-    :param arch: architecture of MC-CNN : "fast" or "accurate"
-    :type arch: str
-    :param training_dataset: training dataset of MC-CNN : "middlebury" of "dfc" (Data Fusion Contest)
-    :type training_dataset:str
-    :return: absolute path of MC-CNN weights (.pt file)
-    :rtype: PosixPath
-    """
-    filename = AVAILABLE_WEIGHTS[arch][training_dataset]
-    return importlib_resources.files("mc_cnn.weights").joinpath(filename)
+from .weights import get_weights
