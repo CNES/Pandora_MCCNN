@@ -519,19 +519,33 @@ class TestMCCNN(unittest.TestCase):
         """
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        # Load MC-CNN-accurate weights in the model
-        acc_weights_path = get_weights(arch="accurate")
-        assert "mb" in str(acc_weights_path)
-        acc_net = AccMcCnnInfer()
-        acc_net.load_state_dict(torch.load(acc_weights_path, map_location=device)["model"])
-        acc_net.eval()
-
-        # Load MC-CNN-fast weights in the model
-        fast_weights_path = get_weights(training_dataset="dfc")
-        assert "data_fusion_contest" in str(fast_weights_path)
+        # Load MC-CNN-fast weights trained on Middlebury in the model
+        weights_path = get_weights()
+        assert "mb" in str(weights_path)
         fast_net = FastMcCnn()
-        fast_net.load_state_dict(torch.load(fast_weights_path, map_location=device)["model"])
+        fast_net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
         fast_net.eval()
+
+        # Load MC-CNN-fast weights trained on DFC in the model
+        weights_path = get_weights(training_dataset="dfc")
+        assert "data_fusion_contest" in str(weights_path)
+        net = FastMcCnn()
+        net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
+        net.eval()
+
+        # Load MC-CNN-accurate weights trained on Middlebury in the model
+        weights_path = get_weights(arch="accurate", training_dataset="middlebury")
+        assert "mb" in str(weights_path)
+        net = AccMcCnnInfer()
+        net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
+        net.eval()
+
+        # Load MC-CNN-accurate weights trained on DFC in the model
+        weights_path = get_weights(arch="accurate", training_dataset="dfc")
+        assert "data_fusion_contest" in str(weights_path)
+        net = AccMcCnnInfer()
+        net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
+        net.eval()
 
 
 if __name__ == "__main__":
