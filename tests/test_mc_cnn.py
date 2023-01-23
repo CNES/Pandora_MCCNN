@@ -30,8 +30,10 @@ from torch import nn
 
 from mc_cnn.run import computes_cost_volume_mc_cnn_fast
 from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
+from mc_cnn.model.mc_cnn_fast import FastMcCnn
 from mc_cnn.dataset_generator.middlebury_generator import MiddleburyGenerator
 from mc_cnn.dataset_generator.datas_fusion_contest_generator import DataFusionContestGenerator
+from mc_cnn.weights import get_weights
 
 
 # load-plugins=pylint.extensions.no_self_use
@@ -510,6 +512,40 @@ class TestMCCNN(unittest.TestCase):
 
         # Check if the calculated patch is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_array_equal(patch, gt_path)
+
+    def test_accessor_weights(self):
+        """
+        Tests whether the get_weights function return the accurate path
+        """
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # Load MC-CNN-fast weights trained on Middlebury in the model
+        weights_path = get_weights()
+        assert "mb" in str(weights_path)
+        fast_net = FastMcCnn()
+        fast_net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
+        fast_net.eval()
+
+        # Load MC-CNN-fast weights trained on DFC in the model
+        weights_path = get_weights(training_dataset="dfc")
+        assert "data_fusion_contest" in str(weights_path)
+        net = FastMcCnn()
+        net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
+        net.eval()
+
+        # Load MC-CNN-accurate weights trained on Middlebury in the model
+        weights_path = get_weights(arch="accurate", training_dataset="middlebury")
+        assert "mb" in str(weights_path)
+        net = AccMcCnnInfer()
+        net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
+        net.eval()
+
+        # Load MC-CNN-accurate weights trained on DFC in the model
+        weights_path = get_weights(arch="accurate", training_dataset="dfc")
+        assert "data_fusion_contest" in str(weights_path)
+        net = AccMcCnnInfer()
+        net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
+        net.eval()
 
 
 if __name__ == "__main__":
