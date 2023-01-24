@@ -38,7 +38,7 @@ def get_weights(arch="fast", training_dataset="middlebury"):
     :param arch: architecture of MC-CNN : "fast" or "accurate"
     :type arch: str
     :param training_dataset: training dataset of MC-CNN : "middlebury" of "dfc" (Data Fusion Contest)
-    :type training_dataset:str
+    :type training_dataset: str
     :return: absolute path of MC-CNN weights (.pt file)
     :rtype: PosixPath
     """

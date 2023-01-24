@@ -60,7 +60,7 @@ wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/mc_cnn/weights/
 ### Access weights from pip package
 
 Pretrained weights are stored into the pip package and downloaded for any installation of mc_cnn pip package.
-To access if, use the `weights` submodule :
+To access it, use the `weights` submodule :
 
 ```python
 from mc_cnn.weights import get_weights
@@ -73,6 +73,8 @@ mc_cnn_accurate_data_fusion_contest = get_weights(arch="accurate", training_data
 ## References
 
 Please cite the following paper when using MCCNN:
+
+*Defonte, V., Dumas, L., Cournet, M., & Sarrazin, E. (2021, July). Evaluation of MC-CNN Based Stereo Matching Pipeline for the CO3D Earth Observation Program. In 2021 IEEE International Geoscience and Remote Sensing Symposium IGARSS (pp. 7670-7673). IEEE.*
    
 *Cournet, M., Sarrazin, E., Dumas, L., Michel, J., Guinet, J., Youssefi, D., Defonte, V., Fardet, Q., 2020. Ground-truth generation and disparity estimation for optical satellite imagery. ISPRS - International Archives of the Photogrammetry, Remote Sensing and Spatial Information Sciences.*
 
