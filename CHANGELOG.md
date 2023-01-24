@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-## 1.0.2 (January 2023)
+## 1.1.0 (January 2023)
 
 ### Added
 
