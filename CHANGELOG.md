@@ -7,7 +7,7 @@
 ### Added
 
  - Add weights submodule to access pretrained weights directly from pip package
-
+ - Add minimal python version 3.7
 
 ## 1.0.1 (December 2021)
 
