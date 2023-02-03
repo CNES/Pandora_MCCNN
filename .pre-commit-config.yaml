@@ -1,20 +1,16 @@
 repos:
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.6.0
-    hooks:
-      - id: nbstripout
   - repo: local
     hooks:
-    -   id: pylint
-        name: PyLint
-        entry: python -m pylint --rcfile=.pylintrc
-        language: system
-        files: \.py$
+      - id: black
+        name: Black
         stages: [commit]
-    -   id: black
-        name: black
-        entry: black --line-length=120
         language: system
+        entry: black
+        types: [python]
+
+      - id: pylint
+        name: PyLint
+        stages: [commit]
+        language: system
+        entry: pylint --rcfile=.pylintrc
         files: \.py$
-        stages: [ commit ]
-        types: [ python ]

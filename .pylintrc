@@ -1,11 +1,17 @@
 [MASTER]
 
+#  analyze C extensions capabilities packages.
+extension-pkg-whitelist=rasterio
+
+# Extend Recursion limit for RecursionError in big files
+init-hook='import sys; sys.setrecursionlimit(8 * sys.getrecursionlimit())'
+
 # Specify a score threshold to be exceeded before program exits with error.
 fail-under=10
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use.
-jobs=1
+jobs=0
 
 # Control the amount of potential inferred values when inferring a single
 # object. This can help the performance when dealing with large functions or
@@ -145,7 +151,7 @@ evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / stateme
 
 # Template used to display messages. This is a python new-style format string
 # used to format the message information. See doc for all details.
-#msg-template=
+msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
 
 # Set the output format. Available formats are text, parseable, colorized, json
 # and msvs (visual studio). You can also give a reporter class, e.g.
@@ -156,7 +162,7 @@ output-format=text
 reports=no
 
 # Activate the evaluation score.
-score=yes
+score=no
 
 
 [REFACTORING]
@@ -577,10 +583,3 @@ max-statements=100
 # Minimum number of public methods for a class (see R0903).
 min-public-methods=2
 
-
-[EXCEPTIONS]
-
-# Exceptions that will emit a warning when being caught. Defaults to
-# "BaseException, Exception".
-overgeneral-exceptions=BaseException,
-                       Exception

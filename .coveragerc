@@ -1,0 +1,5 @@
+[run]
+source = mc_cnn
+omit =
+    # Omit tests
+    /tests/*

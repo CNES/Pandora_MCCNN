@@ -210,7 +210,6 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
     num_image = 0
 
     for directory in sorted(os.listdir(in_dir_2014)):
-
         base1 = os.path.join(in_dir_2014, directory)
 
         left = read_im(os.path.join(base1, "im0.png"), True)
@@ -421,7 +420,6 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
         base2 = os.path.join(in_dir_2001, directory)
         if os.path.isfile(os.path.join(base2, fname_disp0)):
-
             im_tensor = []
             imgs = []
 

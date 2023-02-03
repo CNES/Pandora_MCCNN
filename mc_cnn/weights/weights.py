@@ -23,7 +23,11 @@
 This module contains all functions to access MC-CNN weights
 """
 
-import importlib_resources
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files  # python<=3.8
+
 
 AVAILABLE_WEIGHTS = {
     "fast": {"middlebury": "mc_cnn_fast_mb_weights.pt", "dfc": "mc_cnn_fast_data_fusion_contest.pt"},
@@ -43,4 +47,4 @@ def get_weights(arch="fast", training_dataset="middlebury"):
     :rtype: PosixPath
     """
     filename = AVAILABLE_WEIGHTS[arch][training_dataset]
-    return importlib_resources.files("mc_cnn.weights").joinpath(filename)
+    return files("mc_cnn.weights").joinpath(filename)
