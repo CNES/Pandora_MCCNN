@@ -107,12 +107,12 @@ lint: install lint/black lint/pylint ## check code quality and linting
 .PHONY: lint/black
 lint/black: ## check global style with black
 	@echo "+ $@"
-	@${VENV}/bin/black --check mc_cnn tests ./*.py
+	@${VENV}/bin/black --check mc_cnn tests
 
 .PHONY: lint/pylint
 lint/pylint: ## check linting with pylint
 	@echo "+ $@"
-	@set -o pipefail; ${VENV}/bin/pylint mc_cnn tests ./*.py --rcfile=.pylintrc --output-format=parseable | tee pylint-report.txt # pipefail to propagate pylint exit code in bash
+	@set -o pipefail; ${VENV}/bin/pylint mc_cnn tests --rcfile=.pylintrc --output-format=parseable | tee pylint-report.txt # pipefail to propagate pylint exit code in bash
 
 ## Documentation section
 
