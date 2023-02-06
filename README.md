@@ -20,12 +20,20 @@
 
 Pytorch implementation of [[MCCNN]](#1.) neural network which computes a similarity measure on pair of small image patches.
 
-## Install
+## Install from Pypi
 
 **MCCNN** is available on Pypi and can be installed by:
 
 ```bash
 pip install MCCNN
+```
+
+## Developer install
+
+After cloning source code from repository, do a local pip install in a virtualenv through MCCNN Makefile:
+
+```bash
+make install
 ```
 
 ## Usage
@@ -34,8 +42,7 @@ Documentation explains how to train and use MCCNN convolutional neural network.
 To generate it, please execute the following commands:
 
 ```bash
-pip install MCCNN[doc]
-python setup.py build_sphinx
+make docs
 ```
 
 Let's see [pandora_plugin_mccnn](https://github.com/CNES/Pandora_plugin_mccnn) for real life example.
