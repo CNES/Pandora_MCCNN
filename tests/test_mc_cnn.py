@@ -23,6 +23,10 @@
 This module contains functions to test the cost volume create by mc_cnn
 """
 
+# Needs refactoring to pytest completely and remove all pylint disable
+# pylint: disable=duplicate-code
+
+
 import unittest
 import numpy as np
 import torch
