@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (c) 2021 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2023 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -22,6 +22,9 @@
 """
 This module contains functions to test the cost volume create by mc_cnn
 """
+
+# Needs refactoring to pytest completely and remove all pylint disable
+
 
 import unittest
 import numpy as np

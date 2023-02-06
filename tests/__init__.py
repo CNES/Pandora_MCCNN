@@ -20,19 +20,5 @@
 # limitations under the License.
 #
 """
-Packaging setup.py for compatibility
-All packaging in setup.cfg, except setuptools_scm version activation
+Init file of PANDORA_MCCNN tests module (needed to have a module)
 """
-
-from setuptools import setup
-
-try:
-    setup()
-except Exception:
-    print(
-        "\n\nAn error occurred while building the project, "
-        "please ensure you have the most updated version of setuptools, "
-        "setuptools_scm and wheel with:\n"
-        "   pip install -U setuptools setuptools_scm wheel\n\n"
-    )
-    raise

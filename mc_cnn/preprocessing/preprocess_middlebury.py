@@ -55,18 +55,18 @@ def load_pfm(fname):
         elif header == "Pf":
             color = False
         else:
-            raise Exception("Not a PFM file.")
+            raise OSError("Not a PFM file.")
 
         dim_match = re.match(r"^(\d+)\s(\d+)\s$", file.readline().decode("latin-1"))
         if dim_match:
             width, height = map(int, dim_match.groups())
         else:
-            raise Exception("Malformed PFM header.")
+            raise OSError("Malformed PFM header.")
 
         scale = float(file.readline().rstrip().decode("latin-1"))
         if scale < 0:  # little-endian
             endian = "<"
-            scale = -scale
+            scale = -1 * scale
         else:
             endian = ">"  # big-endian
 

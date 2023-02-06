@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (c) 2021 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2023 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -22,3 +22,15 @@
 """
 Init file for pandora_mc_cnn package
 """
+
+# Standard imports
+from importlib.metadata import version
+
+# VERSION through setuptools_scm when python3 > 3.8, otherwise unknown
+try:
+    __version__ = version("mc_cnn")
+except Exception:  # pylint: disable=broad-except
+    __version__ = "unknown"
+
+__author__ = "CNES"
+__email__ = "cars@cnes.fr"
