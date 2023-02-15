@@ -34,16 +34,16 @@ from numba import njit
 
 
 @njit()
-def compute_mask(disp_map, mask_ref, mask_sec, patch_size):
+def compute_mask(disp_map, mask_left, mask_right, patch_size):
     """
     Masks invalid pixels : pixel outside epipolar image
 
     :param disp_map: disparity map
     :type disp_map: 2D numpy array
-    :param mask_ref: left epipolar image mask : with the convention 0 is valid pixel in epipolar image
-    :type mask_ref: 2D numpy array
-    :param mask_sec: right epipolar image mask : with the convention 0 is valid pixel in epipolar image
-    :type mask_sec: 2D numpy array
+    :param mask_left: left epipolar image mask : with the convention 0 is valid pixel in epipolar image
+    :type mask_left: 2D numpy array
+    :param mask_right: right epipolar image mask : with the convention 0 is valid pixel in epipolar image
+    :type mask_right: 2D numpy array
     :param patch_size: patch size
     :type patch_size: int
     :return: the disparity map with invalid pixels = -9999
@@ -63,23 +63,23 @@ def compute_mask(disp_map, mask_ref, mask_sec, patch_size):
 
             # If negative example is inside right epipolar image
             if radius < neg_match < (nb_col - radius) and radius < neg_match < (nb_row - radius):
-                patch_ref = mask_ref[(row - radius) : (row + radius + 1), (col - radius) : (col + radius + 1)]
-                patch_sec = mask_sec[(row - radius) : (row + radius + 1), (match - radius) : (match + radius + 1)]
+                patch_left = mask_left[(row - radius) : (row + radius + 1), (col - radius) : (col + radius + 1)]
+                patch_right = mask_right[(row - radius) : (row + radius + 1), (match - radius) : (match + radius + 1)]
 
                 # Invalid patch : outside left epipolar image
-                if np.sum(patch_ref != 0) != 0:
+                if np.sum(patch_left != 0) != 0:
                     disp_map[row, col] = -9999
 
                 # Invalid patch : outside right epipolar image
-                if np.sum(patch_sec != 0) != 0:
+                if np.sum(patch_right != 0) != 0:
                     disp_map[row, col] = -9999
 
-                neg_patch_sec = mask_sec[
+                neg_patch_right = mask_right[
                     (row - radius) : (row + radius + 1), (neg_match - radius) : (neg_match + radius + 1)
                 ]
 
                 # Invalid patch : outside right epipolar image
-                if np.sum(neg_patch_sec != 0) != 0:
+                if np.sum(neg_patch_right != 0) != 0:
                     disp_map[row, col] = -9999
             # Negative example cannot be created
             else:
@@ -157,7 +157,7 @@ def fusion_contest(input_dir, output):
         mask_disp[np.where(cross_checking == 255)] = -9999
         mask_disp[np.where(mask_dsp == 255)] = -9999
 
-        # Change the disparity convention to ref(x,y) = sec(x-d,y)
+        # Change the disparity convention to left(x,y) = right(x-d,y)
         mask_disp *= -1
         # Remove invalid disparity
         valid_row, valid_col = np.where(mask_disp != 9999)
