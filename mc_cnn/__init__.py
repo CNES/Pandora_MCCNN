@@ -23,11 +23,10 @@
 Init file for pandora_mc_cnn package
 """
 
-# Standard imports
-from importlib.metadata import version
-
 # VERSION through setuptools_scm when python3 > 3.8, otherwise unknown
 try:
+    from importlib.metadata import version
+
     __version__ = version("mc_cnn")
 except Exception:  # pylint: disable=broad-except
     __version__ = "unknown"
