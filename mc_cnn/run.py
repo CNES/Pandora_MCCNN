@@ -32,39 +32,39 @@ from mc_cnn.model.mc_cnn_fast import FastMcCnn
 from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
 
 
-def point_interval(ref_features, sec_features, disp):
+def point_interval(left_features, right_features, disp):
     """
     Computes the range of points over which the similarity measure will be applied
 
-    :param ref_features: reference features
-    :type ref_features: Tensor of shape (64, row, col)
-    :param sec_features: secondary features
-    :type sec_features: Tensor of shape (64, row, col)
+    :param left_features: left features
+    :type left_features: Tensor of shape (64, row, col)
+    :param right_features: right features
+    :type right_features: Tensor of shape (64, row, col)
     :param disp: current disparity
     :type disp: float
-    :return: the range of the reference and secondary image over which the similarity measure will be applied
+    :return: the range of the left and right image over which the similarity measure will be applied
     :rtype: tuple
     """
-    _, _, nx_ref = ref_features.shape
-    _, _, nx_sec = sec_features.shape
+    _, _, nx_left = left_features.shape
+    _, _, nx_right = right_features.shape
 
-    # range in the reference image
-    left = (max(0 - disp, 0), min(nx_ref - disp, nx_ref))
-    # range in the secondary image
-    right = (max(0 + disp, 0), min(nx_sec + disp, nx_sec))
+    # range in the left image
+    left = (max(0 - disp, 0), min(nx_left - disp, nx_left))
+    # range in the right image
+    right = (max(0 + disp, 0), min(nx_right + disp, nx_right))
 
     return left, right
 
 
-def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
+def run_mc_cnn_fast(img_left, img_right, disp_min, disp_max, model_path):
     """
     Computes the cost volume for a pair of images with mc-cnn fast
 
-    :param img_ref: reference Dataset image
-    :type img_ref: xarray.Dataset containing :
+    :param img_left: left Dataset image
+    :type img_left: xarray.Dataset containing :
         - im : 2D (row, col) xarray.DataArray
-    :param img_sec: secondary Dataset image
-    :type img_sec: xarray.Dataset containing :
+    :param img_right: right Dataset image
+    :type img_right: xarray.Dataset containing :
         - im : 2D (row, col) xarray.DataArray
     :param disp_min: minimum disparity
     :type disp_min: int
@@ -85,30 +85,30 @@ def run_mc_cnn_fast(img_ref, img_sec, disp_min, disp_max, model_path):
     net.eval()
 
     # Normalize images
-    ref = img_ref["im"].copy(deep=True).data
-    ref = (ref - ref.mean()) / ref.std()
+    left = img_left["im"].copy(deep=True).data
+    left = (left - left.mean()) / left.std()
 
-    sec = img_sec["im"].copy(deep=True).data
-    sec = (sec - sec.mean()) / sec.std()
+    right = img_right["im"].copy(deep=True).data
+    right = (right - right.mean()) / right.std()
 
     # Extracts the image features by propagating the images in the mc_cnn fast network
     # Right and left features of shape : (64, row-10, col-10)
-    ref_features = net(torch.from_numpy(ref).to(device=device, dtype=torch.float), training=False)
-    sec_features = net(torch.from_numpy(sec).to(device=device, dtype=torch.float), training=False)
+    left_features = net(torch.from_numpy(left).to(device=device, dtype=torch.float), training=False)
+    right_features = net(torch.from_numpy(right).to(device=device, dtype=torch.float), training=False)
 
-    cv = computes_cost_volume_mc_cnn_fast(ref_features, sec_features, disp_min, disp_max)
+    cv = computes_cost_volume_mc_cnn_fast(left_features, right_features, disp_min, disp_max)
 
     return cv
 
 
-def computes_cost_volume_mc_cnn_fast(ref_features, sec_features, disp_min, disp_max):
+def computes_cost_volume_mc_cnn_fast(left_features, right_features, disp_min, disp_max):
     """
-    Computes the cost volume using the reference and secondary features computing by mc_cnn fast
+    Computes the cost volume using the left and right features computing by mc_cnn fast
 
-    :param ref_features: reference features
-    :type ref_features: Tensor of shape (64, row, col)
-    :param sec_features: secondary features
-    :type sec_features: Tensor of shape (64, row, col)
+    :param left_features: left features
+    :type left_features: Tensor of shape (64, row, col)
+    :param right_features: right features
+    :type right_features: Tensor of shape (64, row, col)
     :return: the cost volume ( similarity score is converted to a matching cost )
     :rtype: 3D np.array (row, col, disp)
     """
@@ -116,18 +116,18 @@ def computes_cost_volume_mc_cnn_fast(ref_features, sec_features, disp_min, disp_
     disparity_range = np.arange(disp_min, disp_max + 1)
 
     # Allocate the numpy cost volume cv = (disp, col, row), for efficient memory management
-    cv = np.zeros((len(disparity_range), ref_features.shape[2], ref_features.shape[1]), dtype=np.float32)
+    cv = np.zeros((len(disparity_range), left_features.shape[2], left_features.shape[1]), dtype=np.float32)
     cv += np.nan
 
     cos = nn.CosineSimilarity(dim=0, eps=1e-6)
 
     for disp in disparity_range:
         # Columns range in left and right image
-        left, right = point_interval(ref_features, sec_features, disp)
+        left, right = point_interval(left_features, right_features, disp)
         ind_d = int(disp - disp_min)
         cv[ind_d, left[0] : left[1], :] = np.swapaxes(
             (
-                cos(ref_features[:, :, left[0] : left[1]], sec_features[:, :, right[0] : right[1]])
+                cos(left_features[:, :, left[0] : left[1]], right_features[:, :, right[0] : right[1]])
                 .cpu()
                 .detach()
                 .numpy()
@@ -145,15 +145,15 @@ def computes_cost_volume_mc_cnn_fast(ref_features, sec_features, disp_min, disp_
     return np.swapaxes(cv, 0, 2)
 
 
-def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
+def run_mc_cnn_accurate(img_left, img_right, disp_min, disp_max, model_path):
     """
     Computes the cost volume for a pair of images with mc-cnn accurate
 
-    :param img_ref: reference Dataset image
-    :type img_ref: xarray.Dataset containing :
+    :param img_left: left Dataset image
+    :type img_left: xarray.Dataset containing :
         - im : 2D (row, col) xarray.DataArray
-    :param img_sec: secondary Dataset image
-    :type img_sec: xarray.Dataset containing :
+    :param img_right: right Dataset image
+    :type img_right: xarray.Dataset containing :
         - im : 2D (row, col) xarray.DataArray
     :param disp_min: minimum disparity
     :type disp_min: int
@@ -174,15 +174,15 @@ def run_mc_cnn_accurate(img_ref, img_sec, disp_min, disp_max, model_path):
     net.eval()
 
     # Normalize images
-    ref = img_ref["im"].copy(deep=True).data
-    ref = (ref - ref.mean()) / ref.std()
+    left = img_left["im"].copy(deep=True).data
+    left = (left - left.mean()) / left.std()
 
-    sec = img_sec["im"].copy(deep=True).data
-    sec = (sec - sec.mean()) / sec.std()
+    right = img_right["im"].copy(deep=True).data
+    right = (right - right.mean()) / right.std()
 
     cv = net(
-        torch.from_numpy(ref).to(device=device, dtype=torch.float),
-        torch.from_numpy(sec).to(device=device, dtype=torch.float),
+        torch.from_numpy(left).to(device=device, dtype=torch.float),
+        torch.from_numpy(right).to(device=device, dtype=torch.float),
         disp_min,
         disp_max,
     )
