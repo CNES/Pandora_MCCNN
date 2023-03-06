@@ -60,12 +60,10 @@ def run_mc_cnn_fast(img_left, img_right, disp_min, disp_max, model_path):
     """
     Computes the cost volume for a pair of images with mc-cnn fast
 
-    :param img_left: left Dataset image
-    :type img_left: xarray.Dataset containing :
-        - im : 2D (row, col) xarray.DataArray
-    :param img_right: right Dataset image
-    :type img_right: xarray.Dataset containing :
-        - im : 2D (row, col) xarray.DataArray
+    :param img_left: left image
+    :type img_left: np.ndarray
+    :param img_right: right image
+    :type img_right: np.ndarray
     :param disp_min: minimum disparity
     :type disp_min: int
     :param disp_max: maximum disparity
@@ -85,11 +83,9 @@ def run_mc_cnn_fast(img_left, img_right, disp_min, disp_max, model_path):
     net.eval()
 
     # Normalize images
-    left = img_left["im"].copy(deep=True).data
-    left = (left - left.mean()) / left.std()
+    left = (img_left - img_left.mean()) / img_left.std()
 
-    right = img_right["im"].copy(deep=True).data
-    right = (right - right.mean()) / right.std()
+    right = (img_right - img_right.mean()) / img_right.std()
 
     # Extracts the image features by propagating the images in the mc_cnn fast network
     # Right and left features of shape : (64, row-10, col-10)
@@ -149,12 +145,10 @@ def run_mc_cnn_accurate(img_left, img_right, disp_min, disp_max, model_path):
     """
     Computes the cost volume for a pair of images with mc-cnn accurate
 
-    :param img_left: left Dataset image
-    :type img_left: xarray.Dataset containing :
-        - im : 2D (row, col) xarray.DataArray
-    :param img_right: right Dataset image
-    :type img_right: xarray.Dataset containing :
-        - im : 2D (row, col) xarray.DataArray
+    :param img_left: left image
+    :type img_left: np.ndarray
+    :param img_right: right image
+    :type img_right: np.ndarray
     :param disp_min: minimum disparity
     :type disp_min: int
     :param disp_max: maximum disparity
@@ -174,11 +168,9 @@ def run_mc_cnn_accurate(img_left, img_right, disp_min, disp_max, model_path):
     net.eval()
 
     # Normalize images
-    left = img_left["im"].copy(deep=True).data
-    left = (left - left.mean()) / left.std()
+    left = (img_left - img_left.mean()) / img_left.std()
 
-    right = img_right["im"].copy(deep=True).data
-    right = (right - right.mean()) / right.std()
+    right = (img_right - img_right.mean()) / img_right.std()
 
     cv = net(
         torch.from_numpy(left).to(device=device, dtype=torch.float),
