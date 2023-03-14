@@ -5,6 +5,7 @@
 ### Added 
 
 - Suppress xarray dependency, change of API to use numpy array. [#42]
+- Add dev dependencies in githubAction file
 
 ## 1.1.0 (January 2023)
 
