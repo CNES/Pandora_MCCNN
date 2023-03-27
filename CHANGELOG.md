@@ -4,6 +4,10 @@
 
 ### Added 
 
+## 1.2.0 (March 2023)
+
+### Added 
+
 - Suppress xarray dependency, change of API to use numpy array. [#42]
 - Add dev dependencies in githubAction file
 
