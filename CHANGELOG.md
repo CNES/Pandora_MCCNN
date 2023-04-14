@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+ - Deletion of the pip install codecov of githubAction CI.
+
 ### Added 
 
 ## 1.2.0 (March 2023)
