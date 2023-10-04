@@ -39,6 +39,8 @@ from mc_cnn.model.mc_cnn_fast import FastMcCnn
 from mc_cnn.dataset_generator.middlebury_generator import MiddleburyGenerator
 from mc_cnn.dataset_generator.datas_fusion_contest_generator import DataFusionContestGenerator
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
 
 def mkdir_p(path):
     """
@@ -297,8 +299,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     user_cfg = read_config_file(args.injson)
-
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     if user_cfg["network"] == "fast":
         train_mc_cnn_fast(user_cfg, args.outdir)
