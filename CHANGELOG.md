@@ -2,11 +2,13 @@
 
 ## Unreleased
 
+## 1.2.1 (November 2023)
+
 ### Fixed
 
  - Deletion of the pip install codecov of githubAction CI.
+ - Fix pylint error. [#45] 
 
-### Added 
 
 ## 1.2.0 (March 2023)
 
