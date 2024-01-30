@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 1.2.2 (January 2024)
+
+### Changed
+- Update of the minimal version for python. [#33]
 
 ## 1.2.1 (November 2023)
 
