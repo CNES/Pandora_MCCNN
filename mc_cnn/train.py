@@ -90,10 +90,13 @@ def train_mc_cnn_fast(cfg, output_dir):
     if cfg["dataset"] == "middlebury":
         training_loader = MiddleburyGenerator(cfg["training_sample"], cfg["training_image"], cfg)
         testing_loader = MiddleburyGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
-
-    if cfg["dataset"] == "data_fusion_contest":
+    elif cfg["dataset"] == "data_fusion_contest":
         training_loader = DataFusionContestGenerator(cfg["training_sample"], cfg["training_image"], cfg)
         testing_loader = DataFusionContestGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
+    else:
+        raise OSError(
+            "dataset key does not correspond to one of the options in the list ['middlebury', 'data_fusion_contest'] ."
+        )
 
     training_generator = data.DataLoader(training_loader, **params)
     testing_generator = data.DataLoader(testing_loader, **params)
@@ -197,10 +200,13 @@ def train_mc_cnn_acc(cfg, output_dir):
     if cfg["dataset"] == "middlebury":
         training_loader = MiddleburyGenerator(cfg["training_sample"], cfg["training_image"], cfg)
         testing_loader = MiddleburyGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
-
-    if cfg["dataset"] == "data_fusion_contest":
+    elif cfg["dataset"] == "data_fusion_contest":
         training_loader = DataFusionContestGenerator(cfg["training_sample"], cfg["training_image"], cfg)
         testing_loader = DataFusionContestGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
+    else:
+        raise OSError(
+            "dataset key does not correspond to one of the options in the list ['middlebury', 'data_fusion_contest'] ."
+        )
 
     training_generator = data.DataLoader(training_loader, **params)
     testing_generator = data.DataLoader(testing_loader, **params)
