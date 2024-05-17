@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf8
-#
 # Copyright (c) 2021 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
@@ -22,6 +19,7 @@
 """
 This module contains the mc-cnn accurate network
 """
+# pylint:disable=too-few-public-methods
 
 from torch import nn
 import torch
