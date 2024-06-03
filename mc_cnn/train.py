@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# Copyright (c) 2021 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2024 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -55,7 +55,34 @@ def mkdir_p(path):
             raise
 
 
-def train_mc_cnn_fast(cfg, output_dir):
+def load_dataset(cfg):
+    """
+    Load training and testing data.
+
+    :param cfg: configuration
+    :type cfg: dict
+    """
+
+    # Testing configuration : deactivate data augmentation
+    test_cfg = copy.deepcopy(cfg)
+    test_cfg["transformation"] = False
+
+    if cfg["dataset"] == "middlebury":
+        training_loader = MiddleburyGenerator(cfg["training_sample"], cfg["training_image"], cfg)
+        testing_loader = MiddleburyGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
+    elif cfg["dataset"] == "data_fusion_contest":
+        training_loader = DataFusionContestGenerator(cfg["training_sample"], cfg["training_image"], cfg)
+        testing_loader = DataFusionContestGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
+    else:
+        raise ValueError(
+            f"dataset key {cfg['dataset']} does not correspond to one of the options in the list "
+            "['middlebury', 'data_fusion_contest'] ."
+        )
+
+    return training_loader, testing_loader
+
+
+def train_mc_cnn_fast(cfg, output_dir, params):
     """
     Train the fast mc_cnn network
 
@@ -63,6 +90,8 @@ def train_mc_cnn_fast(cfg, output_dir):
     :type cfg: dict
     :param output_dir: output directory
     :type output_dir: string
+    :param params: params for DataLoader
+    :type params: dict
     """
     # Create the output directory
     mkdir_p(output_dir)
@@ -80,20 +109,8 @@ def train_mc_cnn_fast(cfg, output_dir):
     # lr = 0.0002 if 9 <= epoch < 18 ...
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 9, gamma=0.1)
 
-    batch_size = 128
-    params = {"batch_size": batch_size, "shuffle": True}
-
-    # Testing configuration : deactivate data augmentation
-    test_cfg = copy.deepcopy(cfg)
-    test_cfg["transformation"] = False
-
-    if cfg["dataset"] == "middlebury":
-        training_loader = MiddleburyGenerator(cfg["training_sample"], cfg["training_image"], cfg)
-        testing_loader = MiddleburyGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
-
-    if cfg["dataset"] == "data_fusion_contest":
-        training_loader = DataFusionContestGenerator(cfg["training_sample"], cfg["training_image"], cfg)
-        testing_loader = DataFusionContestGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
+    # Load training and testing data
+    training_loader, testing_loader = load_dataset(cfg)
 
     training_generator = data.DataLoader(training_loader, **params)
     testing_generator = data.DataLoader(testing_loader, **params)
@@ -162,7 +179,7 @@ def train_mc_cnn_fast(cfg, output_dir):
         )
 
 
-def train_mc_cnn_acc(cfg, output_dir):
+def train_mc_cnn_acc(cfg, output_dir, params):
     """
     Train the accurate mc_cnn network
 
@@ -170,6 +187,8 @@ def train_mc_cnn_acc(cfg, output_dir):
     :type cfg: dict
     :param output_dir: output directory
     :type output_dir: string
+    :param params: params for DataLoader
+    :type params: dict
     """
     # Create the output directory
     mkdir_p(output_dir)
@@ -187,20 +206,8 @@ def train_mc_cnn_acc(cfg, output_dir):
     # lr = 0.0003 if 10 <= epoch < 18 ...
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, gamma=0.1)
 
-    batch_size = 128
-    params = {"batch_size": batch_size, "shuffle": True}
-
-    # Testing configuration : deactivate data augmentation
-    test_cfg = copy.deepcopy(cfg)
-    test_cfg["transformation"] = False
-
-    if cfg["dataset"] == "middlebury":
-        training_loader = MiddleburyGenerator(cfg["training_sample"], cfg["training_image"], cfg)
-        testing_loader = MiddleburyGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
-
-    if cfg["dataset"] == "data_fusion_contest":
-        training_loader = DataFusionContestGenerator(cfg["training_sample"], cfg["training_image"], cfg)
-        testing_loader = DataFusionContestGenerator(cfg["testing_sample"], cfg["testing_image"], test_cfg)
+    # Load training and testing data
+    training_loader, testing_loader = load_dataset(cfg)
 
     training_generator = data.DataLoader(training_loader, **params)
     testing_generator = data.DataLoader(testing_loader, **params)
@@ -300,7 +307,11 @@ if __name__ == "__main__":
 
     user_cfg = read_config_file(args.injson)
 
+    # params for DataLoader
+    batch_size = 128  # pylint: disable=C0103
+    data_loader_params = {"batch_size": batch_size, "shuffle": True}
+
     if user_cfg["network"] == "fast":
-        train_mc_cnn_fast(user_cfg, args.outdir)
+        train_mc_cnn_fast(user_cfg, args.outdir, data_loader_params)
     else:
-        train_mc_cnn_acc(user_cfg, args.outdir)
+        train_mc_cnn_acc(user_cfg, args.outdir, data_loader_params)

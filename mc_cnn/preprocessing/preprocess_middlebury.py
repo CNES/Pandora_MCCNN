@@ -2,7 +2,7 @@
 # coding: utf8
 #
 # Copyright (c) 2015, Jure Zbontar <jure.zbontar@gmail.com>
-# Copyright (c) 2021 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2024 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -26,6 +26,7 @@ This module contains all functions to generate the training and testing dataset 
 
 import argparse
 import os
+import logging
 import re
 import numpy as np
 from numba import njit, prange
@@ -87,17 +88,20 @@ def read_im(fname, downsample):
     :rtype: np.array (1, row, col)
     """
     image = rasterio.open(fname).read()
-
     if downsample:
         image = image[:, ::2, ::2]
-
     # Gray conversion : [Stereo Matching by Training a Convolutional NeuralNetwork to Compare Image Patches]
     # Our initial experiments suggested that using color information does not improve the quality of the disparity maps
     # therefore, we converted all color images to grayscale.
-    if len(image.shape) == 3:
+
+    # The two latest images are shaped (1, n_lig, n_col)
+    #  if the first dimension do not fit, exchange the dimensions
+    #  otherwise, remove the first dimension
+    if (len(image.shape) == 3) and (image.shape[0] != 1):
         image = image.transpose(1, 2, 0)
         image = np.dot(image[:, :, :], [0.299, 0.587, 0.114])
-
+    else:
+        image = image[0, :, :]
     # Normalize
     image = (image - image.mean()) / image.std()
 
@@ -196,6 +200,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
     training_file = h5py.File(os.path.join(output_dir, "training_dataset.hdf5"), "w")
     testing_file = h5py.File(os.path.join(output_dir, "testing_dataset.hdf5"), "w")
 
+    logging.info("Middlebury 2014")
     # --------------- Middlebury 2014 dataset ---------------
 
     # Testing dataset = 'Adirondack-imperfect', 'Backpack-imperfect', 'Bicycle1-imperfect', 'Cable-imperfect',
@@ -275,6 +280,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
             save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
+    logging.info("Middlebury 2006")
     # --------------- Middlebury 2006 dataset ---------------
     for directory in sorted(os.listdir(in_dir_2006)):
         im_tensor = []
@@ -284,7 +290,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         for light in range(3):
             imgs = []
             for exp in (0, 1, 2):
-                base3 = os.path.join(base1, "Illum" + str(light + 1) + "Exp" + str(exp))
+                base3 = os.path.join(base1, "Illum" + str(light + 1), "Exp" + str(exp))
                 left = read_im(os.path.join(base3, "view1.png"), False)
                 right = read_im(os.path.join(base3, "view5.png"), False)
                 imgs.append(left)
@@ -297,9 +303,10 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         left_disp = rasterio.open(base1 + "/disp1.png").read().astype(np.float32)
         right_disp = rasterio.open(base1 + "/disp5.png").read().astype(np.float32)
 
+        # Takes the first dimension (shaped (1, n_l, n_c))
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
-        left_disp /= 2
-        right_disp /= 2
+        left_disp = left_disp[0, :, :] / 2
+        right_disp = right_disp[0, :, :] / 2
 
         left_disp[left_disp == 0] = np.inf
         right_disp[right_disp == 0] = np.inf
@@ -320,6 +327,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
+    logging.info("Middlebury 2005")
     # --------------- Middlebury 2005 dataset ---------------
     for directory in sorted(os.listdir(in_dir_2005)):
         im_tensor = []
@@ -331,7 +339,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         for light in range(3):
             imgs = []
             for exp in (0, 1, 2):
-                base3 = os.path.join(base1, "Illum" + str(light + 1) + "Exp" + str(exp))
+                base3 = os.path.join(base1, "Illum" + str(light + 1), "Exp" + str(exp))
                 left = read_im(os.path.join(base3, "view1.png"), False)
                 right = read_im(os.path.join(base3, "view5.png"), False)
                 imgs.append(left)
@@ -345,9 +353,10 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         left_disp = rasterio.open(base1 + "/disp1.png").read().astype(np.float32)
         right_disp = rasterio.open(base1 + "/disp5.png").read().astype(np.float32)
 
+        # Takes the first dimension (shaped (1, n_l, n_c));
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
-        left_disp /= 2
-        right_disp /= 2
+        left_disp = left_disp[0, :, :] / 2
+        right_disp = right_disp[0, :, :] / 2
 
         left_disp[left_disp == 0] = np.inf
         right_disp[right_disp == 0] = np.inf
@@ -368,6 +377,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
+    logging.info("Middlebury 2003")
     # --------------- Middlebury 2003 dataset ---------------
     for directory in ("conesH", "teddyH"):
         base1 = os.path.join(in_dir_2003, directory)
@@ -386,9 +396,11 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         left_disp = rasterio.open(base1 + "/disp2.pgm").read().astype(np.float32)
         right_disp = rasterio.open(base1 + "/disp6.pgm").read().astype(np.float32)
 
+        # Takes the first dimension (shaped (1, n_l, n_c))
         # In the half-size versions, the intensity values of the disparity maps need to be divided by 2
-        left_disp /= 2
-        right_disp /= 2
+        left_disp = left_disp[0, :, :] / 2
+        right_disp = right_disp[0, :, :] / 2
+
         # Disparity 0 is invalid
         left_disp[left_disp == 0] = np.inf
         right_disp[right_disp == 0] = np.inf
@@ -409,6 +421,7 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
         save_dataset(im_tensor, data, num_image, img_file, training_file)
         num_image += 1
 
+    logging.info("Middlebury 2001")
     # --------------- Middlebury 2001 dataset ---------------
     for directory in sorted(os.listdir(in_dir_2001)):
         if directory == "tsukuba":
@@ -433,6 +446,10 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
             left_disp = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.0
             right_disp = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.0
+
+            # Takes the first dimension (shaped (1, n_l, n_c))
+            left_disp = left_disp[0, :, :]
+            right_disp = right_disp[0, :, :]
 
             mask = compute_mask(left_disp, None, right_disp, patch_size)
 
