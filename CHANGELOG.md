@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.2.3a1 (June 2024)
+
+### Fixed
+- Fix preprocessing problem with Middleburry datasets. [#29]
+- Fix pylint errors due to its update. [#46]
+
+
 ## 1.2.2 (January 2024)
 
 ### Changed
