@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.2.4 (September 2024)
+
 ## 1.2.4a1 (September 2024)
 
 ### Changed
