@@ -201,7 +201,7 @@ def _ov_set_cpu_properties(core: "ov.Core", nt: int) -> None:
     Try progressively smaller property sets; ignore unsupported keys.
     """
     candidates = [
-        {"INFERENCE_NUM_THREADS": nt, "NUM_STREAMS": "1", "AFFINITY": "NONE", "INFERENCE_PRECISION_HINT": "f32"},
+        # {"INFERENCE_NUM_THREADS": nt, "NUM_STREAMS": "1", "AFFINITY": "NONE", "INFERENCE_PRECISION_HINT": "f32"},
         {"INFERENCE_NUM_THREADS": nt, "NUM_STREAMS": "1", "INFERENCE_PRECISION_HINT": "f32"},
         {"INFERENCE_NUM_THREADS": nt, "NUM_STREAMS": "1"},
         {"INFERENCE_NUM_THREADS": nt},
@@ -332,7 +332,7 @@ def run_mc_cnn_fast(
             providers="CPUExecutionProvider"
             provider_options={}
         elif provider == "openvino":
-            so.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
+            # so.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
             providers="OpenVINOExecutionProvider"
             provider_options={"device": "CPU_FP32"}
         else:
