@@ -280,7 +280,7 @@ def run_mc_cnn_fast(
     :param disp_max: maximum disparity (inclusive, typically 0 for left-to-right)
     :param model_path: path to the trained network weights (.pth)
     :param framework: {"pytorch", "onnx", "openvino"}
-    :param variant: {"baseline", "opt1"} selects the CV implementation
+    :param variant: {"baseline", "opt1", "opt2", "opt3"} selects the CV implementation
     :return: cost volume as numpy array of shape (H, W, D), float32
     """
     device = torch.device("cpu")  # Force CPU
@@ -317,7 +317,7 @@ def run_mc_cnn_fast(
     elif framework == "onnx":
         if ort is None:
             raise ImportError("onnxruntime is not installed but framework='onnx' was selected.")
-        
+
         model_path = _resolve_onnx_path(model_path)
 
         nt = _num_threads()
@@ -424,8 +424,10 @@ def run_mc_cnn_fast(
     start_loop = time.perf_counter()
     if variant == "opt1":
         cv = computes_cost_volume_mc_cnn_fast_opt1(left_features, right_features, disp_min, disp_max)
-    if variant == "opt2":
+    elif variant == "opt2":
         cv = computes_cost_volume_mc_cnn_fast_opt2(left_features, right_features, disp_min, disp_max)
+    elif variant == "opt3":
+        cv = computes_cost_volume_mc_cnn_fast_opt3(left_features, right_features, disp_min, disp_max, assume_unit_norm=True)
     else:
         cv = computes_cost_volume_mc_cnn_fast(left_features, right_features, disp_min, disp_max)
     time_loop = time.perf_counter() - start_loop
@@ -488,6 +490,7 @@ def computes_cost_volume_mc_cnn_fast(
     # Convert similarity to cost (negate), then return as (H, W, D)
     cv *= -1.0
     return np.swapaxes(cv, 0, 2)
+
 
 def computes_cost_volume_mc_cnn_fast_opt1(left_features, right_features, disp_min, disp_max):
     """
