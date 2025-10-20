@@ -426,8 +426,8 @@ def run_mc_cnn_fast(
         cv = computes_cost_volume_mc_cnn_fast_opt1(left_features, right_features, disp_min, disp_max)
     elif variant == "opt2":
         cv = computes_cost_volume_mc_cnn_fast_opt2(left_features, right_features, disp_min, disp_max)
-    elif variant == "opt3":
-        cv = computes_cost_volume_mc_cnn_fast_opt3(left_features, right_features, disp_min, disp_max, assume_unit_norm=True)
+    elif variant == "cpp":
+        cv = computes_cost_volume_mc_cnn_fast_cpp(left_features, right_features, disp_min, disp_max)
     else:
         cv = computes_cost_volume_mc_cnn_fast(left_features, right_features, disp_min, disp_max)
     time_loop = time.perf_counter() - start_loop
@@ -565,3 +565,12 @@ def computes_cost_volume_mc_cnn_fast_opt2(
         out[di, :, l0:l0+width] = sim
 
     return out.permute(1, 2, 0).cpu().numpy().astype(np.float32)
+
+from .cv_opt2_single_loader import computes_cost_volume_mc_cnn_fast_opt2_single_cpp
+
+@torch.no_grad()
+def computes_cost_volume_mc_cnn_fast_cpp(left_features, right_features, disp_min, disp_max):
+    # C++ returns (D,H,W). Pandora expects (H,W,D).
+    out = computes_cost_volume_mc_cnn_fast_opt2_single_cpp(left_features, right_features, disp_min, disp_max)
+    out = out.permute(1, 2, 0).contiguous()  # -> (H, W, D)
+    return out.cpu().numpy().astype(np.float32)
