@@ -49,7 +49,6 @@ except Exception:  # pragma: no cover
 
 from mc_cnn.model.mc_cnn_fast import FastMcCnn
 
-
 def get_memory_usage_bytes() -> int:
     """Get current process RSS in bytes."""
     return psutil.Process().memory_info().rss
@@ -284,7 +283,7 @@ def run_mc_cnn_fast(
     :param disp_max: maximum disparity (inclusive, typically 0 for left-to-right)
     :param model_path: path to the trained network weights (.pth)
     :param framework: {"pytorch", "onnx", "openvino"}
-    :param variant: {"baseline", "opt1"} selects the CV implementation
+    :param variant: {"baseline", "opt1", "opt2", "opt3"} selects the CV implementation
     :return: cost volume as numpy array of shape (H, W, D), float32
     """
     device = torch.device("cpu")  # Force CPU
@@ -427,7 +426,11 @@ def run_mc_cnn_fast(
     ms = MemorySampler().start()
     start_loop = time.perf_counter()
     if variant == "opt1":
-        cv = computes_cost_volume_mc_cnn_fast_opt(left_features, right_features, disp_min, disp_max)
+        cv = computes_cost_volume_mc_cnn_fast_opt1(left_features, right_features, disp_min, disp_max)
+    elif variant == "opt2":
+        cv = computes_cost_volume_mc_cnn_fast_opt2(left_features, right_features, disp_min, disp_max)
+    elif variant == "cpp":
+        cv = computes_cost_volume_mc_cnn_fast_cpp(left_features, right_features, disp_min, disp_max)
     else:
         cv = computes_cost_volume_mc_cnn_fast(left_features, right_features, disp_min, disp_max)
     time_loop = time.perf_counter() - start_loop
@@ -492,16 +495,85 @@ def computes_cost_volume_mc_cnn_fast(
     return np.swapaxes(cv, 0, 2)
 
 
-def computes_cost_volume_mc_cnn_fast_opt(
-    left_features: torch.Tensor,
-    right_features: torch.Tensor,
+@torch.no_grad()
+def computes_cost_volume_mc_cnn_fast_opt1(
+    left_features: torch.Tensor,   # (C, H, W), float32, CPU
+    right_features: torch.Tensor,  # (C, H, W)
     disp_min: int,
     disp_max: int,
 ) -> np.ndarray:
     """
-    Optimized cost volume placeholder (currently identical to baseline).
-    Modify this function for your optimization experiments.
-
-    Returns numpy array (H, W, D).
+    MC-CNN fast cost volume (cosine): normalize features once, then dot product.
+    - Orientation: right-invalid for d > 0 (valid x ∈ [0, W-d))
+    - Cost = -cosine_similarity (i.e., -dot of L2-normalized features)
+    - Returns: np.ndarray (H, W, D) float32 with NaN in invalid columns
     """
-    return computes_cost_volume_mc_cnn_fast(left_features, right_features, disp_min, disp_max)
+    # Channels-last for better memory locality
+    lf = left_features.permute(1, 2, 0).contiguous()   # (H, W, C)
+    rf = right_features.permute(1, 2, 0).contiguous()  # (H, W, C)
+
+    # L2-normalize across channel dim
+    eps = 1e-6
+    lf = lf / torch.clamp(torch.linalg.vector_norm(lf, dim=2, keepdim=True), min=eps)
+    rf = rf / torch.clamp(torch.linalg.vector_norm(rf, dim=2, keepdim=True), min=eps)
+
+    H, W, C = lf.shape
+    D = disp_max - disp_min + 1
+    out = torch.full((D, H, W), float("nan"), dtype=lf.dtype, device=lf.device)
+
+    for d in range(disp_min, disp_max + 1):
+        di = d - disp_min
+        l0 = max(0, -d)
+        r0 = max(0,  d)
+        width = W - abs(d)
+        if width <= 0:
+            continue
+        # Dot across channels; negate to convert similarity -> cost
+        sim = (lf[:, l0:l0+width, :] * rf[:, r0:r0+width, :]).sum(dim=2).neg_()  # (H, width)
+        out[di, :, l0:l0+width] = sim
+
+    return out.permute(1, 2, 0).cpu().numpy().astype(np.float32)
+
+
+@torch.no_grad()
+def computes_cost_volume_mc_cnn_fast_opt2(
+    left_features: torch.Tensor,   # (C, H, W), float32, CPU
+    right_features: torch.Tensor,  # (C, H, W)
+    disp_min: int,
+    disp_max: int,
+) -> np.ndarray:
+    """
+    MC-CNN fast cost volume (dot): assume features are L2 unit-norm (opt2 legal).
+    - Orientation: right-invalid for d > 0 (valid x ∈ [0, W-d))
+    - Cost = -dot(left, right) across channels (equivalent to -cosine if unit-norm)
+    - Returns: np.ndarray (H, W, D) float32 with NaN in invalid columns
+    """
+    # Channels-last for better memory locality
+    lf = left_features.permute(1, 2, 0).contiguous()   # (H, W, C)
+    rf = right_features.permute(1, 2, 0).contiguous()  # (H, W, C)
+
+    H, W, C = lf.shape
+    D = disp_max - disp_min + 1
+    out = torch.full((D, H, W), float("nan"), dtype=lf.dtype, device=lf.device)
+
+    for d in range(disp_min, disp_max + 1):
+        di = d - disp_min
+        l0 = max(0, -d)
+        r0 = max(0,  d)
+        width = W - abs(d)
+        if width <= 0:
+            continue
+        # Dot across channels; negate to convert similarity -> cost
+        sim = (lf[:, l0:l0+width, :] * rf[:, r0:r0+width, :]).sum(dim=2).neg_()  # (H, width)
+        out[di, :, l0:l0+width] = sim
+
+    return out.permute(1, 2, 0).cpu().numpy().astype(np.float32)
+
+from .cv_opt2_single_loader import computes_cost_volume_mc_cnn_fast_opt2_single_cpp
+
+@torch.no_grad()
+def computes_cost_volume_mc_cnn_fast_cpp(left_features, right_features, disp_min, disp_max):
+    # C++ returns (D,H,W). Pandora expects (H,W,D).
+    out = computes_cost_volume_mc_cnn_fast_opt2_single_cpp(left_features, right_features, disp_min, disp_max)
+    out = out.permute(1, 2, 0).contiguous()  # -> (H, W, D)
+    return out.cpu().numpy().astype(np.float32)
