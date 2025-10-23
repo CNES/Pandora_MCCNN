@@ -1,7 +1,7 @@
 # pylint: skip-file
 #
 # coding: utf8
-# Copyright (c) 2024 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2025 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of Pandora_MCCNN
 #
@@ -30,7 +30,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "MCCNN"
-copyright = "2024, CNES"
+copyright = "2025, CNES"
 author = "CNES"
 
 # The full version, including alpha/beta/rc tags
