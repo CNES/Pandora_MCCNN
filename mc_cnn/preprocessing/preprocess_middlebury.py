@@ -2,7 +2,7 @@
 # coding: utf8
 #
 # Copyright (c) 2015, Jure Zbontar <jure.zbontar@gmail.com>
-# Copyright (c) 2024 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2025 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -177,6 +177,7 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
 
 
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-function-args
+# pylint: disable=too-many-positional-arguments
 def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_dir):
     """
     Preprocess and create middlebury hdf5 database

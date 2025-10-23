@@ -2,7 +2,7 @@
 # coding: utf8
 #
 # Copyright (c) 2015, Jure Zbontar <jure.zbontar@gmail.com>
-# Copyright (c) 2024 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2025 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -222,7 +222,9 @@ class MiddleburyGenerator(data.Dataset):
         """
         return self.data.shape[0]
 
-    def data_augmentation(self, src, row, col, scale, phi, trans, hshear, brightness, contrast):
+    def data_augmentation(
+        self, src, row, col, scale, phi, trans, hshear, brightness, contrast
+    ):  # pylint: disable=too-many-positional-arguments
         """
         Return augmented patch : apply affine transformations
 
