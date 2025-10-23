@@ -31,7 +31,6 @@ from pathlib import Path
 from typing import Tuple, Optional
 
 import numpy as np
-import onnxruntime
 import psutil
 import torch
 from torch import nn
@@ -428,6 +427,8 @@ def run_mc_cnn_fast(
         cv = computes_cost_volume_mc_cnn_fast_opt2(left_features, right_features, disp_min, disp_max)
     elif variant == "cpp":
         cv = computes_cost_volume_mc_cnn_fast_cpp(left_features, right_features, disp_min, disp_max)
+    elif variant == "cpp2":
+        cv = computes_cost_volume_mc_cnn_fast_cpp2(left_features, right_features, disp_min, disp_max)
     else:
         cv = computes_cost_volume_mc_cnn_fast(left_features, right_features, disp_min, disp_max)
     time_loop = time.perf_counter() - start_loop
@@ -529,7 +530,7 @@ def computes_cost_volume_mc_cnn_fast_opt1(
         sim = (lf[:, l0:l0+width, :] * rf[:, r0:r0+width, :]).sum(dim=2).neg_()  # (H, width)
         out[di, :, l0:l0+width] = sim
 
-    return out.permute(1, 2, 0).cpu().numpy().astype(np.float32)
+    return out.permute(1, 2, 0).contiguous().numpy()
 
 
 @torch.no_grad()
@@ -564,13 +565,17 @@ def computes_cost_volume_mc_cnn_fast_opt2(
         sim = (lf[:, l0:l0+width, :] * rf[:, r0:r0+width, :]).sum(dim=2).neg_()  # (H, width)
         out[di, :, l0:l0+width] = sim
 
-    return out.permute(1, 2, 0).cpu().numpy().astype(np.float32)
+    return out.permute(1, 2, 0).contiguous().numpy()
 
 from .cv_opt2_single_loader import computes_cost_volume_mc_cnn_fast_opt2_single_cpp
+from .cv_opt2_pixelmajor_loader import computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp
 
 @torch.no_grad()
 def computes_cost_volume_mc_cnn_fast_cpp(left_features, right_features, disp_min, disp_max):
-    # C++ returns (D,H,W). Pandora expects (H,W,D).
-    out = computes_cost_volume_mc_cnn_fast_opt2_single_cpp(left_features, right_features, disp_min, disp_max)
-    out = out.permute(1, 2, 0).contiguous()  # -> (H, W, D)
-    return out.cpu().numpy().astype(np.float32)
+    out = computes_cost_volume_mc_cnn_fast_opt2_single_cpp(left_features, right_features, disp_min, disp_max)  # (D,H,W)
+    return out.permute(1, 2, 0).contiguous().numpy()  # (H,W,D), zero-copy
+
+@torch.no_grad()
+def computes_cost_volume_mc_cnn_fast_cpp2(left_features, right_features, disp_min, disp_max):
+    out = computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp(left_features, right_features, disp_min, disp_max)  # (H,W,D)
+    return out.numpy()
