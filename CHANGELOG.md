@@ -2,6 +2,9 @@
 
 ## 1.2.5a1 (October 2025)
 
+### Changed
+- Update github workflow.
+
 ### Fixed
 - Fix pylint by updating the disable statement for 'too-many-positional-arguments'
 
