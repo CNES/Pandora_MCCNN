@@ -131,7 +131,7 @@ def _num_threads() -> int:
         return 1
 
 
-def _resolve_onnx_path(model_path: str, img_shape: Optional[int] = None) -> str:
+def _resolve_onnx_path(model_path: str, model_name: Optional[str] = None) -> str:
     """
     Locate the ONNX file.
     Priority:
@@ -146,10 +146,9 @@ def _resolve_onnx_path(model_path: str, img_shape: Optional[int] = None) -> str:
         return str(Path(env_path).resolve())
 
     mp = Path(model_path)
-    if img_shape is None:
+    if model_name is None:
         candidates = [
-            mp.with_name(mp.stem + f"_dynamo.onnx"),
-            # mp.with_suffix(".onnx"),
+            mp.with_suffix(".onnx"),
             mp.parent / "mc_cnn_fast.onnx",
             Path.cwd() / "mc_cnn_fast.onnx",
             Path(__file__).resolve().parent / "mc_cnn_fast.onnx",
@@ -158,14 +157,13 @@ def _resolve_onnx_path(model_path: str, img_shape: Optional[int] = None) -> str:
             if p.exists():
                 return str(p.resolve())
     else:
-        candidates = glob.glob(os.path.join(mp.parent, f"*_{img_shape}.onnx"))
-        return candidates[0]
+        return str(os.path.join(os.path.dirname(mp), model_name))
 
     # Fallback (will raise later if missing)
     return "mc_cnn_fast.onnx"
 
 
-def _resolve_openvino_path(model_path: str) -> str:
+def _resolve_openvino_path(model_path: str, model_name: Optional[str] = None) -> str:
     """
     Locate the OpenVINO IR (.xml).
     Priority:
@@ -180,15 +178,19 @@ def _resolve_openvino_path(model_path: str) -> str:
         return str(Path(env_path).resolve())
 
     mp = Path(model_path)
-    candidates = [
-        mp.with_suffix(".xml"),
-        mp.parent / "mc_cnn_fast.xml",
-        Path.cwd() / "mc_cnn_fast.xml",
-        Path(__file__).resolve().parent / "mc_cnn_fast.xml",
-    ]
-    for p in candidates:
-        if p.exists():
-            return str(p.resolve())
+    if model_name is None:
+        candidates = [
+            mp.with_suffix(".xml"),
+            mp.parent / "mc_cnn_fast.xml",
+            Path.cwd() / "mc_cnn_fast.xml",
+            Path(__file__).resolve().parent / "mc_cnn_fast.xml",
+        ]
+        for p in candidates:
+            if p.exists():
+                return str(p.resolve())
+    else:
+        return str(os.path.join(os.path.dirname(mp), model_name))
+
     # Fallback (will raise later if missing)
     return "mc_cnn_fast.xml"
 
@@ -269,6 +271,7 @@ def run_mc_cnn_fast(
     framework: str = "pytorch",
     variant: str = "baseline",
     provider: Optional[str] = "cpu_base",
+    model_name: Optional[str] = None
 ) -> np.ndarray:
     """
     Compute the cost volume for a pair of images with MC-CNN fast (CPU-only).
@@ -316,8 +319,8 @@ def run_mc_cnn_fast(
     elif framework == "onnx":
         if ort is None:
             raise ImportError("onnxruntime is not installed but framework='onnx' was selected.")
-
-        model_path = _resolve_onnx_path(model_path)
+        
+        model_path = _resolve_onnx_path(model_path, model_name)
 
         nt = _num_threads()
         so = ort.SessionOptions()
@@ -355,8 +358,8 @@ def run_mc_cnn_fast(
         if ov is None:
             raise ImportError("openvino is not installed but framework='openvino' was selected.")
         # Prefer IR (.xml) if present; fallback to ONNX
-        xml_path = _resolve_openvino_path(model_path)
-        onnx_path = _resolve_onnx_path(model_path)
+        xml_path = _resolve_openvino_path(model_path, model_name)
+        onnx_path = _resolve_onnx_path(model_path, model_name)
         model_path = xml_path if Path(xml_path).exists() else onnx_path
 
         nt = _num_threads()
