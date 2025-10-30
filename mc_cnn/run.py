@@ -432,6 +432,10 @@ def run_mc_cnn_fast(
         cv = computes_cost_volume_mc_cnn_fast_cpp(left_features, right_features, disp_min, disp_max)
     elif variant == "cpp2":
         cv = computes_cost_volume_mc_cnn_fast_cpp2(left_features, right_features, disp_min, disp_max)
+    elif variant == "cpp_notorch":
+        cv = computes_cost_volume_mc_cnn_fast_cpp_notorch(left_features, right_features, disp_min, disp_max)
+    elif variant == "cpp2_notorch":
+        cv = computes_cost_volume_mc_cnn_fast_cpp2_notorch(left_features, right_features, disp_min, disp_max)
     else:
         cv = computes_cost_volume_mc_cnn_fast(left_features, right_features, disp_min, disp_max)
     time_loop = time.perf_counter() - start_loop
@@ -573,6 +577,8 @@ def computes_cost_volume_mc_cnn_fast_opt2(
 from .cv_opt2_single_loader import computes_cost_volume_mc_cnn_fast_opt2_single_cpp
 from .cv_opt2_pixelmajor_loader import computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp
 
+
+
 @torch.no_grad()
 def computes_cost_volume_mc_cnn_fast_cpp(left_features, right_features, disp_min, disp_max):
     out = computes_cost_volume_mc_cnn_fast_opt2_single_cpp(left_features, right_features, disp_min, disp_max)  # (D,H,W)
@@ -582,3 +588,66 @@ def computes_cost_volume_mc_cnn_fast_cpp(left_features, right_features, disp_min
 def computes_cost_volume_mc_cnn_fast_cpp2(left_features, right_features, disp_min, disp_max):
     out = computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp(left_features, right_features, disp_min, disp_max)  # (H,W,D)
     return out.numpy()
+
+from .cv_opt2_single_loader_notorch import computes_cost_volume_mc_cnn_fast_opt2_single_cpp as computes_cost_volume_mc_cnn_fast_opt2_single_cpp_notorch
+from .cv_opt2_pixelmajor_loader_notorch import computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp as computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch
+
+def computes_cost_volume_mc_cnn_fast_cpp_notorch(left_features, right_features, disp_min, disp_max):
+    """
+    Calls native single kernel (returns D,H,W) and transposes to (H,W,D).
+    Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W).
+    """
+    import numpy as np
+
+    # Convert inputs to NumPy (C,H,W), float32
+    if isinstance(left_features, torch.Tensor):
+        lf = left_features.detach().cpu().numpy()
+    else:
+        lf = np.asarray(left_features, dtype=np.float32)
+
+    if isinstance(right_features, torch.Tensor):
+        rf = right_features.detach().cpu().numpy()
+    else:
+        rf = np.asarray(right_features, dtype=np.float32)
+
+    if lf.ndim != 3 or rf.ndim != 3:
+        raise ValueError("left/right features must be 3D (C,H,W)")
+    if lf.shape != rf.shape:
+        raise ValueError("left/right feature shapes must match")
+    if not lf.flags.c_contiguous:
+        lf = np.ascontiguousarray(lf)
+    if not rf.flags.c_contiguous:
+        rf = np.ascontiguousarray(rf)
+
+    out_dhw = computes_cost_volume_mc_cnn_fast_opt2_single_cpp_notorch(lf, rf, disp_min, disp_max)  # (D,H,W) NumPy
+    return np.transpose(out_dhw, (1, 2, 0))  # (H,W,D)
+
+
+def computes_cost_volume_mc_cnn_fast_cpp2_notorch(left_features, right_features, disp_min, disp_max):
+    """
+    Calls native pixel-major kernel (returns H,W,D) and returns as-is.
+    Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W).
+    """
+    import numpy as np
+
+    if isinstance(left_features, torch.Tensor):
+        lf = left_features.detach().cpu().numpy()
+    else:
+        lf = np.asarray(left_features, dtype=np.float32)
+
+    if isinstance(right_features, torch.Tensor):
+        rf = right_features.detach().cpu().numpy()
+    else:
+        rf = np.asarray(right_features, dtype=np.float32)
+
+    if lf.ndim != 3 or rf.ndim != 3:
+        raise ValueError("left/right features must be 3D (C,H,W)")
+    if lf.shape != rf.shape:
+        raise ValueError("left/right feature shapes must match")
+    if not lf.flags.c_contiguous:
+        lf = np.ascontiguousarray(lf)
+    if not rf.flags.c_contiguous:
+        rf = np.ascontiguousarray(rf)
+
+    out_hwd = computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch(lf, rf, disp_min, disp_max)  # (H,W,D) NumPy
+    return out_hwd
