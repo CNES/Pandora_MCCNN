@@ -595,9 +595,11 @@ from .cv_opt2_pixelmajor_loader_notorch import computes_cost_volume_mc_cnn_fast_
 def computes_cost_volume_mc_cnn_fast_cpp_notorch(left_features, right_features, disp_min, disp_max):
     """
     Calls native single kernel (returns D,H,W) and transposes to (H,W,D).
-    Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W).
+    Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W),
+    then performs CHW -> HWC in Python and calls the native HWC kernel.
     """
     import numpy as np
+    import torch
 
     # Convert inputs to NumPy (C,H,W), float32
     if isinstance(left_features, torch.Tensor):
@@ -610,6 +612,7 @@ def computes_cost_volume_mc_cnn_fast_cpp_notorch(left_features, right_features, 
     else:
         rf = np.asarray(right_features, dtype=np.float32)
 
+    # Validate CHW
     if lf.ndim != 3 or rf.ndim != 3:
         raise ValueError("left/right features must be 3D (C,H,W)")
     if lf.shape != rf.shape:
@@ -619,17 +622,27 @@ def computes_cost_volume_mc_cnn_fast_cpp_notorch(left_features, right_features, 
     if not rf.flags.c_contiguous:
         rf = np.ascontiguousarray(rf)
 
-    out_dhw = computes_cost_volume_mc_cnn_fast_opt2_single_cpp_notorch(lf, rf, disp_min, disp_max)  # (D,H,W) NumPy
+    # CHW -> HWC (fast NumPy path) with C-order copy
+    lf_hwc = np.transpose(lf, (1, 2, 0)).copy(order="C")
+    rf_hwc = np.transpose(rf, (1, 2, 0)).copy(order="C")
+
+    # Native notorch kernel (expects HWC, returns DHW)
+    out_dhw = computes_cost_volume_mc_cnn_fast_opt2_single_cpp_notorch(
+        lf_hwc, rf_hwc, disp_min, disp_max
+    )
     return np.transpose(out_dhw, (1, 2, 0))  # (H,W,D)
 
 
 def computes_cost_volume_mc_cnn_fast_cpp2_notorch(left_features, right_features, disp_min, disp_max):
     """
     Calls native pixel-major kernel (returns H,W,D) and returns as-is.
-    Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W).
+    Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W),
+    then performs CHW -> HWC in Python and calls the native HWC kernel.
     """
     import numpy as np
+    import torch
 
+    # Convert inputs to NumPy (C,H,W), float32
     if isinstance(left_features, torch.Tensor):
         lf = left_features.detach().cpu().numpy()
     else:
@@ -640,6 +653,7 @@ def computes_cost_volume_mc_cnn_fast_cpp2_notorch(left_features, right_features,
     else:
         rf = np.asarray(right_features, dtype=np.float32)
 
+    # Validate CHW
     if lf.ndim != 3 or rf.ndim != 3:
         raise ValueError("left/right features must be 3D (C,H,W)")
     if lf.shape != rf.shape:
@@ -649,5 +663,12 @@ def computes_cost_volume_mc_cnn_fast_cpp2_notorch(left_features, right_features,
     if not rf.flags.c_contiguous:
         rf = np.ascontiguousarray(rf)
 
-    out_hwd = computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch(lf, rf, disp_min, disp_max)  # (H,W,D) NumPy
+    # CHW -> HWC (fast NumPy path) with C-order copy for downstream speed
+    lf_hwc = np.transpose(lf, (1, 2, 0)).copy(order="C")
+    rf_hwc = np.transpose(rf, (1, 2, 0)).copy(order="C")
+
+    # Native notorch kernel (expects HWC, returns HWD)
+    out_hwd = computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch(
+        lf_hwc, rf_hwc, disp_min, disp_max
+    )
     return out_hwd
