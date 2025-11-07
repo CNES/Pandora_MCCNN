@@ -336,9 +336,10 @@ def run_mc_cnn_fast(
             providers="CPUExecutionProvider"
             provider_options={}
         elif provider == "openvino":
-            # so.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
-            providers="OpenVINOExecutionProvider"
-            provider_options={"device_type": "CPU", "precision": "FP32"}
+            providers = "OpenVINOExecutionProvider"
+            provider_options = {
+                "num_of_threads": str(nt),
+            }
         else:
             warnings.warn(f"Provider {provider} is not implemented cpu_base selected then.")
             providers="CPUExecutionProvider"
