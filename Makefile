@@ -73,8 +73,8 @@ install: venv  ## install environment for development target (depends venv)
 ## Test section
 
 .PHONY: test
-test: install ## run tests and coverage quickly with the default Python
-	@${VENV}/bin/pytest -o log_cli=true --cov-config=.coveragerc --cov --cov-report=xml --junitxml=pytest-report.xml
+test: install reports_dir ## run tests and coverage quickly with the default Python
+	@${VENV}/bin/pytest -o log_cli=true --cov-config=.coveragerc --cov --cov-report=xml:reports/py-coverage.cobertura.xml --cov-report term --junitxml=pytest-report.xml
 
 .PHONY: test-all
 test-all: install ## run tests on every Python version with tox
@@ -90,6 +90,10 @@ coverage: install ## check code coverage quickly with the default Python
 ## Code quality, linting section
 
 ### Format with isort and black
+
+.PHONY: reports_dir
+reports_dir:
+	mkdir -p reports
 
 .PHONY: format
 format: install format/black  ## run black and isort formatting (depends install)
@@ -177,6 +181,7 @@ clean-test: ## remove test and coverage artifacts
 	@rm -fr .pytest_cache
 	@rm -f pytest-report.xml
 	@find . -type f -name "debug.log" -exec rm -fr {} +
+	@rm -rf reports
 
 .PHONY: clean-lint
 clean-lint: ## remove linting artifacts
