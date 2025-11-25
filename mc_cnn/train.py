@@ -134,8 +134,8 @@ def train_mc_cnn_fast(cfg, output_dir, params):
             left, pos, neg = net(batch.to(device=device, dtype=torch.float), training=True)
 
             # Cosine  similarity
-            output_positive = cos(left, pos)
-            output_negative = cos(left, neg)
+            output_positive = cos(left, pos).squeeze()
+            output_negative = cos(left, neg).squeeze()
 
             target = torch.ones(batch.size(0))
             loss = criterion.forward(output_positive, output_negative, target.to(device=device, dtype=torch.float))
