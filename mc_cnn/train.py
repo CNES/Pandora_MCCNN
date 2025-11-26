@@ -32,6 +32,7 @@ import copy
 import torch
 from torch import nn, optim
 from torch.utils import data
+from tqdm import tqdm
 
 
 from mc_cnn.model.mc_cnn_accurate import AccMcCnn
@@ -127,15 +128,15 @@ def train_mc_cnn_fast(cfg, output_dir, params):
         test_epoch_loss = 0.0
         net.train()
 
-        for _, batch in enumerate(training_generator, 0):
+        for _, batch in enumerate(tqdm(training_generator, desc="Training"), 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
             left, pos, neg = net(batch.to(device=device, dtype=torch.float), training=True)
 
             # Cosine  similarity
-            output_positive = cos(left, pos)
-            output_negative = cos(left, neg)
+            output_positive = cos(left, pos).squeeze()
+            output_negative = cos(left, neg).squeeze()
 
             target = torch.ones(batch.size(0))
             loss = criterion.forward(output_positive, output_negative, target.to(device=device, dtype=torch.float))
@@ -148,15 +149,15 @@ def train_mc_cnn_fast(cfg, output_dir, params):
         scheduler.step(epoch)
 
         net.eval()
-        for _, batch in enumerate(testing_generator, 0):
+        for _, batch in enumerate(tqdm(testing_generator, desc="Evaluation"), 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
             left, pos, neg = net(batch.to(device=device, dtype=torch.float), training=True)
 
             # Cosine  similarity
-            output_positive = cos(left, pos)
-            output_negative = cos(left, neg)
+            output_positive = cos(left, pos).squeeze()
+            output_negative = cos(left, neg).squeeze()
 
             target = torch.ones(batch.size(0))
             loss = criterion.forward(output_positive, output_negative, target.to(device=device, dtype=torch.float))
@@ -222,7 +223,7 @@ def train_mc_cnn_acc(cfg, output_dir, params):
         test_epoch_loss = 0.0
         net.train()
 
-        for _, batch in enumerate(training_generator, 0):
+        for _, batch in enumerate(tqdm(training_generator, desc="Training"), 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -243,7 +244,7 @@ def train_mc_cnn_acc(cfg, output_dir, params):
         scheduler.step(epoch)
 
         net.eval()
-        for _, batch in enumerate(testing_generator, 0):
+        for _, batch in enumerate(tqdm(testing_generator, desc="Evaluation"), 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
