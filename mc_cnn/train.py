@@ -37,6 +37,7 @@ from tqdm import tqdm
 
 from mc_cnn.model.mc_cnn_accurate import AccMcCnn
 from mc_cnn.model.mc_cnn_fast import FastMcCnn
+from mc_cnn.model.mc_cnn_fast_dw import FastMcCnnDw
 from mc_cnn.dataset_generator.middlebury_generator import MiddleburyGenerator
 from mc_cnn.dataset_generator.datas_fusion_contest_generator import DataFusionContestGenerator
 
@@ -99,12 +100,15 @@ def train_mc_cnn_fast(cfg, output_dir, params):
     save_cfg(output_dir, cfg)
 
     # Create the network
-    net = FastMcCnn()
+    if cfg["conv"] == "depthwise":
+        net = FastMcCnnDw()
+        optimizer = optim.Adam(net.parameters(), lr=0.002)
+    else:
+        net = FastMcCnn()
+        optimizer = optim.SGD(net.parameters(), lr=0.002, momentum=0.9)
     net.to(device)
 
     criterion = nn.MarginRankingLoss(margin=0.2, reduction="mean")
-
-    optimizer = optim.SGD(net.parameters(), lr=0.002, momentum=0.9)
 
     # lr = 0.002 if epoch < 9
     # lr = 0.0002 if 9 <= epoch < 18 ...
@@ -126,14 +130,15 @@ def train_mc_cnn_fast(cfg, output_dir, params):
 
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
+        train_cur_size = 0
+        test_cur_size = 0
         net.train()
-
-        for _, batch in enumerate(tqdm(training_generator, desc="Training"), 0):
+        train_progress_bar = tqdm(training_generator, desc="Training")
+        for _, batch in enumerate(train_progress_bar, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
             left, pos, neg = net(batch.to(device=device, dtype=torch.float), training=True)
-
             # Cosine  similarity
             output_positive = cos(left, pos).squeeze()
             output_negative = cos(left, neg).squeeze()
@@ -144,12 +149,15 @@ def train_mc_cnn_fast(cfg, output_dir, params):
             optimizer.step()
 
             train_epoch_loss += loss.item() * batch.size(0)
+            train_cur_size += batch.size(0)
+            train_progress_bar.set_postfix({"train_loss": f"{train_epoch_loss / train_cur_size :.4f}"})
 
         training_loss.append(train_epoch_loss / len(training_loader))
         scheduler.step(epoch)
 
         net.eval()
-        for _, batch in enumerate(tqdm(testing_generator, desc="Evaluation"), 0):
+        test_progress_bar = tqdm(testing_generator, desc="Evaluation")
+        for _, batch in enumerate(test_progress_bar, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -163,6 +171,8 @@ def train_mc_cnn_fast(cfg, output_dir, params):
             loss = criterion.forward(output_positive, output_negative, target.to(device=device, dtype=torch.float))
 
             test_epoch_loss += loss.item() * batch.size(0)
+            test_cur_size += batch.size(0)
+            test_progress_bar.set_postfix({"eval_loss": f"{test_epoch_loss / test_cur_size :.4f}"})
 
         testing_loss.append(test_epoch_loss / len(testing_loader))
 
@@ -221,9 +231,12 @@ def train_mc_cnn_acc(cfg, output_dir, params):
 
         train_epoch_loss = 0.0
         test_epoch_loss = 0.0
+        train_cur_size = 0
+        test_cur_size = 0
         net.train()
 
-        for _, batch in enumerate(tqdm(training_generator, desc="Training"), 0):
+        train_progress_bar = tqdm(training_generator, desc="Training")
+        for _, batch in enumerate(train_progress_bar, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -239,12 +252,15 @@ def train_mc_cnn_acc(cfg, output_dir, params):
             optimizer.step()
 
             train_epoch_loss += loss.item() * batch.size(0)
+            train_cur_size += batch.size(0)
+            train_progress_bar.set_postfix({"train_loss": f"{train_epoch_loss / train_cur_size :.4f}"})
 
         training_loss.append(train_epoch_loss / len(training_loader))
         scheduler.step(epoch)
 
         net.eval()
-        for _, batch in enumerate(tqdm(testing_generator, desc="Evaluation"), 0):
+        test_progress_bar = tqdm(testing_generator, desc="Evaluation")
+        for _, batch in enumerate(test_progress_bar, 0):
             # zero the parameter gradients
             optimizer.zero_grad()
 
@@ -258,6 +274,8 @@ def train_mc_cnn_acc(cfg, output_dir, params):
             loss = criterion.forward(sample, target.to(device=device, dtype=torch.float))
 
             test_epoch_loss += loss.item() * batch.size(0)
+            test_cur_size += batch.size(0)
+            test_progress_bar.set_postfix({"test_loss": f"{test_epoch_loss / test_cur_size :.4f}"})
 
         testing_loss.append(test_epoch_loss / len(testing_loader))
 
