@@ -478,7 +478,7 @@ if __name__ == "__main__":
     mlflow.set_experiment("rt_mccnn")
 
     # params for DataLoader
-    batch_size = 128  # pylint: disable=C0103
+    batch_size = user_cfg["batch_size"]
     data_loader_params = {"batch_size": batch_size, "shuffle": True}
 
     if user_cfg["network"] == "fast":
