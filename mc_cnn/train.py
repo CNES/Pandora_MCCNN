@@ -163,7 +163,7 @@ def mcc_fast_training_epoch(net, training_generator, optimizer, criterion):
                 {"train_loss": f"{train_loss:.4f}", "train_acc": f"{train_acc:.4f}"}, refresh=False
             )
             train_progress_bar.update(1000)
-            mlflow.log_metrics({"train_loss": train_loss, "train_acc": train_acc})
+            mlflow.log_metrics({"batch_train_loss": train_loss, "batch_train_acc": train_acc})
 
     return train_epoch_loss, train_num_correct
 
@@ -214,7 +214,7 @@ def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
                 {"test_loss": f"{test_loss:.4f}", "test_accuracy": f"{test_accuracy:.4f}"}, refresh=False
             )
             test_progress_bar.update(1000)
-            mlflow.log_metrics({"test_loss": test_loss, "test_accuracy": test_accuracy})
+            mlflow.log_metrics({"batch_test_loss": test_loss, "batch_test_accuracy": test_accuracy})
 
     return test_epoch_loss, test_num_correct
 
@@ -356,7 +356,7 @@ def mcc_acc_training_epoch(net, training_generator, optimizer, criterion):
                 {"train_loss": f"{train_loss:.4f}", "train_acc": f"{train_acc:.4f}"}, refresh=False
             )
             train_progress_bar.update(1000)
-            mlflow.log_metrics({"train_loss": train_loss, "train_acc": train_acc})
+            mlflow.log_metrics({"batch_train_loss": train_loss, "batch_train_acc": train_acc})
 
     return train_epoch_loss, train_num_correct
 
@@ -404,7 +404,7 @@ def mcc_acc_testing_epoch(net, testing_generator, optimizer, criterion):
                 {"test_loss": f"{test_loss:.4f}", "test_accuracy": f"{test_accuracy:.4f}"}, refresh=False
             )
             test_progress_bar.update(1000)
-            mlflow.log_metrics({"test_loss": test_loss, "test_accuracy": test_accuracy})
+            mlflow.log_metrics({"batch_test_loss": test_loss, "batch_test_accuracy": test_accuracy})
 
     return test_epoch_loss, test_num_correct
 
