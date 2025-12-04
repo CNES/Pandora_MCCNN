@@ -215,7 +215,6 @@ def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
             )
             test_progress_bar.update(1000)
             mlflow.log_metrics({"test_loss": test_loss, "test_accuracy": test_accuracy})
-            test_progress_bar.update(1000)
 
     return test_epoch_loss, test_num_correct
 
