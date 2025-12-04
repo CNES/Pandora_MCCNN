@@ -158,12 +158,12 @@ def mcc_fast_training_epoch(net, training_generator, optimizer, criterion):
 
         if batch_idx % 1000 == 0:
             train_loss = train_epoch_loss / train_cur_size
-            train_accuracy = train_num_correct / train_cur_size
+            train_acc = train_num_correct / train_cur_size
             train_progress_bar.set_postfix(
-                {"train_loss": f"{train_loss:.4f}", "train_accuracy": f"{train_accuracy:.4f}"}, refresh=False
+                {"train_loss": f"{train_loss:.4f}", "train_acc": f"{train_acc:.4f}"}, refresh=False
             )
             train_progress_bar.update(1000)
-            mlflow.log_metrics({"train_loss": train_loss, "train_accuracy": train_accuracy})
+            mlflow.log_metrics({"train_loss": train_loss, "train_acc": train_acc})
 
     return train_epoch_loss, train_num_correct
 
@@ -351,12 +351,12 @@ def mcc_acc_training_epoch(net, training_generator, optimizer, criterion):
 
         if batch_idx % 1000 == 0:
             train_loss = train_epoch_loss / train_cur_size
-            train_accuracy = train_num_correct / train_cur_size
+            train_acc = train_num_correct / train_cur_size
             train_progress_bar.set_postfix(
-                {"train_loss": f"{train_loss:.4f}", "train_accuracy": f"{train_accuracy:.4f}"}, refresh=False
+                {"train_loss": f"{train_loss:.4f}", "train_acc": f"{train_acc:.4f}"}, refresh=False
             )
             train_progress_bar.update(1000)
-            mlflow.log_metrics({"train_loss": train_loss, "train_accuracy": train_accuracy})
+            mlflow.log_metrics({"train_loss": train_loss, "train_acc": train_acc})
 
     return train_epoch_loss, train_num_correct
 
