@@ -131,6 +131,7 @@ def mcc_fast_training_epoch(net, training_generator, optimizer, criterion):
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
     train_epoch_loss = 0.0
+    train_num_correct = 0
     train_cur_size = 0
 
     net.train()
@@ -146,19 +147,25 @@ def mcc_fast_training_epoch(net, training_generator, optimizer, criterion):
         output_negative = cos(left, neg).squeeze()
 
         target = torch.ones(batch.size(0))
+
         loss = criterion.forward(output_positive, output_negative, target.to(device=device, dtype=torch.float))
         loss.backward()
         optimizer.step()
 
         train_epoch_loss += loss.item() * batch.size(0)
+        train_num_correct += (output_positive > output_negative).sum()
         train_cur_size += batch.size(0)
 
         if batch_idx % 1000 == 0:
-            train_progress_bar.set_postfix({"train_loss": f"{train_epoch_loss / train_cur_size :.4f}"}, refresh=False)
+            train_loss = train_epoch_loss / train_cur_size
+            train_accuracy = train_num_correct / train_cur_size
+            train_progress_bar.set_postfix(
+                {"train_loss": f"{train_loss:.4f}", "train_accuracy": f"{train_accuracy:.4f}"}, refresh=False
+            )
             train_progress_bar.update(1000)
-            mlflow.log_metrics({"train_loss": train_epoch_loss / train_cur_size})
+            mlflow.log_metrics({"train_loss": train_loss, "train_accuracy": train_accuracy})
 
-    return train_epoch_loss
+    return train_epoch_loss, train_num_correct
 
 
 def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
@@ -177,6 +184,7 @@ def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
     test_epoch_loss = 0.0
+    test_num_correct = 0
     test_cur_size = 0
 
     net.eval()
@@ -196,13 +204,20 @@ def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
         loss = criterion.forward(output_positive, output_negative, target.to(device=device, dtype=torch.float))
 
         test_epoch_loss += loss.item() * batch.size(0)
+        test_num_correct += (output_positive > output_negative).sum()
         test_cur_size += batch.size(0)
 
-        if batch_idx % 100 == 0:
-            test_progress_bar.set_postfix({"eval_loss": f"{test_epoch_loss / test_cur_size :.4f}"}, refresh=False)
+        if batch_idx % 1000 == 0:
+            test_loss = test_epoch_loss / test_cur_size
+            test_accuracy = test_num_correct / test_cur_size
+            test_progress_bar.set_postfix(
+                {"test_loss": f"{test_loss:.4f}", "test_accuracy": f"{test_accuracy:.4f}"}, refresh=False
+            )
+            test_progress_bar.update(1000)
+            mlflow.log_metrics({"test_loss": test_loss, "test_accuracy": test_accuracy})
             test_progress_bar.update(1000)
 
-    return test_epoch_loss
+    return test_epoch_loss, test_num_correct
 
 
 def train_mc_cnn_fast(cfg, output_dir, dataloader_params):
@@ -258,23 +273,23 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params):
     testing_generator = data.DataLoader(testing_loader, **dataloader_params)
 
     nb_epoch = 14
-    training_loss = []
-    testing_loss = []
     for epoch in range(nb_epoch):
         print("-------- Fast epoch" + str(epoch) + " ------------")
 
         # Training
-        train_epoch_loss = mcc_fast_training_epoch(net, training_generator, optimizer, criterion)
-        training_loss.append(train_epoch_loss / len(training_loader))
+        train_epoch_loss, train_num_correct = mcc_fast_training_epoch(net, training_generator, optimizer, criterion)
         scheduler.step(epoch)
 
         # Evaluation
-        test_epoch_loss = mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion)
-        testing_loss.append(test_epoch_loss / len(testing_loader))
+        test_epoch_loss, test_num_correct = mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion)
 
+        train_loss = train_epoch_loss / len(training_loader)
+        test_loss = test_epoch_loss / len(testing_loader)
+        train_acc = train_num_correct / len(training_loader)
+        test_acc = test_num_correct / len(testing_loader)
         # Log metrics
         mlflow.log_metrics(
-            {"train_loss": train_epoch_loss / len(training_loader), "eval_loss": test_epoch_loss / len(testing_loader)}
+            {"train_loss": train_loss, "test_loss": test_loss, "train_acc": train_acc, "test_acc": test_acc}
         )
 
         # Save the network, optimizer, scheduler at each epoch
@@ -284,8 +299,10 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params):
                 "optimizer": optimizer.state_dict(),
                 "scheduler": scheduler.state_dict(),
                 "epoch": epoch,
-                "train_epoch_loss": train_epoch_loss / len(training_loader),
-                "test_epoch_loss": test_epoch_loss / len(testing_loader),
+                "train_epoch_loss": train_loss,
+                "test_epoch_loss": test_loss,
+                "train_epoch_acc": train_acc,
+                "test_epoch_acc": test_acc,
             },
             os.path.join(output_dir, "mc_cnn_fast_epoch" + str(epoch) + ".pt"),
         )
@@ -373,8 +390,8 @@ def mcc_acc_testing_epoch(net, testing_generator, optimizer, criterion):
         test_epoch_loss += loss.item() * batch.size(0)
         test_cur_size += batch.size(0)
 
-        if batch_idx % 100 == 0:
-            test_progress_bar.set_postfix({"eval_loss": f"{test_epoch_loss / test_cur_size :.4f}"}, refresh=False)
+        if batch_idx % 1000 == 0:
+            test_progress_bar.set_postfix({"test_loss": f"{test_epoch_loss / test_cur_size :.4f}"}, refresh=False)
             test_progress_bar.update(1000)
 
     return test_epoch_loss
@@ -414,19 +431,15 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params):
     testing_generator = data.DataLoader(testing_loader, **dataloader_params)
 
     nb_epoch = 14
-    training_loss = []
-    testing_loss = []
     for epoch in range(nb_epoch):
         print("-------- Accurate epoch" + str(epoch) + " ------------")
 
         # Training
         train_epoch_loss = mcc_acc_training_epoch(net, training_generator, optimizer, criterion)
-        training_loss.append(train_epoch_loss / len(training_loader))
         scheduler.step(epoch)
 
         # Evaluation
         test_epoch_loss = mcc_acc_testing_epoch(net, testing_generator, optimizer, criterion)
-        testing_loss.append(test_epoch_loss / len(testing_loader))
 
         # Save the network, optimizer, scheduler at each epoch
         torch.save(
