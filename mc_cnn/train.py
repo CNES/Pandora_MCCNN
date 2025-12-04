@@ -271,8 +271,7 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params):
     training_generator = data.DataLoader(training_loader, **dataloader_params)
     testing_generator = data.DataLoader(testing_loader, **dataloader_params)
 
-    nb_epoch = 14
-    for epoch in range(nb_epoch):
+    for epoch in range(cfg["epochs"]):
         print("-------- Fast epoch" + str(epoch) + " ------------")
 
         # Training
@@ -429,8 +428,7 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params):
     training_generator = data.DataLoader(training_loader, **dataloader_params)
     testing_generator = data.DataLoader(testing_loader, **dataloader_params)
 
-    nb_epoch = 14
-    for epoch in range(nb_epoch):
+    for epoch in range(cfg["epochs"]):
         print("-------- Accurate epoch" + str(epoch) + " ------------")
 
         # Training
