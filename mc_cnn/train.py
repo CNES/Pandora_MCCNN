@@ -116,7 +116,7 @@ def get_parameters_for_logs(cfg):
     return params
 
 
-def mcc_fast_training_epoch(net, training_generator, optimizer, criterion):
+def mcc_fast_training_epoch(epoch, net, training_generator, optimizer, criterion):
     """
     Run a mccnn fast training epoch.
     :param net: network
@@ -163,7 +163,10 @@ def mcc_fast_training_epoch(net, training_generator, optimizer, criterion):
                 {"train_loss": f"{train_loss:.4f}", "train_acc": f"{train_acc:.4f}"}, refresh=False
             )
             train_progress_bar.update(1000)
-            mlflow.log_metrics({"batch_train_loss": train_loss, "batch_train_acc": train_acc})
+            mlflow.log_metrics(
+                {"batch_train_loss": train_loss, "batch_train_acc": train_acc},
+                step=epoch * len(training_generator) + batch_idx,
+            )
 
     return train_epoch_loss, train_num_correct
 
@@ -211,10 +214,9 @@ def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
             test_loss = test_epoch_loss / test_cur_size
             test_accuracy = test_num_correct / test_cur_size
             test_progress_bar.set_postfix(
-                {"test_loss": f"{test_loss:.4f}", "test_accuracy": f"{test_accuracy:.4f}"}, refresh=False
+                {"test_loss": f"{test_loss:.4f}", "test_acc": f"{test_accuracy:.4f}"}, refresh=False
             )
             test_progress_bar.update(1000)
-            mlflow.log_metrics({"batch_test_loss": test_loss, "batch_test_accuracy": test_accuracy})
 
     return test_epoch_loss, test_num_correct
 
@@ -276,7 +278,9 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params):
         print("-------- Fast epoch" + str(epoch) + " ------------")
 
         # Training
-        train_epoch_loss, train_num_correct = mcc_fast_training_epoch(net, training_generator, optimizer, criterion)
+        train_epoch_loss, train_num_correct = mcc_fast_training_epoch(
+            epoch, net, training_generator, optimizer, criterion
+        )
         scheduler.step(epoch)
 
         # Evaluation
@@ -288,7 +292,7 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params):
         test_acc = test_num_correct / len(testing_loader)
         # Log metrics
         mlflow.log_metrics(
-            {"train_loss": train_loss, "test_loss": test_loss, "train_acc": train_acc, "test_acc": test_acc}
+            {"train_loss": train_loss, "test_loss": test_loss, "train_acc": train_acc, "test_acc": test_acc}, step=epoch
         )
 
         # Save the network, optimizer, scheduler at each epoch
@@ -311,7 +315,7 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params):
     mlflow.end_run()
 
 
-def mcc_acc_training_epoch(net, training_generator, optimizer, criterion):
+def mcc_acc_training_epoch(epoch, net, training_generator, optimizer, criterion):
     """
     Run a mccnn acc training epoch.
     :param net: network
@@ -356,7 +360,10 @@ def mcc_acc_training_epoch(net, training_generator, optimizer, criterion):
                 {"train_loss": f"{train_loss:.4f}", "train_acc": f"{train_acc:.4f}"}, refresh=False
             )
             train_progress_bar.update(1000)
-            mlflow.log_metrics({"batch_train_loss": train_loss, "batch_train_acc": train_acc})
+            mlflow.log_metrics(
+                {"batch_train_loss": train_loss, "batch_train_acc": train_acc},
+                step=epoch * len(training_generator) + batch_idx,
+            )
 
     return train_epoch_loss, train_num_correct
 
@@ -404,7 +411,6 @@ def mcc_acc_testing_epoch(net, testing_generator, optimizer, criterion):
                 {"test_loss": f"{test_loss:.4f}", "test_accuracy": f"{test_accuracy:.4f}"}, refresh=False
             )
             test_progress_bar.update(1000)
-            mlflow.log_metrics({"batch_test_loss": test_loss, "batch_test_accuracy": test_accuracy})
 
     return test_epoch_loss, test_num_correct
 
@@ -451,7 +457,9 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params):
         print("-------- Accurate epoch" + str(epoch) + " ------------")
 
         # Training
-        train_epoch_loss, train_num_correct = mcc_acc_training_epoch(net, training_generator, optimizer, criterion)
+        train_epoch_loss, train_num_correct = mcc_acc_training_epoch(
+            epoch, net, training_generator, optimizer, criterion
+        )
         scheduler.step(epoch)
 
         # Evaluation
@@ -463,7 +471,7 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params):
         test_acc = test_num_correct / len(testing_loader)
         # Log metrics
         mlflow.log_metrics(
-            {"train_loss": train_loss, "test_loss": test_loss, "train_acc": train_acc, "test_acc": test_acc}
+            {"train_loss": train_loss, "test_loss": test_loss, "train_acc": train_acc, "test_acc": test_acc}, step=epoch
         )
 
         # Save the network, optimizer, scheduler at each epoch
