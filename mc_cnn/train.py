@@ -221,7 +221,7 @@ def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
     return test_epoch_loss, test_num_correct
 
 
-def train_mc_cnn_fast(cfg, output_dir, dataloader_params):
+def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
     """
     Train the fast mc_cnn network
 
@@ -233,7 +233,7 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params):
     :type dataloader_params: dict
     """
     # Start mlflow run
-    mlflow.start_run()
+    mlflow.start_run(experiment_id=experiment_id)
 
     mlflow.log_params(get_parameters_for_logs(cfg))
 
@@ -415,7 +415,7 @@ def mcc_acc_testing_epoch(net, testing_generator, optimizer, criterion):
     return test_epoch_loss, test_num_correct
 
 
-def train_mc_cnn_acc(cfg, output_dir, dataloader_params):
+def train_mc_cnn_acc(cfg, output_dir, dataloader_params, experiment_id):
     """
     Train the accurate mc_cnn network
 
@@ -427,7 +427,7 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params):
     :type dataloader_params: dict
     """
     # Start mlflow run
-    mlflow.start_run()
+    mlflow.start_run(experiment_id=experiment_id)
 
     mlflow.log_params(get_parameters_for_logs(cfg))
 
@@ -517,6 +517,31 @@ def save_cfg(output, configuration):
         json.dump(configuration, file, indent=2)
 
 
+def setup_mlflow(cfg_mlflow):
+    """
+    Setup MLFlow
+
+    :param cfg_mlflow: mlflow config
+    :type cfg_mlflow: dict
+    """
+    mlflow.set_tracking_uri(cfg_mlflow["tracking_uri"])
+    try:
+        print("Create new experiment ...")
+        mlflow.create_experiment(
+            cfg_mlflow["experiment"], artifact_location=cfg_mlflow.get(["artifact_location"], None)
+        )
+    except mlflow.exceptions.MlflowException:
+        print("Experiment already exist ...")
+
+    experiment = mlflow.get_experiment_by_name(cfg_mlflow["experiment"])
+
+    print(f"TRACKING_URI: {mlflow.get_tracking_uri()}")
+    print(f"EXP: {experiment.name}")
+    print(f"ARTIFACT_LOCATION: {experiment.artifact_location}")
+
+    return experiment.experiment_id
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("injson", help="Input json file")
@@ -525,16 +550,15 @@ if __name__ == "__main__":
 
     user_cfg = read_config_file(args.injson)
 
-    mlflow.set_experiment("rt_mccnn")
+    exp_id = setup_mlflow(user_cfg["mlflow"])
 
     # params for DataLoader
-    batch_size = user_cfg["batch_size"]
-    data_loader_params = {"batch_size": batch_size, "shuffle": True}
+    data_loader_params = {"batch_size": user_cfg["batch_size"], "shuffle": True}
 
     if user_cfg["network"] == "fast":
-        train_mc_cnn_fast(user_cfg, args.outdir, data_loader_params)
+        train_mc_cnn_fast(user_cfg, args.outdir, data_loader_params, exp_id)
     elif user_cfg["network"] == "accurate":
-        train_mc_cnn_acc(user_cfg, args.outdir, data_loader_params)
+        train_mc_cnn_acc(user_cfg, args.outdir, data_loader_params, exp_id)
     else:
         raise ValueError(
             f"network {user_cfg['network']} does not correspond to one of the options in the list "
