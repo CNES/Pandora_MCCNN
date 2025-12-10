@@ -527,9 +527,7 @@ def setup_mlflow(cfg_mlflow):
     mlflow.set_tracking_uri(cfg_mlflow["tracking_uri"])
     try:
         print("Create new experiment ...")
-        mlflow.create_experiment(
-            cfg_mlflow["experiment"], artifact_location=cfg_mlflow.get(["artifact_location"], None)
-        )
+        mlflow.create_experiment(cfg_mlflow["experiment"], artifact_location=cfg_mlflow.get("artifact_location", None))
     except mlflow.exceptions.MlflowException:
         print("Experiment already exist ...")
 
