@@ -85,7 +85,7 @@ def load_dataset(cfg):
     return training_loader, testing_loader
 
 
-def get_parameters_for_logs(cfg):
+def get_parameters_for_mlflow_logs(cfg):
     """
     Get parameters for logs.
 
@@ -114,6 +114,54 @@ def get_parameters_for_logs(cfg):
             params[key] = value
 
     return params
+
+
+def load_checkpoint(cfg, net, optimizer, scheduler):
+    """
+    Run a mccnn fast testing epoch.
+
+    :param cfg: configuration
+    :type cfg: dict
+    :param net: network
+    :type net: torch.nn.Module
+    :param optimizer: optimizer
+    :type optimizer: torch.optim.Optimizer
+    :param scheduler: scheduler
+    :type scheduler: torch.optim.LRScheduler
+    """
+    # Get run and params
+    run = mlflow.active_run()
+    run_data = run.to_dictionary()
+    params = run_data["data"]["params"]
+
+    # Compute start epoch
+    start_epoch = int(params["epochs"])
+    i = 0
+    additional_epochs_key = f"additional_epochs{i}"
+    while additional_epochs_key in params:
+        start_epoch += int(params[additional_epochs_key])
+        i += 1
+        additional_epochs_key = f"additional_epochs{i}"
+
+    # Get checkpoint path
+    checkpoint_path = cfg["resume"].get("checkpoint", None)
+    run_id = cfg["resume"]["run_id"]
+    if not checkpoint_path:
+        training_state_uri = f"runs:/{run_id}/checkpoints/mc_cnn_fast_epoch{start_epoch-1}.pt"
+        checkpoint_path = mlflow.artifacts.download_artifacts(training_state_uri)
+
+    # Load checkpoint
+    print(f"Load checkpoint from {checkpoint_path} ...")
+    checkpoint = torch.load(checkpoint_path)
+    net.load_state_dict(checkpoint["model"])
+    optimizer.load_state_dict(checkpoint["optimizer"])
+    scheduler.load_state_dict(checkpoint["scheduler"])
+
+    mlflow.log_params({additional_epochs_key: cfg["epochs"]})
+
+    end_epoch = start_epoch + cfg["epochs"]
+
+    return start_epoch, end_epoch
 
 
 def mcc_fast_training_epoch(epoch, net, training_generator, optimizer, criterion):
@@ -232,11 +280,6 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
     :param dataloader_params: params for DataLoader
     :type dataloader_params: dict
     """
-    # Start mlflow run
-    mlflow.start_run(experiment_id=experiment_id)
-
-    mlflow.log_params(get_parameters_for_logs(cfg))
-
     # Create the output directory
     mkdir_p(output_dir)
     save_cfg(output_dir, cfg)
@@ -274,7 +317,21 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
     training_generator = data.DataLoader(training_loader, **dataloader_params)
     testing_generator = data.DataLoader(testing_loader, **dataloader_params)
 
-    for epoch in range(cfg["epochs"]):
+    # Start or resume mlflow run
+    resume = cfg.get("resume", None)
+    if resume:
+        run_id = resume["run_id"]
+        mlflow.start_run(experiment_id=experiment_id, run_id=run_id)
+        start_epoch, end_epoch = load_checkpoint(cfg, net, optimizer, scheduler)
+    else:
+        mlflow.start_run(experiment_id=experiment_id)
+
+        start_epoch = 0
+        end_epoch = cfg["epochs"]
+
+        mlflow.log_params(get_parameters_for_mlflow_logs(cfg))
+
+    for epoch in range(start_epoch, end_epoch):
         print("-------- Fast epoch" + str(epoch) + " ------------")
 
         # Training
@@ -286,14 +343,16 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
         # Evaluation
         test_epoch_loss, test_num_correct = mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion)
 
+        # Log metrics
         train_loss = train_epoch_loss / len(training_loader)
         test_loss = test_epoch_loss / len(testing_loader)
         train_acc = train_num_correct / len(training_loader)
         test_acc = test_num_correct / len(testing_loader)
-        # Log metrics
         mlflow.log_metrics(
             {"train_loss": train_loss, "test_loss": test_loss, "train_acc": train_acc, "test_acc": test_acc}, step=epoch
         )
+
+        checkpoint_filepath = os.path.join(output_dir, "mc_cnn_fast_epoch" + str(epoch) + ".pt")
 
         # Save the network, optimizer, scheduler at each epoch
         torch.save(
@@ -307,10 +366,12 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
                 "train_epoch_acc": train_acc,
                 "test_epoch_acc": test_acc,
             },
-            os.path.join(output_dir, "mc_cnn_fast_epoch" + str(epoch) + ".pt"),
+            checkpoint_filepath,
         )
 
-        mlflow.pytorch.log_model(net, name=f"checkpoint_{epoch}")
+        mlflow.log_artifact(checkpoint_filepath, artifact_path="checkpoints")
+
+    mlflow.pytorch.log_model(net, name=f"model_epoch{epoch}")
 
     mlflow.end_run()
 
@@ -426,11 +487,6 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params, experiment_id):
     :param dataloader_params: params for DataLoader
     :type dataloader_params: dict
     """
-    # Start mlflow run
-    mlflow.start_run(experiment_id=experiment_id)
-
-    mlflow.log_params(get_parameters_for_logs(cfg))
-
     # Create the output directory
     mkdir_p(output_dir)
     save_cfg(output_dir, cfg)
@@ -439,9 +495,9 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params, experiment_id):
     net = AccMcCnn()
     net.to(device)
 
-    criterion = nn.BCELoss(reduction="mean")
-
     optimizer = optim.SGD(net.parameters(), lr=0.003, momentum=0.9)
+
+    criterion = nn.BCELoss(reduction="mean")
 
     # lr = 0.003 if epoch < 10
     # lr = 0.0003 if 10 <= epoch < 18 ...
@@ -453,7 +509,21 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params, experiment_id):
     training_generator = data.DataLoader(training_loader, **dataloader_params)
     testing_generator = data.DataLoader(testing_loader, **dataloader_params)
 
-    for epoch in range(cfg["epochs"]):
+    # Start or resume mlflow run
+    resume = cfg.get("resume", None)
+    if resume:
+        run_id = resume["run_id"]
+        mlflow.start_run(experiment_id=experiment_id, run_id=run_id)
+        start_epoch, end_epoch = load_checkpoint(cfg, net, optimizer, scheduler)
+    else:
+        mlflow.start_run(experiment_id=experiment_id)
+
+        start_epoch = 0
+        end_epoch = cfg["epochs"]
+
+        mlflow.log_params(get_parameters_for_mlflow_logs(cfg))
+
+    for epoch in range(start_epoch, end_epoch):
         print("-------- Accurate epoch" + str(epoch) + " ------------")
 
         # Training
@@ -474,6 +544,8 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params, experiment_id):
             {"train_loss": train_loss, "test_loss": test_loss, "train_acc": train_acc, "test_acc": test_acc}, step=epoch
         )
 
+        checkpoint_filepath = os.path.join(output_dir, "mc_cnn_acc_epoch" + str(epoch) + ".pt")
+
         # Save the network, optimizer, scheduler at each epoch
         torch.save(
             {
@@ -486,10 +558,14 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params, experiment_id):
                 "train_epoch_acc": train_acc,
                 "test_epoch_acc": test_acc,
             },
-            os.path.join(output_dir, "mc_cnn_acc_epoch" + str(epoch) + ".pt"),
+            checkpoint_filepath,
         )
 
-        mlflow.pytorch.log_model(net, name=f"checkpoint_{epoch}")
+        mlflow.log_artifact(checkpoint_filepath, artifact_path="checkpoints")
+
+    mlflow.pytorch.log_model(net, name=f"model_epoch{epoch}")
+
+    mlflow.end_run()
 
 
 def read_config_file(config_file):
@@ -533,9 +609,9 @@ def setup_mlflow(cfg_mlflow):
 
     experiment = mlflow.get_experiment_by_name(cfg_mlflow["experiment"])
 
-    print(f"TRACKING_URI: {mlflow.get_tracking_uri()}")
-    print(f"EXP: {experiment.name}")
-    print(f"ARTIFACT_LOCATION: {experiment.artifact_location}")
+    print(f"MLFLOW_TRACKING_URI: {mlflow.get_tracking_uri()}")
+    print(f"MLFLOW_EXP: {experiment.name}")
+    print(f"MLFLOW_ARTIFACT_LOCATION: {experiment.artifact_location}")
 
     return experiment.experiment_id
 
