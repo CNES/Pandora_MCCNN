@@ -31,11 +31,11 @@ class FastMcCnnDw(nn.Module):
     Define the mc_cnn fast neural network with depthwise separable convolution
     """
 
-    def __init__(self):
+    def __init__(self, in_channels=1, num_conv_feature_maps=64, conv_kernel_size=3):
         super().__init__()
-        self.in_channels = 1
-        self.num_conv_feature_maps = 64
-        self.conv_kernel_size = 3
+        self.in_channels = in_channels
+        self.num_conv_feature_maps = num_conv_feature_maps
+        self.conv_kernel_size = conv_kernel_size
 
         self.conv_blocks = nn.Sequential(
             nn.Conv2d(

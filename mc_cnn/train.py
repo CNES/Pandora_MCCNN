@@ -95,6 +95,7 @@ def get_parameters_for_mlflow_logs(cfg):
     params = {
         "network": cfg["network"],
         "conv": cfg["conv"],
+        "num_conv_feature_maps": cfg.get("num_conv_feature_maps", 64),
         "dataset": cfg["dataset"],
         "epochs": cfg["epochs"],
         "batch_size": cfg["batch_size"],
@@ -286,9 +287,9 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
 
     # Create the network
     if cfg["conv"] == "std":
-        net = FastMcCnn()
+        net = FastMcCnn(num_conv_feature_maps=cfg.get("num_conv_feature_maps", 64))
     elif cfg["conv"] == "depthwise":
-        net = FastMcCnnDw()
+        net = FastMcCnnDw(num_conv_feature_maps=cfg.get("num_conv_feature_maps", 64))
     else:
         raise ValueError(
             f"conv {cfg['network']} does not correspond to one of the options in the list " "['std', 'depthwise'] ."
