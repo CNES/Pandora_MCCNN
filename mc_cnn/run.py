@@ -47,6 +47,7 @@ class MemorySampler:
     Background sampler to capture true peak RSS during a stage.
     Sampling interval can be tuned with env MCCNN_MEM_SAMPLE_SEC (default 0.005s).
     """
+
     def __init__(self, interval_sec: float = None):
         if interval_sec is None:
             try:
@@ -234,17 +235,21 @@ def import_libraries(framework: str, variant: str):
     modules = {}
     if (variant in ["baseline", "opt1", "opt2", "cpp", "cpp2"]) or (framework == "pytorch"):
         import torch
+
         modules["torch"] = torch
 
         if variant == "baseline":
             import torch.nn as nn
+
             modules["nn"] = nn
 
     if framework == "onnx":
         import onnxruntime as ort
+
         modules["ort"] = ort
     elif framework == "openvino":
         import openvino as ov
+
         modules["ov"] = ov
 
     return modules
@@ -287,7 +292,9 @@ def run_mc_cnn_fast(
     time_import = time.perf_counter() - start_import
     ms.stop()
     mem_import_peak = ms.peak_mb
-    print(f"PROFILING_LIBRARY_IMPORT: time={time_import:.4f}s, mem_peak={mem_import_peak:.2f}MB, framework={framework}, variant={variant}")
+    print(
+        f"PROFILING_LIBRARY_IMPORT: time={time_import:.4f}s, mem_peak={mem_import_peak:.2f}MB, framework={framework}, variant={variant}"
+    )
 
     # ---------------- Stage: Model init ----------------
     ms = MemorySampler().start()
@@ -390,10 +397,7 @@ def run_mc_cnn_fast(
             provider_options = {}
 
         session = ort.InferenceSession(
-            model_path,
-            sess_options=so,
-            providers=[providers],
-            provider_options=[provider_options]
+            model_path, sess_options=so, providers=[providers], provider_options=[provider_options]
         )
 
         def inference_func(img_np: np.ndarray) -> np.ndarray:
@@ -449,7 +453,9 @@ def run_mc_cnn_fast(
     time_init = time.perf_counter() - start_init
     ms.stop()
     mem_init_peak = ms.peak_mb
-    print(f"PROFILING_MODEL_INIT: time={time_init:.4f}s, mem_peak={mem_init_peak:.2f}MB, framework={framework}, variant={variant}")
+    print(
+        f"PROFILING_MODEL_INIT: time={time_init:.4f}s, mem_peak={mem_init_peak:.2f}MB, framework={framework}, variant={variant}"
+    )
 
     # ---------------- Stage: Feature extraction ----------------
     def normalize(img: np.ndarray) -> np.ndarray:
@@ -464,12 +470,14 @@ def run_mc_cnn_fast(
     start_inf = time.perf_counter()
     left = normalize(img_left)
     right = normalize(img_right)
-    left_features = inference_func(left)   # (64, H', W') depending on model depth
-    right_features = inference_func(right) # (64, H', W')
+    left_features = inference_func(left)  # (64, H', W') depending on model depth
+    right_features = inference_func(right)  # (64, H', W')
     time_inf = time.perf_counter() - start_inf
     ms.stop()
     mem_inf_peak = ms.peak_mb
-    print(f"PROFILING_IA_FEATURES: time={time_inf:.4f}s, mem_peak={mem_inf_peak:.2f}MB, framework={framework}, variant={variant}")
+    print(
+        f"PROFILING_IA_FEATURES: time={time_inf:.4f}s, mem_peak={mem_inf_peak:.2f}MB, framework={framework}, variant={variant}"
+    )
 
     # ---------------- Stage: Cost volume (non-IA loop) ----------------
     ms = MemorySampler().start()
@@ -490,6 +498,8 @@ def run_mc_cnn_fast(
         cv = computes_cost_volume_mc_cnn_fast_cpp_notorch(left_features, right_features, disp_min, disp_max)
     elif variant == "cpp2_notorch":
         cv = computes_cost_volume_mc_cnn_fast_cpp2_notorch(left_features, right_features, disp_min, disp_max)
+    elif variant == "cpp2_notorch_int32":
+        cv = computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(left_features, right_features, disp_min, disp_max)
     else:
         cv = computes_cost_volume_mc_cnn_fast(modules, left_features, right_features, disp_min, disp_max)
     time_loop = time.perf_counter() - start_loop
@@ -543,7 +553,9 @@ def computes_cost_volume_mc_cnn_fast(
 
     cos = nn.CosineSimilarity(dim=0, eps=1e-6)  # cosine over channel dimension C
 
-    def point_interval(left_features: "torch.Tensor", right_features: "torch.Tensor", disp: int) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+    def point_interval(
+        left_features: "torch.Tensor", right_features: "torch.Tensor", disp: int
+    ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
         """
         Compute the horizontal intervals over which similarity is applied for a given disparity.
         left_features/right_features shape: (C=64, H, W)
@@ -579,7 +591,7 @@ def computes_cost_volume_mc_cnn_fast(
 
 def computes_cost_volume_mc_cnn_fast_opt1(
     modules: Dict[str, Any],
-    left_features: np.ndarray,   # (C, H, W), float32, CPU
+    left_features: np.ndarray,  # (C, H, W), float32, CPU
     right_features: np.ndarray,  # (C, H, W)
     disp_min: int,
     disp_max: int,
@@ -594,7 +606,7 @@ def computes_cost_volume_mc_cnn_fast_opt1(
 
     with torch.no_grad():
         # Channels-last for better memory locality
-        lf = torch.from_numpy(left_features).permute(1, 2, 0).contiguous()   # (H, W, C)
+        lf = torch.from_numpy(left_features).permute(1, 2, 0).contiguous()  # (H, W, C)
         rf = torch.from_numpy(right_features).permute(1, 2, 0).contiguous()  # (H, W, C)
 
         # L2-normalize across channel dim
@@ -609,19 +621,19 @@ def computes_cost_volume_mc_cnn_fast_opt1(
         for d in range(disp_min, disp_max + 1):
             di = d - disp_min
             l0 = max(0, -d)
-            r0 = max(0,  d)
+            r0 = max(0, d)
             width = W - abs(d)
             if width <= 0:
                 continue
             # Dot across channels; negate to convert similarity -> cost
-            sim = (lf[:, l0:l0 + width, :] * rf[:, r0:r0 + width, :]).sum(dim=2).neg_()  # (H, width)
-            out[di, :, l0:l0 + width] = sim
+            sim = (lf[:, l0 : l0 + width, :] * rf[:, r0 : r0 + width, :]).sum(dim=2).neg_()  # (H, width)
+            out[di, :, l0 : l0 + width] = sim
 
     return out.permute(1, 2, 0).contiguous().numpy()
 
 
 def computes_cost_volume_mc_cnn_fast_opt1_notorch(
-    left_features: np.ndarray,   # (C, H, W), float32, CPU
+    left_features: np.ndarray,  # (C, H, W), float32, CPU
     right_features: np.ndarray,  # (C, H, W)
     disp_min: int,
     disp_max: int,
@@ -633,7 +645,7 @@ def computes_cost_volume_mc_cnn_fast_opt1_notorch(
     - Returns: np.ndarray (H, W, D) float32 with NaN in invalid columns
     """
     # Channels-last for better memory locality
-    lf = np.ascontiguousarray(np.transpose(left_features, axes=(1, 2, 0)))   # (H, W, C)
+    lf = np.ascontiguousarray(np.transpose(left_features, axes=(1, 2, 0)))  # (H, W, C)
     rf = np.ascontiguousarray(np.transpose(right_features, axes=(1, 2, 0)))  # (H, W, C)
 
     # L2-normalize across channel dim
@@ -648,20 +660,20 @@ def computes_cost_volume_mc_cnn_fast_opt1_notorch(
     for d in range(disp_min, disp_max + 1):
         di = d - disp_min
         l0 = max(0, -d)
-        r0 = max(0,  d)
+        r0 = max(0, d)
         width = W - abs(d)
         if width <= 0:
             continue
         # Dot across channels; negate to convert similarity -> cost
-        sim = np.negative((lf[:, l0:l0 + width, :] * rf[:, r0:r0 + width, :]).sum(axis=2))  # (H, width)
-        out[di, :, l0:l0 + width] = sim
+        sim = np.negative((lf[:, l0 : l0 + width, :] * rf[:, r0 : r0 + width, :]).sum(axis=2))  # (H, width)
+        out[di, :, l0 : l0 + width] = sim
 
     return np.ascontiguousarray(np.transpose(out, axes=(1, 2, 0)))
 
 
 def computes_cost_volume_mc_cnn_fast_opt2(
     modules: Dict[str, Any],
-    left_features: np.ndarray,   # (C, H, W), float32, CPU
+    left_features: np.ndarray,  # (C, H, W), float32, CPU
     right_features: np.ndarray,  # (C, H, W)
     disp_min: int,
     disp_max: int,
@@ -675,7 +687,7 @@ def computes_cost_volume_mc_cnn_fast_opt2(
     torch = modules["torch"]
 
     with torch.no_grad():
-        lf =  torch.from_numpy(left_features).permute(1, 2, 0).contiguous()   # (H, W, C)
+        lf = torch.from_numpy(left_features).permute(1, 2, 0).contiguous()  # (H, W, C)
         rf = torch.from_numpy(right_features).permute(1, 2, 0).contiguous()  # (H, W, C)
 
         H, W, C = lf.shape
@@ -685,19 +697,19 @@ def computes_cost_volume_mc_cnn_fast_opt2(
         for d in range(disp_min, disp_max + 1):
             di = d - disp_min
             l0 = max(0, -d)
-            r0 = max(0,  d)
+            r0 = max(0, d)
             width = W - abs(d)
             if width <= 0:
                 continue
             # Dot across channels; negate to convert similarity -> cost
-            sim = (lf[:, l0:l0 + width, :] * rf[:, r0:r0 + width, :]).sum(dim=2).neg_()  # (H, width)
-            out[di, :, l0:l0 + width] = sim
+            sim = (lf[:, l0 : l0 + width, :] * rf[:, r0 : r0 + width, :]).sum(dim=2).neg_()  # (H, width)
+            out[di, :, l0 : l0 + width] = sim
 
     return out.permute(1, 2, 0).contiguous().numpy()
 
 
 def computes_cost_volume_mc_cnn_fast_opt2_notorch(
-    left_features: np.ndarray,   # (C, H, W), float32, CPU
+    left_features: np.ndarray,  # (C, H, W), float32, CPU
     right_features: np.ndarray,  # (C, H, W)
     disp_min: int,
     disp_max: int,
@@ -709,8 +721,8 @@ def computes_cost_volume_mc_cnn_fast_opt2_notorch(
     - Returns: np.ndarray (H, W, D) float32 with NaN in invalid columns
     """
     # Channels-last for better memory locality
-    lf = np.ascontiguousarray(np.transpose(left_features, axes=(1, 2, 0)))    # (H, W, C)
-    rf = np.ascontiguousarray(np.transpose(right_features, axes=(1, 2, 0)))   # (H, W, C)
+    lf = np.ascontiguousarray(np.transpose(left_features, axes=(1, 2, 0)))  # (H, W, C)
+    rf = np.ascontiguousarray(np.transpose(right_features, axes=(1, 2, 0)))  # (H, W, C)
 
     H, W, C = lf.shape
     D = disp_max - disp_min + 1
@@ -719,23 +731,20 @@ def computes_cost_volume_mc_cnn_fast_opt2_notorch(
     for d in range(disp_min, disp_max + 1):
         di = d - disp_min
         l0 = max(0, -d)
-        r0 = max(0,  d)
+        r0 = max(0, d)
         width = W - abs(d)
         if width <= 0:
             continue
         # Dot across channels; negate to convert similarity -> cost
-        sim = np.negative(np.sum(lf[:, l0:l0 + width, :] * rf[:, r0:r0 + width, :], axis=2))  # (H, width)
-        out[di, :, l0:l0 + width] = sim
+        sim = np.negative(np.sum(lf[:, l0 : l0 + width, :] * rf[:, r0 : r0 + width, :], axis=2))  # (H, width)
+        out[di, :, l0 : l0 + width] = sim
 
     return np.ascontiguousarray(np.transpose(out, axes=(1, 2, 0)))
 
 
 def computes_cost_volume_mc_cnn_fast_cpp(
-    modules: Dict[str, Any],
-    left_features: np.ndarray,
-    right_features: np.ndarray,
-    disp_min: int,
-    disp_max: int):
+    modules: Dict[str, Any], left_features: np.ndarray, right_features: np.ndarray, disp_min: int, disp_max: int
+):
     torch = modules["torch"]
     from .cv_opt2_single_loader import computes_cost_volume_mc_cnn_fast_opt2_single_cpp
 
@@ -748,11 +757,8 @@ def computes_cost_volume_mc_cnn_fast_cpp(
 
 
 def computes_cost_volume_mc_cnn_fast_cpp2(
-    modules: Dict[str, Any],
-    left_features: np.ndarray,
-    right_features: np.ndarray,
-    disp_min: int,
-    disp_max: int):
+    modules: Dict[str, Any], left_features: np.ndarray, right_features: np.ndarray, disp_min: int, disp_max: int
+):
 
     torch = modules["torch"]
     from .cv_opt2_pixelmajor_loader import computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp
@@ -771,7 +777,9 @@ def computes_cost_volume_mc_cnn_fast_cpp_notorch(left_features, right_features, 
     Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W),
     then performs CHW -> HWC in Python and calls the native HWC kernel.
     """
-    from .cv_opt2_single_loader_notorch import computes_cost_volume_mc_cnn_fast_opt2_single_cpp as computes_cost_volume_mc_cnn_fast_opt2_single_cpp_notorch
+    from .cv_opt2_single_loader_notorch import (
+        computes_cost_volume_mc_cnn_fast_opt2_single_cpp as computes_cost_volume_mc_cnn_fast_opt2_single_cpp_notorch,
+    )
 
     # Validate CHW
     if left_features.ndim != 3 or right_features.ndim != 3:
@@ -788,9 +796,7 @@ def computes_cost_volume_mc_cnn_fast_cpp_notorch(left_features, right_features, 
     rf_hwc = np.transpose(right_features, (1, 2, 0)).copy(order="C")
 
     # Native notorch kernel (expects HWC, returns DHW)
-    out_dhw = computes_cost_volume_mc_cnn_fast_opt2_single_cpp_notorch(
-        lf_hwc, rf_hwc, disp_min, disp_max
-    )
+    out_dhw = computes_cost_volume_mc_cnn_fast_opt2_single_cpp_notorch(lf_hwc, rf_hwc, disp_min, disp_max)
     return np.transpose(out_dhw, (1, 2, 0))  # (H,W,D)
 
 
@@ -800,7 +806,9 @@ def computes_cost_volume_mc_cnn_fast_cpp2_notorch(left_features, right_features,
     Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W),
     then performs CHW -> HWC in Python and calls the native HWC kernel.
     """
-    from .cv_opt2_pixelmajor_loader_notorch import computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp as computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch
+    from .cv_opt2_pixelmajor_loader_notorch import (
+        computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp as computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch,
+    )
 
     # Validate CHW
     if left_features.ndim != 3 or right_features.ndim != 3:
@@ -817,7 +825,34 @@ def computes_cost_volume_mc_cnn_fast_cpp2_notorch(left_features, right_features,
     rf_hwc = np.transpose(right_features, (1, 2, 0)).copy(order="C")
 
     # Native notorch kernel (expects HWC, returns HWD)
-    out_hwd = computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch(
-        lf_hwc, rf_hwc, disp_min, disp_max
+    out_hwd = computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch(lf_hwc, rf_hwc, disp_min, disp_max)
+    return out_hwd
+
+
+def computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(left_features, right_features, disp_min, disp_max):
+    """
+    Calls native pixel-major kernel (returns H,W,D) and returns as-is.
+    Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W),
+    then performs CHW -> HWC in Python and calls the native HWC kernel.
+    """
+    from .cv_opt2_pixelmajor_loader_notorch_int32 import (
+        computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_int32 as computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch,
     )
+
+    # Validate CHW
+    if left_features.ndim != 3 or right_features.ndim != 3:
+        raise ValueError("left/right features must be 3D (C,H,W)")
+    if left_features.shape != right_features.shape:
+        raise ValueError("left/right feature shapes must match")
+    if not left_features.flags.c_contiguous:
+        left_features = np.ascontiguousarray(left_features)
+    if not right_features.flags.c_contiguous:
+        right_features = np.ascontiguousarray(right_features)
+
+    # CHW -> HWC (fast NumPy path) with C-order copy for downstream speed
+    lf_hwc = np.transpose(left_features, (1, 2, 0)).copy(order="C")
+    rf_hwc = np.transpose(right_features, (1, 2, 0)).copy(order="C")
+
+    # Native notorch kernel (expects HWC, returns HWD)
+    out_hwd = computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch(lf_hwc, rf_hwc, disp_min, disp_max)
     return out_hwd
