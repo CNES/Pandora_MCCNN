@@ -26,10 +26,9 @@ import torch
 import torch.nn.functional as F
 
 
-class FastMcCnn(nn.Module):
+class FastMcCnnDw(nn.Module):
     """
-    Define the mc_cnn fast neural network
-
+    Define the mc_cnn fast neural network with depthwise separable convolution
     """
 
     def __init__(self, in_channels=1, num_conv_feature_maps=64, conv_kernel_size=3):
@@ -40,32 +39,44 @@ class FastMcCnn(nn.Module):
 
         self.conv_blocks = nn.Sequential(
             nn.Conv2d(
-                in_channels=self.in_channels, out_channels=self.num_conv_feature_maps, kernel_size=self.conv_kernel_size
+                in_channels=self.in_channels,
+                out_channels=self.in_channels,
+                kernel_size=self.conv_kernel_size,
+                groups=self.in_channels,
             ),
+            nn.Conv2d(in_channels=self.in_channels, out_channels=self.num_conv_feature_maps, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(
                 in_channels=self.num_conv_feature_maps,
                 out_channels=self.num_conv_feature_maps,
                 kernel_size=self.conv_kernel_size,
+                groups=self.num_conv_feature_maps,
             ),
+            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(
                 in_channels=self.num_conv_feature_maps,
                 out_channels=self.num_conv_feature_maps,
                 kernel_size=self.conv_kernel_size,
+                groups=self.num_conv_feature_maps,
             ),
+            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(
                 in_channels=self.num_conv_feature_maps,
                 out_channels=self.num_conv_feature_maps,
                 kernel_size=self.conv_kernel_size,
+                groups=self.num_conv_feature_maps,
             ),
+            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps, kernel_size=1),
             nn.ReLU(),
             nn.Conv2d(
                 in_channels=self.num_conv_feature_maps,
                 out_channels=self.num_conv_feature_maps,
                 kernel_size=self.conv_kernel_size,
+                groups=self.num_conv_feature_maps,
             ),
+            nn.Conv2d(in_channels=self.num_conv_feature_maps, out_channels=self.num_conv_feature_maps, kernel_size=1),
         )
 
     # pylint: disable=arguments-differ

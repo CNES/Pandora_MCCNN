@@ -32,11 +32,11 @@ class AccMcCnn(nn.Module):
 
     """
 
-    def __init__(self):
+    def __init__(self, in_channels=1, num_conv_feature_maps=112, conv_kernel_size=3):
         super().__init__()
-        self.in_channels = 1
-        self.num_conv_feature_maps = 112
-        self.conv_kernel_size = 3
+        self.in_channels = in_channels
+        self.num_conv_feature_maps = num_conv_feature_maps
+        self.conv_kernel_size = conv_kernel_size
 
         # Extract images features
         self.conv_blocks = nn.Sequential(
