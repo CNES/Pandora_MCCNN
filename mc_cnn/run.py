@@ -23,7 +23,6 @@
 This module contains functions to test mc-cnn fast and accurate
 """
 
-
 import numpy as np
 import torch
 from torch import nn
