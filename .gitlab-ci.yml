@@ -11,7 +11,7 @@
 include:
   - component: $CI_SERVER_FQDN/to-be-continuous/python/gitlab-ci-python@8.1.3
     inputs:
-      image: ${UL_ARTIFACTORY_HOST}/publicremotes-docker/python:3.9
+      image: ${UL_ARTIFACTORY_HOST}/publicremotes-docker/python:3.10
       pytest-enabled: true
       pylint-enabled: true
       black-enabled: true
