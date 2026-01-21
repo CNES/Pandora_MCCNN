@@ -19,6 +19,7 @@
 """
 This module contains the mc-cnn fast network
 """
+
 # pylint:disable=too-few-public-methods
 
 from torch import nn

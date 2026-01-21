@@ -20,7 +20,7 @@
 Init file for pandora_mc_cnn package
 """
 
-# VERSION through setuptools_scm when python3 > 3.8, otherwise unknown
+# VERSION through setuptools_scm when python3 > 3.10, otherwise unknown
 try:
     from importlib.metadata import version
 

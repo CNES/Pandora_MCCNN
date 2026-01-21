@@ -23,7 +23,6 @@
 This module contains functions to test mc-cnn fast and accurate
 """
 
-
 import numpy as np
 import torch
 from torch import nn
@@ -109,7 +108,7 @@ def computes_cost_volume_mc_cnn_fast(left_features, right_features, disp_min, di
     :rtype: 3D np.array (row, col, disp)
     """
     # Construct the cost volume
-    disparity_range = np.arange(disp_min, disp_max + 1)
+    disparity_range = np.arange(disp_min, disp_max + 1).astype(np.int32)
 
     # Allocate the numpy cost volume cv = (disp, col, row), for efficient memory management
     cv = np.zeros((len(disparity_range), left_features.shape[2], left_features.shape[1]), dtype=np.float32)
