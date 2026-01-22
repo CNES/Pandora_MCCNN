@@ -1,104 +1,79 @@
 #!/usr/bin/env python
 # coding: utf8
 #
-# CPU-only execution for MC-CNN fast with frameworks and variants.
-# Emits (stdout for fallback parsing):
-#   - PROFILING_MODEL_INIT: time=...s, mem_peak=...MB
-#   - PROFILING_IA_FEATURES: time=...s, mem_peak=...MB
-#   - PROFILING_NON_IA_LOOP: time=...s, mem_peak=...MB
+# Copyright (c) 2025 Centre National d'Etudes Spatiales (CNES).
 #
-# Also writes structured per-stage metrics to:
-#   <PANDORA_RUN_OUTPUT_DIR>/metrics_stages.json
-# with:
-#   - model_init_time, ia_features_time, non_ia_loop_time
-#   - model_init_mem, ia_features_mem, non_ia_loop_mem
-#   - framework, variant
+# This file is part of PANDORA_MCCNN
 #
-# Notes:
-# - All paths are CPU-only regardless of hardware availability.
-# - Single-thread by default for stability (override with env MCCNN_THREADS).
-# - ONNX and OpenVINO sessions are configured to avoid affinity issues and keep runs comparable.
-# - ONNX model is resolved next to the weights by default (<weights>.onnx).
-# - OpenVINO IR is resolved next to the weights by default (<weights>.xml). Prefer IR if present.
+#     https://github.com/CNES/Pandora_MCCNN
 #
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+"""
+CPU-only execution for MC-CNN fast with frameworks and variants.
+Emits (stdout for fallback parsing):
+  - PROFILING_MODEL_INIT: time=...s, mem_peak=...MB
+  - PROFILING_IA_FEATURES: time=...s, mem_peak=...MB
+  - PROFILING_NON_IA_LOOP: time=...s, mem_peak=...MB
+Also writes structured per-stage metrics to:
+  <PANDORA_RUN_OUTPUT_DIR>/metrics_stages.json
+with:
+  - model_init_time, ia_features_time, non_ia_loop_time
+  - model_init_mem, ia_features_mem, non_ia_loop_mem
+  - framework, variant
+Notes:
+- All paths are CPU-only regardless of hardware availability.
+- Single-thread by default for stability (override with env MCCNN_THREADS).
+- ONNX and OpenVINO sessions are configured to avoid affinity issues and keep runs comparable.
+- ONNX model is resolved next to the weights by default (<weights>.onnx).
+- OpenVINO IR is resolved next to the weights by default (<weights>.xml). Prefer IR if present.
+"""
+
 import os
 import time
 import json
-import threading
 import warnings
 from pathlib import Path
 from typing import Tuple, Optional, Dict, Any
 
 import numpy as np
-import psutil
 
+from mc_cnn.profiling import MemorySampler
 
-def get_memory_usage_bytes() -> int:
-    """Get current process RSS in bytes."""
-    return psutil.Process().memory_info().rss
+def import_libraries(framework: str, variant: str):
+    modules = {}
+    if (variant in ["baseline", "opt1", "opt2", "cpp", "cpp2"]) or (framework == "pytorch"):
+        import torch
 
+        modules["torch"] = torch
 
-def bytes_to_mb(b: int) -> float:
-    return b / (1024.0 * 1024.0)
+        if variant == "baseline":
+            import torch.nn as nn
 
+            modules["nn"] = nn
 
-class MemorySampler:
-    """
-    Background sampler to capture true peak RSS during a stage.
-    Sampling interval can be tuned with env MCCNN_MEM_SAMPLE_SEC (default 0.005s).
-    """
+    if framework == "onnx":
+        import onnxruntime as ort
 
-    def __init__(self, interval_sec: float = None):
-        if interval_sec is None:
-            try:
-                interval_sec = float(os.getenv("MCCNN_MEM_SAMPLE_SEC", "0.005"))
-            except Exception:
-                interval_sec = 0.005
-        self.interval = max(0.0005, interval_sec)
-        self._stop = threading.Event()
-        self._thread = None
-        self._peak = 0
+        modules["ort"] = ort
+    elif framework == "openvino":
+        import openvino as ov
 
-    def _run(self):
-        proc = psutil.Process()
-        while not self._stop.is_set():
-            try:
-                rss = proc.memory_info().rss
-                if rss > self._peak:
-                    self._peak = rss
-            except Exception:
-                pass
-            time.sleep(self.interval)
+        modules["ov"] = ov
 
-    def start(self):
-        self._peak = get_memory_usage_bytes()
-        self._stop.clear()
-        self._thread = threading.Thread(target=self._run, name="mem_sampler", daemon=True)
-        self._thread.start()
-        return self
+    return modules
 
-    def stop(self):
-        self._stop.set()
-        if self._thread is not None:
-            try:
-                self._thread.join()
-            except Exception:
-                pass
-
-    @property
-    def peak_mb(self) -> float:
-        return bytes_to_mb(self._peak)
-
-
-def _num_threads() -> int:
-    """
-    Unified threading knob.
-    Default to 1 for reproducibility; override by setting env MCCNN_THREADS.
-    """
-    try:
-        return max(1, int(os.getenv("MCCNN_THREADS", "1")))
-    except Exception:
-        return 1
 
 
 def _resolve_onnx_path(model_path: str, model_name: Optional[str] = None) -> str:
@@ -133,6 +108,7 @@ def _resolve_onnx_path(model_path: str, model_name: Optional[str] = None) -> str
     return "mc_cnn_fast.onnx"
 
 
+
 def _resolve_openvino_path(model_path: str, model_name: Optional[str] = None) -> str:
     """
     Locate the OpenVINO IR (.xml).
@@ -165,6 +141,7 @@ def _resolve_openvino_path(model_path: str, model_name: Optional[str] = None) ->
     return "mc_cnn_fast.xml"
 
 
+
 def _ov_set_cpu_properties(core: "ov.Core", nt: int) -> None:
     """
     Set CPU plugin properties robustly across OpenVINO versions.
@@ -182,6 +159,7 @@ def _ov_set_cpu_properties(core: "ov.Core", nt: int) -> None:
         except Exception:
             continue
     # If all attempts fail, proceed with defaults
+
 
 
 def _ov_compile_for_shape(core: "ov.Core", model_path: str, h: int, w: int) -> "ov.CompiledModel":
@@ -211,6 +189,19 @@ def _ov_compile_for_shape(core: "ov.Core", model_path: str, h: int, w: int) -> "
     return core.compile_model(m, "CPU")
 
 
+
+def _num_threads() -> int:
+    """
+    Unified threading knob.
+    Default to 1 for reproducibility; override by setting env MCCNN_THREADS.
+    """
+    try:
+        return max(1, int(os.getenv("MCCNN_THREADS", "1")))
+    except Exception:
+        return 1
+
+
+
 def _write_metrics_stages(framework: str, variant: str, model_path: str, data: dict) -> None:
     """
     Write per-stage metrics JSON to PANDORA_RUN_OUTPUT_DIR if set.
@@ -230,29 +221,6 @@ def _write_metrics_stages(framework: str, variant: str, model_path: str, data: d
     except Exception:
         pass
 
-
-def import_libraries(framework: str, variant: str):
-    modules = {}
-    if (variant in ["baseline", "opt1", "opt2", "cpp", "cpp2"]) or (framework == "pytorch"):
-        import torch
-
-        modules["torch"] = torch
-
-        if variant == "baseline":
-            import torch.nn as nn
-
-            modules["nn"] = nn
-
-    if framework == "onnx":
-        import onnxruntime as ort
-
-        modules["ort"] = ort
-    elif framework == "openvino":
-        import openvino as ov
-
-        modules["ov"] = ov
-
-    return modules
 
 
 def run_mc_cnn_fast(
