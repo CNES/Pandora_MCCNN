@@ -49,7 +49,12 @@ def bytes_to_mb(num_bytes: int) -> float:
 class MemorySampler:
     """
     Background sampler to capture true peak RSS during a stage.
-    Sampling interval can be tuned with env MCCNN_MEM_SAMPLE_SEC (default 0.005s).
+
+    Usage example:
+    ms = MemorySampler().start()
+    do_something()
+    ms.stop()
+    mem_import_peak = ms.peak_mb
     """
 
     def __init__(self, sampling_interval_sec: float = 0.0005):

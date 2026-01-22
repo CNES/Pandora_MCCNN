@@ -22,16 +22,6 @@
 
 """
 CPU-only execution for MC-CNN fast with frameworks and variants.
-Emits (stdout for fallback parsing):
-  - PROFILING_MODEL_INIT: time=...s, mem_peak=...MB
-  - PROFILING_IA_FEATURES: time=...s, mem_peak=...MB
-  - PROFILING_NON_IA_LOOP: time=...s, mem_peak=...MB
-Also writes structured per-stage metrics to:
-  <PANDORA_RUN_OUTPUT_DIR>/metrics_stages.json
-with:
-  - model_init_time, ia_features_time, non_ia_loop_time
-  - model_init_mem, ia_features_mem, non_ia_loop_mem
-  - framework, variant
 Notes:
 - All paths are CPU-only regardless of hardware availability.
 - Single-thread by default for stability (override with env MCCNN_THREADS).
