@@ -41,15 +41,11 @@ Notes:
 """
 
 import os
-import time
-import json
 import warnings
 from pathlib import Path
 from typing import Tuple, Optional, Dict, Any
 
 import numpy as np
-
-from mc_cnn.profiling import MemorySampler
 
 
 def import_libraries(framework: str, variant: str):
@@ -197,26 +193,6 @@ def _num_threads() -> int:
         return 1
 
 
-def _write_metrics_stages(framework: str, variant: str, model_path: str, data: dict) -> None:
-    """
-    Write per-stage metrics JSON to PANDORA_RUN_OUTPUT_DIR if set.
-    """
-    out_dir = os.getenv("PANDORA_RUN_OUTPUT_DIR", "")
-    if not out_dir:
-        return
-    try:
-        p = Path(out_dir).resolve()
-        p.mkdir(parents=True, exist_ok=True)
-        payload = dict(data)
-        payload["framework"] = framework
-        payload["variant"] = variant
-        payload["model_path"] = model_path
-        with open(p / "metrics_stages.json", "w") as f:
-            json.dump(payload, f, indent=2)
-    except Exception:
-        pass
-
-
 def run_mc_cnn_fast(
     img_left: np.ndarray,
     img_right: np.ndarray,
@@ -248,20 +224,9 @@ def run_mc_cnn_fast(
     H_in, W_in = int(img_left.shape[0]), int(img_left.shape[1])
 
     # ---------------- Stage: Import library ----------------
-    ms = MemorySampler().start()
-    start_import = time.perf_counter()
     modules = import_libraries(framework, variant)
-    time_import = time.perf_counter() - start_import
-    ms.stop()
-    mem_import_peak = ms.peak_mb
-    print(
-        f"PROFILING_LIBRARY_IMPORT: time={time_import:.4f}s, mem_peak={mem_import_peak:.2f}MB, framework={framework}, variant={variant}"
-    )
 
     # ---------------- Stage: Model init ----------------
-    ms = MemorySampler().start()
-    start_init = time.perf_counter()
-
     if framework == "pytorch":
         if window_size is None:
             # Pandora must pass window_size; choose safe default but will likely mismatch
@@ -409,15 +374,7 @@ def run_mc_cnn_fast(
             return feats_np
 
     else:
-        ms.stop()
         raise ValueError(f"Unsupported framework: {framework}")
-
-    time_init = time.perf_counter() - start_init
-    ms.stop()
-    mem_init_peak = ms.peak_mb
-    print(
-        f"PROFILING_MODEL_INIT: time={time_init:.4f}s, mem_peak={mem_init_peak:.2f}MB, framework={framework}, variant={variant}"
-    )
 
     # ---------------- Stage: Feature extraction ----------------
     def normalize(img: np.ndarray) -> np.ndarray:
@@ -428,22 +385,12 @@ def run_mc_cnn_fast(
             std = 1.0
         return (img - mean) / std
 
-    ms = MemorySampler().start()
-    start_inf = time.perf_counter()
     left = normalize(img_left)
     right = normalize(img_right)
     left_features = inference_func(left)  # (64, H', W') depending on model depth
     right_features = inference_func(right)  # (64, H', W')
-    time_inf = time.perf_counter() - start_inf
-    ms.stop()
-    mem_inf_peak = ms.peak_mb
-    print(
-        f"PROFILING_IA_FEATURES: time={time_inf:.4f}s, mem_peak={mem_inf_peak:.2f}MB, framework={framework}, variant={variant}"
-    )
 
     # ---------------- Stage: Cost volume (non-IA loop) ----------------
-    ms = MemorySampler().start()
-    start_loop = time.perf_counter()
     if variant == "opt1":
         cv = computes_cost_volume_mc_cnn_fast_opt1(modules, left_features, right_features, disp_min, disp_max)
     elif variant == "opt1_notorch":
@@ -464,27 +411,6 @@ def run_mc_cnn_fast(
         cv = computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(left_features, right_features, disp_min, disp_max)
     else:
         cv = computes_cost_volume_mc_cnn_fast(modules, left_features, right_features, disp_min, disp_max)
-    time_loop = time.perf_counter() - start_loop
-    ms.stop()
-    mem_loop_peak = ms.peak_mb
-    print(f"PROFILING_NON_IA_LOOP: time={time_loop:.4f}s, mem_peak={mem_loop_peak:.2f}MB")
-
-    # ---------------- Write structured per-stage metrics ----------------
-    _write_metrics_stages(
-        framework=framework,
-        variant=variant,
-        model_path=model_path,
-        data={
-            "library_import_time": time_import,
-            "model_init_time": time_init,
-            "library_import_mem": mem_import_peak,
-            "model_init_mem": mem_init_peak,
-            "ia_features_time": time_inf,
-            "ia_features_mem": mem_inf_peak,
-            "non_ia_loop_time": time_loop,
-            "non_ia_loop_mem": mem_loop_peak,
-        },
-    )
 
     return cv
 

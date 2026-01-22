@@ -29,12 +29,21 @@ import psutil
 def get_memory_usage_bytes() -> int:
     """
     Get current process RSS in bytes.
+
+    :return: current process RSS in bytes
     """
     return psutil.Process().memory_info().rss
 
 
-def bytes_to_mb(b: int) -> float:
-    return b / (1024.0 * 1024.0)
+def bytes_to_mb(num_bytes: int) -> float:
+    """
+    Convert bytes to mega bytes.
+
+    :param num_bytes: number of bytes
+
+    :return: number of mega bytes
+    """
+    return num_bytes / (1024.0 * 1024.0)
 
 
 class MemorySampler:
@@ -43,24 +52,29 @@ class MemorySampler:
     Sampling interval can be tuned with env MCCNN_MEM_SAMPLE_SEC (default 0.005s).
     """
 
-    def __init__(self, interval_sec: float = 0.0005):
-        self.interval = max(0.0005, interval_sec)
+    def __init__(self, sampling_interval_sec: float = 0.0005):
+        self.interval = max(0.0005, sampling_interval_sec)
         self._stop = threading.Event()
         self._thread = None
         self._peak = 0
 
     def _run(self):
+        """
+        Run the memory sampler.
+        """
         proc = psutil.Process()
         while not self._stop.is_set():
             try:
                 rss = proc.memory_info().rss
-                if rss > self._peak:
-                    self._peak = rss
+                self._peak = max(self._peak, rss)
             except Exception:
                 pass
             time.sleep(self.interval)
 
     def start(self):
+        """
+        Start the memory sampler.
+        """
         self._peak = get_memory_usage_bytes()
         self._stop.clear()
         self._thread = threading.Thread(target=self._run, name="mem_sampler", daemon=True)
@@ -68,6 +82,9 @@ class MemorySampler:
         return self
 
     def stop(self):
+        """
+        Stop the memory sampler.
+        """
         self._stop.set()
         if self._thread is not None:
             try:
@@ -77,4 +94,7 @@ class MemorySampler:
 
     @property
     def peak_mb(self) -> float:
+        """
+        Return the peak RSS in MB.
+        """
         return bytes_to_mb(self._peak)
