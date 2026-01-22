@@ -20,11 +20,11 @@
 # limitations under the License.
 #
 
-import os
 import threading
 import time
 
 import psutil
+
 
 def get_memory_usage_bytes() -> int:
     """
@@ -36,18 +36,14 @@ def get_memory_usage_bytes() -> int:
 def bytes_to_mb(b: int) -> float:
     return b / (1024.0 * 1024.0)
 
+
 class MemorySampler:
     """
     Background sampler to capture true peak RSS during a stage.
     Sampling interval can be tuned with env MCCNN_MEM_SAMPLE_SEC (default 0.005s).
     """
 
-    def __init__(self, interval_sec: float = None):
-        if interval_sec is None:
-            try:
-                interval_sec = float(os.getenv("MCCNN_MEM_SAMPLE_SEC", "0.005"))
-            except Exception:
-                interval_sec = 0.005
+    def __init__(self, interval_sec: float = 0.0005):
         self.interval = max(0.0005, interval_sec)
         self._stop = threading.Event()
         self._thread = None

@@ -51,6 +51,7 @@ import numpy as np
 
 from mc_cnn.profiling import MemorySampler
 
+
 def import_libraries(framework: str, variant: str):
     modules = {}
     if (variant in ["baseline", "opt1", "opt2", "cpp", "cpp2"]) or (framework == "pytorch"):
@@ -73,7 +74,6 @@ def import_libraries(framework: str, variant: str):
         modules["ov"] = ov
 
     return modules
-
 
 
 def _resolve_onnx_path(model_path: str, model_name: Optional[str] = None) -> str:
@@ -108,7 +108,6 @@ def _resolve_onnx_path(model_path: str, model_name: Optional[str] = None) -> str
     return "mc_cnn_fast.onnx"
 
 
-
 def _resolve_openvino_path(model_path: str, model_name: Optional[str] = None) -> str:
     """
     Locate the OpenVINO IR (.xml).
@@ -141,7 +140,6 @@ def _resolve_openvino_path(model_path: str, model_name: Optional[str] = None) ->
     return "mc_cnn_fast.xml"
 
 
-
 def _ov_set_cpu_properties(core: "ov.Core", nt: int) -> None:
     """
     Set CPU plugin properties robustly across OpenVINO versions.
@@ -159,7 +157,6 @@ def _ov_set_cpu_properties(core: "ov.Core", nt: int) -> None:
         except Exception:
             continue
     # If all attempts fail, proceed with defaults
-
 
 
 def _ov_compile_for_shape(core: "ov.Core", model_path: str, h: int, w: int) -> "ov.CompiledModel":
@@ -189,7 +186,6 @@ def _ov_compile_for_shape(core: "ov.Core", model_path: str, h: int, w: int) -> "
     return core.compile_model(m, "CPU")
 
 
-
 def _num_threads() -> int:
     """
     Unified threading knob.
@@ -199,7 +195,6 @@ def _num_threads() -> int:
         return max(1, int(os.getenv("MCCNN_THREADS", "1")))
     except Exception:
         return 1
-
 
 
 def _write_metrics_stages(framework: str, variant: str, model_path: str, data: dict) -> None:
@@ -220,7 +215,6 @@ def _write_metrics_stages(framework: str, variant: str, model_path: str, data: d
             json.dump(payload, f, indent=2)
     except Exception:
         pass
-
 
 
 def run_mc_cnn_fast(
