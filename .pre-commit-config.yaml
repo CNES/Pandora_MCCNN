@@ -3,14 +3,14 @@ repos:
     hooks:
       - id: black
         name: Black
-        stages: [commit]
+        stages: [pre-commit]
         language: system
         entry: black
         types: [python]
 
       - id: pylint
         name: PyLint
-        stages: [commit]
+        stages: [pre-commit]
         language: system
         entry: pylint --rcfile=.pylintrc
         files: \.py$
