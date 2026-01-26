@@ -48,6 +48,15 @@ def test_init_with_custom_interval():
     assert sampler.interval == 0.01
 
 
+def test_init_with_custom_interval_lower_than_0_0005():
+    """
+    Test initialization with a custom sampling interval lower than 0.0005.
+    """
+    sampler = MemorySampler(sampling_interval_sec=0.000001)
+
+    assert sampler.interval == 0.0005
+
+
 def test_thread_stop():
     """
     Test thread not alive after stop
@@ -113,4 +122,4 @@ def test_deteck_peak():
 
     del big_array
 
-    assert sampler.peak_mb > array_size * 28 / (1024 * 1024)
+    assert sampler.peak_mb > array_size * 28 / (1024 * 1024)  # 28 bytes size for small int
