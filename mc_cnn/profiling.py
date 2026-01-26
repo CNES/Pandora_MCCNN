@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# coding: utf8
-#
-# Copyright (c) 2025 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2026 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -58,6 +55,9 @@ class MemorySampler:
     """
 
     def __init__(self, sampling_interval_sec: float = 0.0005):
+        """
+        Initialize the memory sampler.
+        """
         self.interval = max(0.0005, sampling_interval_sec)
         self._stop = threading.Event()
         self._thread = None
