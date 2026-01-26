@@ -36,6 +36,14 @@ import numpy as np
 
 
 def import_libraries(framework: str, variant: str):
+    """
+    Import the required libraries based on the variant and framework.
+
+    :param framework: name of the framework
+    :param variant: name of the variant
+
+    :return: dict of imported libraries
+    """
     modules = {}
     if (variant in ["baseline", "opt1", "opt2", "cpp", "cpp2"]) or (framework == "pytorch"):
         import torch
