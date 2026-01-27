@@ -24,6 +24,7 @@ import time
 from mc_cnn.profiling import MemorySampler
 
 
+# pylint: disable=protected-access
 def test_init_default_values():
     """
     Test initial default values
