@@ -17,6 +17,10 @@
 # limitations under the License.
 #
 
+"""
+This module contains functions and a class to do memory profiling
+"""
+
 import threading
 import time
 
