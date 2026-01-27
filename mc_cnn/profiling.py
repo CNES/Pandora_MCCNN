@@ -72,7 +72,7 @@ class MemorySampler:
             try:
                 rss = proc.memory_info().rss
                 self._peak = max(self._peak, rss)
-            except Exception:
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
             time.sleep(self.interval)
 
@@ -94,7 +94,7 @@ class MemorySampler:
         if self._thread is not None:
             try:
                 self._thread.join()
-            except Exception:
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
 
     @property
