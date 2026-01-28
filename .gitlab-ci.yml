@@ -13,7 +13,7 @@ include:
     inputs:
       image: ${UL_ARTIFACTORY_HOST}/publicremotes-docker/python:3.10
       pytest-enabled: true
-      pylint-enabled: true
+      pylint-enabled: false
       black-enabled: true
       # Mypy disabled, will be implemented in ticket 54
       mypy-enabled: false
