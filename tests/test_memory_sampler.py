@@ -19,6 +19,7 @@
 """
 This module contains functions to test the memory sampler
 """
+
 import time
 
 from mc_cnn.profiling import MemorySampler
