@@ -540,8 +540,8 @@ def computes_cost_volume_mc_cnn_fast(
     """
     torch = modules["torch"]
     nn = modules["nn"]
-
-    disparity_range = np.arange(disp_min, disp_max + 1, dtype=int)
+    # Construct the cost volume
+    disparity_range = np.arange(disp_min, disp_max + 1).astype(np.int32)
 
     # Allocate cost volume as (D, W, H) for intermediate fill, initialized with NaN
     lf = torch.from_numpy(left_features)
