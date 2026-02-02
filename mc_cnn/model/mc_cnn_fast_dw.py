@@ -1,4 +1,4 @@
-# Copyright (c) 2024 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2026 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -23,16 +23,26 @@ This module contains the mc-cnn fast network
 # pylint:disable=too-few-public-methods
 
 from torch import nn
+from torch import Tensor
 import torch
 import torch.nn.functional as F
+
+from typing import Union, Tuple
 
 
 class FastMcCnnDw(nn.Module):
     """
     Define the mc_cnn fast neural network with depthwise separable convolution
+
+    :param in_channels: input channels dimension.
+    :type in_channels: int. Default 1
+    :param num_conv_feature_maps: intermediate convolution channel dimension
+    :type num_conv_feature_maps: int. Default 64
+    :param conv_kernel_size: convolution kernel size
+    :type conv_kernel_size: int. Default 3
     """
 
-    def __init__(self, in_channels=1, num_conv_feature_maps=64, conv_kernel_size=3):
+    def __init__(self, in_channels: int = 1, num_conv_feature_maps: int = 64, conv_kernel_size: int = 3):
         super().__init__()
         self.in_channels = in_channels
         self.num_conv_feature_maps = num_conv_feature_maps
@@ -82,7 +92,7 @@ class FastMcCnnDw(nn.Module):
 
     # pylint: disable=arguments-differ
     # pylint: disable=no-else-return
-    def forward(self, sample, training):
+    def forward(self, sample: Tensor, training: bool) -> Union[Tuple[Tensor, Tensor, Tensor], Tensor]:
         """
         Forward function
 
@@ -95,6 +105,7 @@ class FastMcCnnDw(nn.Module):
                 - normalized image torch(row, col)
         :param training: training mode
         :type training: bool
+
         :return:
 
             - if training mode : left, right positive and right negative features

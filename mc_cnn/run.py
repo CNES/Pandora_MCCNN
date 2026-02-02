@@ -22,9 +22,7 @@ CPU-only execution for MC-CNN fast with frameworks and variants.
 Notes:
 - All paths are CPU-only regardless of hardware availability.
 - Single-thread by default for stability (override with env MCCNN_THREADS).
-- ONNX and OpenVINO sessions are configured to avoid affinity issues and keep runs comparable.
-- ONNX model is resolved next to the weights by default (<weights>.onnx).
-- OpenVINO IR is resolved next to the weights by default (<weights>.xml). Prefer IR if present.
+- 2 frameworks are available: PyTorch (.pt) and onnx (.onnx)
 """
 
 import os
@@ -45,11 +43,9 @@ def import_libraries(framework: str, variant: str)-> Dict[str, Any]:
     modules = {}
     if (variant == "baseline") or (framework == "pytorch"):
         import torch
+        import torch.nn
         modules["torch"] = torch
-
-        if variant == "baseline":
-            import torch.nn as nn
-            modules["nn"] = nn
+        modules["nn"] = torch.nn
 
     if framework == "onnx":
         import onnxruntime as ort
@@ -62,6 +58,8 @@ def _num_threads() -> int:
     """
     Unified threading knob.
     Default to 1 for reproducibility; override by setting env MCCNN_THREADS.
+
+    :return: int = 1
     """
     try:
         return max(1, int(os.getenv("MCCNN_THREADS", "1")))
@@ -81,6 +79,9 @@ def run_mc_cnn_fast(
 ) -> np.ndarray:
     """
     Compute the cost volume for a pair of images with MC-CNN fast (CPU-only).
+    Notes:
+    - 2 frameworks are available for the AI part: pytorch (nominal method) and onnx (optimized method)
+    - 2 variant for the cost volume loop computation: baseline (nominal method) and cpp (optimized method)
 
     :param img_left: left image, shape (H, W), dtype float or uint8
     :param img_right: right image, shape (H, W)
@@ -89,7 +90,8 @@ def run_mc_cnn_fast(
     :param model_path: path to the trained network weights (.pt/.onnx)
     :param framework: {"pytorch", "onnx"}
     :param variant: {"baseline", "cpp"} for CV loop
-    :param window_size: odd patch size 7/11/13/15; required for PyTorch to build exact-depth net
+    :param window_size: odd patch size 7/11/13/15, parameter only for PyTorch, for ONNX point to the right onnx file.
+
     :return: cost volume as numpy array of shape (H, W, D), float32
     """
     # ---------------- Stage: Import library ----------------
@@ -101,11 +103,11 @@ def run_mc_cnn_fast(
         if window_size is None:
             # Pandora must pass window_size; choose safe default but will likely mismatch
             window_size = 11
-        L = max(1, (int(window_size) - 1) // 2)  # number of 3x3 valid conv layers
+        layer_nb = max(1, (int(window_size) - 1) // 2)  # number of 3x3 valid conv layers
 
         # Cap PyTorch threads for reproducibility
         torch = modules["torch"]
-        import torch.nn as nn
+        nn = modules["nn"]
 
         try:
             torch.set_num_threads(nt)
@@ -115,21 +117,46 @@ def run_mc_cnn_fast(
 
         device = torch.device("cpu")  # Force CPU
 
-        # Dynamic MC-CNN fast with N conv layers (3x3, valid), ReLU after each conv except the last
         class FastMcCnnDyn(nn.Module):
+            """
+            Dynamic MC-CNN fast with N conv layers (3x3, valid), ReLU after each conv except the last
+            
+            :param num_layers: number of convolutional layers, depends on the window size
+
+                              W - 1
+                num_layers = ------- or 1 num_layers < 1
+                                2
+            """
             def __init__(self, num_layers: int):
                 super().__init__()
                 layers = []
                 in_ch = 1
                 out_ch = 64
-                for i in range(num_layers):
+                for layer_i in range(num_layers):
                     layers.append(nn.Conv2d(in_channels=in_ch, out_channels=out_ch, kernel_size=3))
-                    if i < num_layers - 1:
+                    if layer_i < num_layers - 1:
                         layers.append(nn.ReLU())
                     in_ch = out_ch
                 self.conv_blocks = nn.Sequential(*layers)
 
-            def forward(self, sample, training):
+            def forward(self, sample: torch.Tensor, training: bool):
+                """
+                Forward function
+
+                :param sample:
+                    - if training mode :
+                        - normalized patch : torch (batch_size, 3, 11, 11) with: 3 is the left patch, right positive patch,
+                                             right negative patch, 11 the patch
+                    - else :
+                        - normalized image torch(batch_size, row, col)
+                :param training: training mode, true for train false else, bool 
+
+                :return:
+
+                    - if training mode : left, right positive and right negative features, 
+                                         (torch(batch_size, 64, 1, 1), torch(batch_size, 64, 1, 1), torch(batch_size, 64, 1, 1))
+                    - else : extracted features, torch(64, row, col)
+                """
                 if training:
                     left = self.conv_blocks(sample[:, 0:1, :, :])
                     left = torch.nn.functional.normalize(left, p=2, dim=1)
@@ -147,7 +174,7 @@ def run_mc_cnn_fast(
                         return torch.squeeze(torch.nn.functional.normalize(feats, p=2, dim=1))
 
         # Build, then load weights strictly
-        net = FastMcCnnDyn(num_layers=L)
+        net = FastMcCnnDyn(num_layers=layer_nb)
         state = torch.load(model_path, map_location=device)
         sd = state["model"] if isinstance(state, dict) and "model" in state else state
         # strip DataParallel 'module.' if present
@@ -158,10 +185,17 @@ def run_mc_cnn_fast(
         net.eval()
 
         def inference_func(img_np: np.ndarray) -> np.ndarray:
+            """
+            Inference function with PyTorch
+
+            :param: image to infer (H, W). 
+        
+            :return: image features (C=64, H, W), float32
+            """
             # Expect img_np shape (H, W)
-            x = torch.from_numpy(img_np.astype(np.float32, copy=False)).to(device=device)
+            img = torch.from_numpy(img_np.astype(np.float32, copy=False)).to(device=device)
             with torch.no_grad():
-                feats = net(x, training=False)  # (64, H', W')
+                feats = net(img, training=False)  # (64, H', W')
             return feats.numpy()
 
     elif framework == "onnx":
@@ -183,6 +217,13 @@ def run_mc_cnn_fast(
         )
 
         def inference_func(img_np: np.ndarray) -> np.ndarray:
+            """
+            Inference function with ONNX runtime
+
+            :param: image to infer (H, W). 
+        
+            :return: image features (C=64, H, W), float32
+            """
             img = img_np.astype(np.float32, copy=False)
             outs = session.run(None, {"input": img})
             feats_np = outs[0]  # Expect (64, H, W)
@@ -193,6 +234,17 @@ def run_mc_cnn_fast(
 
     # ---------------- Stage: Feature extraction ----------------
     def normalize(img: np.ndarray) -> np.ndarray:
+        """
+        Image normalization
+
+                    img - mean
+        img_norm  = ----------
+                       std
+    
+        :param img: image to normalized (H, W)
+
+        :return: normalized image (H, W), float32
+        """
         img = img.astype(np.float32, copy=False)
         mean = float(img.mean())
         std = float(img.std())
@@ -223,7 +275,14 @@ def computes_cost_volume_mc_cnn_fast(
 ) -> np.ndarray:
     """
     Baseline cost volume: cosine similarity across channel dimension.
-    Returns numpy array (H, W, D).
+
+    :param modules: dict with the libraries to import
+    :param left_features: features from the left images encoded by convolutional network part (64, H, W)
+    :param right_features: features from the right images encoded by convolutional network part (64, H, W)
+    :param disp_min: minimum disparity (inclusive, negative or zero)
+    :param disp_max: maximum disparity (inclusive, typically 0 for left-to-right)
+
+    :return: cost volume as numpy array of shape (H, W, D), float32
     """
     torch = modules["torch"]
     nn = modules["nn"]
@@ -241,11 +300,19 @@ def computes_cost_volume_mc_cnn_fast(
     cos = nn.CosineSimilarity(dim=0, eps=1e-6)  # cosine over channel dimension C
 
     def point_interval(
-        left_features: "torch.Tensor", right_features: "torch.Tensor", disp: int
+        left_features: torch.Tensor,
+        right_features: torch.Tensor,
+        disp: int
     ) -> Tuple[Tuple[int, int], Tuple[int, int]]:
         """
         Compute the horizontal intervals over which similarity is applied for a given disparity.
         left_features/right_features shape: (C=64, H, W)
+
+        :param left_features: features from the left images encoded by convolutional network part (64, H, W)
+        :param right_features: features from the right images encoded by convolutional network part (64, H, W)
+        :param disp: disparity integer value.
+
+        :return: the pixel range for the left and right image. (min_left, max_left), (min_right, max_right)
         """
         _, _, nx_left = left_features.shape
         _, _, nx_right = right_features.shape
@@ -276,11 +343,24 @@ def computes_cost_volume_mc_cnn_fast(
     return np.swapaxes(cv, 0, 2)
 
 
-def computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(left_features, right_features, disp_min, disp_max):
+def computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(
+    left_features: np.ndarray,
+    right_features: np.ndarray,
+    disp_min: int,
+    disp_max: int
+) -> np.ndarray:
     """
-    Calls native pixel-major kernel (returns H,W,D) and returns as-is.
-    Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C,H,W),
+    Calls native pixel-major kernel (returns H, W, D) and returns as-is.
+    Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (C, H, W),
     then performs CHW -> HWC in Python and calls the native HWC kernel.
+
+    :param modules: dict with the libraries to import
+    :param left_features: features from the left images encoded by convolutional network part (64, H, W)
+    :param right_features: features from the right images encoded by convolutional network part (64, H, W)
+    :param disp_min: minimum disparity (inclusive, negative or zero)
+    :param disp_max: maximum disparity (inclusive, typically 0 for left-to-right)
+
+    :return: cost volume as numpy array of shape (H, W, D), float32
     """
     from .cv_opt2_pixelmajor_loader_notorch_int32 import (
         computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_int32 as computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch,

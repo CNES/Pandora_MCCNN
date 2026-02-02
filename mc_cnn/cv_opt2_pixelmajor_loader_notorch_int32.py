@@ -44,14 +44,27 @@ def computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_int32(
 ) -> np.ndarray:
     """
     Torch-free pixel-major kernel (NumPy I/O, HWC -> HWD).
-
-    Inputs:
-      - left_features_hwc, right_features_hwc: float32 arrays (H, W, C), C-order contiguous
-    Returns:
-      - cost volume: float32 (H, W, D) with cost = -dot; NaN in invalid regions if requested.
-
     Note:
       - Caller must provide HWC arrays; no transpose is performed here.
+
+    :param left_features_hwc: left features in C-order contiguous
+    :type left_features_hwc: float32 arrays (H, W, C)
+    :param right_features_hwc: right features in C-order contiguous
+    :type right_features_hwc: float32 arrays (H, W, C)
+    :param disp_min: minimun disparity
+    :type disp_min: int
+    :param disp_max: maximum disparity
+    :type disp_max: int
+    :param write_invalid_nan: write NaN if the computed disparity is not valid.
+    :type write_invalid_nan: bool, default True.
+    
+    :return: cost volume with cost = -dot; NaN in invalid regions if requested.
+    :rtype: float32 (H, W, D)
+
+    :raise RuntimeError: if the native module 'cv_opt2_pixelmajor_notorch_int32' is not found.
+    :raise ValueError: if left and right features
+        - don't have the same number of dimensions
+        - don't have the same shapes
     """
     if _ext is None:
         raise RuntimeError(

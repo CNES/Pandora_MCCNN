@@ -32,16 +32,18 @@ import numpy as np
 from numba import njit, prange
 import h5py
 import rasterio
+from typing import Tuple, List, Union
 
 
-def load_pfm(fname):
+def load_pfm(fname: str) -> Tuple[np.ndarray, float]:
     """
     Load a PFM file into a Numpy array.
 
     :param fname: path to the PFM file
     :type fname: string
+
     :return: data of the PFM file
-    :rtype: tuple(np.array (row, col) , scale factor )
+    :rtype: tuple(np.array (row, col) , scale factor)
     """
     color = None
     width = None
@@ -76,7 +78,7 @@ def load_pfm(fname):
     return np.flipud(np.reshape(data, shape)), scale
 
 
-def read_im(fname, downsample):
+def read_im(fname: str, downsample: bool) -> np.ndarray:
     """
     Read image, apply gray conversion, normalize image
 
@@ -84,6 +86,7 @@ def read_im(fname, downsample):
     :type fname: string
     :param downsample: downsample the image
     :type downsample: bool
+
     :return: data of the file
     :rtype: np.array (1, row, col)
     """
@@ -109,18 +112,24 @@ def read_im(fname, downsample):
 
 
 @njit(parallel=True)
-def compute_mask(left_disp, left_row_disp, right_disp, patch_size):
+def compute_mask(
+    left_disp: np.ndarray,
+    left_row_disp: Union[np.ndarray, None],
+    right_disp: np.ndarray,
+    patch_size: int
+) -> np.ndarray:
     """
     Apply cross-checking, and invalidate pixels with incomplete patch
 
     :param left_disp: Left disparity
     :type left_disp: numpy.array (row, col)
     :param left_row_disp: Left column disparity
-    :type left_row_disp: numpy.array (row, col)
+    :type left_row_disp: numpy.array (row, col), or None
     :param right_disp: Right disparity
     :type right_disp: numpy.array (row, col)
     :param patch_size: patch size
     :type patch_size: int
+
     :return: Result of the cross-checking with the convention : invalid pixels = 0, valid pixels = 1
     :rtype: numpy.array (row, col)
     """
@@ -149,7 +158,13 @@ def compute_mask(left_disp, left_row_disp, right_disp, patch_size):
     return mask
 
 
-def save_dataset(img, sample, num_img, img_file, sample_file):
+def save_dataset(
+    img: List[np.ndarray],
+    sample: np.ndarray,
+    num_img: int,
+    img_file: h5py.Group,
+    sample_file: h5py.Group
+):
     """
     Save the dataset in hdf5 files :
         - images are saved in the img_file file: creation of a group of name num_img that contains number of exposures
@@ -178,7 +193,7 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
 
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-function-args
 # pylint: disable=too-many-positional-arguments
-def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_dir):
+def middleburry(in_dir_2014: str, in_dir_2006: str, in_dir_2005: str, in_dir_2003: str, in_dir_2001: str, output_dir: str):
     """
     Preprocess and create middlebury hdf5 database
 

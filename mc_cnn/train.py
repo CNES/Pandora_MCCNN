@@ -35,6 +35,7 @@ from torch import nn, optim
 from torch.utils import data
 from tqdm import tqdm
 import mlflow
+from typing import Dict, Any, Tuple
 
 from mc_cnn.model.mc_cnn_accurate import AccMcCnn
 from mc_cnn.model.mc_cnn_fast import FastMcCnn
@@ -45,9 +46,11 @@ from mc_cnn.dataset_generator.datas_fusion_contest_generator import DataFusionCo
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def mkdir_p(path):
+def mkdir_p(path: str):
     """
     Create a directory without complaining if it already exists.
+
+    :param path: path to create
     """
     try:
         os.makedirs(path)
@@ -58,12 +61,15 @@ def mkdir_p(path):
             raise
 
 
-def load_dataset(cfg):
+def load_dataset(
+    cfg: Dict[str, Any]) -> Tuple[data.Dataset, data.Dataset]:
     """
     Load training and testing data.
 
-    :param cfg: configuration
-    :type cfg: dict
+    :param cfg: dict configuration
+
+    :return: training and testing datasets.
+    :rtype: Tuple[torch.utils.data.Dataset, torch.utils.data.Dataset]
     """
 
     # Testing configuration : deactivate data augmentation
@@ -85,12 +91,13 @@ def load_dataset(cfg):
     return training_loader, testing_loader
 
 
-def get_parameters_for_mlflow_logs(cfg):
+def get_parameters_for_mlflow_logs(cfg: Dict[str, Any]) -> Dict[str, Any]:
     """
     Get parameters for logs.
 
-    :param cfg: configuration
-    :type cfg: dict
+    :param cfg: dict configuration
+
+    :return: parameters dict
     """
     params = {
         "network": cfg["network"],
@@ -117,7 +124,12 @@ def get_parameters_for_mlflow_logs(cfg):
     return params
 
 
-def load_checkpoint(cfg, net, optimizer, scheduler):
+def load_checkpoint(
+    cfg: Dict[str, Any],
+    net: nn.Module,
+    optimizer: optim.Optimizer,
+    scheduler: optim.LRScheduler
+) -> Tuple[int, int]:
     """
     Run a mccnn fast testing epoch.
 
@@ -129,6 +141,8 @@ def load_checkpoint(cfg, net, optimizer, scheduler):
     :type optimizer: torch.optim.Optimizer
     :param scheduler: scheduler
     :type scheduler: torch.optim.LRScheduler
+
+    :return: start and end epoch; Tuple(int, int)
     """
     # Get run and params
     run = mlflow.active_run()
@@ -137,11 +151,11 @@ def load_checkpoint(cfg, net, optimizer, scheduler):
 
     # Compute start epoch
     start_epoch = int(params["epochs"])
-    i = 0
+    epoch_i = 0
     additional_epochs_key = f"additional_epochs{i}"
     while additional_epochs_key in params:
         start_epoch += int(params[additional_epochs_key])
-        i += 1
+        epoch_i += 1
         additional_epochs_key = f"additional_epochs{i}"
 
     # Get checkpoint path
@@ -165,9 +179,17 @@ def load_checkpoint(cfg, net, optimizer, scheduler):
     return start_epoch, end_epoch
 
 
-def mcc_fast_training_epoch(epoch, net, training_generator, optimizer, criterion):
+def mcc_fast_training_epoch(
+    epoch: int,
+    net: nn.Module,
+    training_generator: data.DataLoader,
+    optimizer: optim.Optimizer,
+    criterion: nn.Module
+) -> Tuple[float, int]:
     """
     Run a mccnn fast training epoch.
+    :param epoch: Number of epoch
+    :type epoch: int
     :param net: network
     :type net: torch.nn.Module
     :param training_generator: training generator
@@ -175,7 +197,10 @@ def mcc_fast_training_epoch(epoch, net, training_generator, optimizer, criterion
     :param optimizer: optimizer
     :type optimizer: torch.optim.Optimizer
     :param criterion: criterion
-    :type criterion: torch.nn.Loss
+    :type criterion: torch.nn.Module
+
+    :return: mean train loss per epoch and train number of accurate prediction per epoch
+    :rtype: Tuple[float, int]
     """
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
@@ -220,7 +245,12 @@ def mcc_fast_training_epoch(epoch, net, training_generator, optimizer, criterion
     return train_epoch_loss, train_num_correct
 
 
-def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
+def mcc_fast_testing_epoch(
+    net: nn.Module,
+    testing_generator: data.DataLoader,
+    optimizer: optim.Optimizer,
+    criterion: nn.Module
+) -> Tuple[float, int]:
     """
     Run a mccnn fast testing epoch.
 
@@ -231,7 +261,10 @@ def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
     :param optimizer: optimizer
     :type optimizer: torch.optim.Optimizer
     :param criterion: criterion
-    :type criterion: torch.nn.Loss
+    :type criterion: torch.nn.Module
+
+    :return: mean train loss per epoch and train number of accurate prediction per epoch
+    :rtype: Tuple[float, int]
     """
     cos = nn.CosineSimilarity(dim=1, eps=1e-6)
 
@@ -270,7 +303,12 @@ def mcc_fast_testing_epoch(net, testing_generator, optimizer, criterion):
     return test_epoch_loss, test_num_correct
 
 
-def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
+def train_mc_cnn_fast(
+    cfg: Dict[str, Any],
+    output_dir: str,
+    dataloader_params: Dict[str, Any],
+    experiment_id: str
+):
     """
     Train the fast mc_cnn network
 
@@ -280,6 +318,13 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
     :type output_dir: string
     :param dataloader_params: params for DataLoader
     :type dataloader_params: dict
+    :param experiment_id: Mlflow experiment id
+    :type experiment_id: string
+
+    :raise ValueError: error is raised if
+        - network option is not on the list ["std", "depthwise"]
+        - optimizer is not in the list ['SGD', 'Adam']
+
     """
     # Create the output directory
     mkdir_p(output_dir)
@@ -292,7 +337,7 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
         net = FastMcCnnDw(num_conv_feature_maps=cfg.get("num_conv_feature_maps", 64))
     else:
         raise ValueError(
-            f"conv {cfg['network']} does not correspond to one of the options in the list " "['std', 'depthwise'] ."
+            f"conv {cfg['network']} does not correspond to one of the options in the list ['std', 'depthwise']."
         )
     net.to(device)
 
@@ -303,7 +348,7 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
         optimizer = optim.Adam(net.parameters(), lr=cfg["learning_rate"])
     else:
         raise ValueError(
-            f"optimizer {cfg['optimizer']} does not correspond to one of the options in the list " "['SGD', 'Adam'] ."
+            f"optimizer {cfg['optimizer']} does not correspond to one of the options in the list ['SGD', 'Adam']."
         )
 
     criterion = nn.MarginRankingLoss(margin=0.2, reduction="mean")
@@ -377,9 +422,18 @@ def train_mc_cnn_fast(cfg, output_dir, dataloader_params, experiment_id):
     mlflow.end_run()
 
 
-def mcc_acc_training_epoch(epoch, net, training_generator, optimizer, criterion):
+def mcc_acc_training_epoch(
+    epoch: int,
+    net: nn.Module,
+    training_generator: data.DataLoader,
+    optimizer: optim.Optimizer,
+    criterion: nn.Module
+) -> Tuple[float, int]:
     """
     Run a mccnn acc training epoch.
+    
+    :param epoch; number of epoch
+    :type epoch: int
     :param net: network
     :type net: torch.nn.Module
     :param training_generator: training generator
@@ -387,7 +441,10 @@ def mcc_acc_training_epoch(epoch, net, training_generator, optimizer, criterion)
     :param optimizer: optimizer
     :type optimizer: torch.optim.Optimizer
     :param criterion: criterion
-    :type criterion: torch.nn.Loss
+    :type criterion: torch.nn.Module
+
+    :return: mean train loss per epoch and train number of accurate prediction per epoch
+    :rtype: Tuple[float, int]
     """
     train_epoch_loss = 0.0
     train_num_correct = 0
@@ -430,9 +487,15 @@ def mcc_acc_training_epoch(epoch, net, training_generator, optimizer, criterion)
     return train_epoch_loss, train_num_correct
 
 
-def mcc_acc_testing_epoch(net, testing_generator, optimizer, criterion):
+def mcc_acc_testing_epoch(
+    net: nn.Module,
+    testing_generator: data.DataLoader,
+    optimizer: optim.Optimizer,
+    criterion: nn.Module
+) -> Tuple[float, int]:
     """
     Run a mccnn acc testing epoch.
+
     :param net: network
     :type net: torch.nn.Module
     :param training_generator: training generator
@@ -440,7 +503,10 @@ def mcc_acc_testing_epoch(net, testing_generator, optimizer, criterion):
     :param optimizer: optimizer
     :type optimizer: torch.optim.Optimizer
     :param criterion: criterion
-    :type criterion: torch.nn.Loss
+    :type criterion: torch.nn.Module
+
+    :return: mean test loss per epoch and test number of accurate prediction per epoch
+    :rtype: Tuple[float, int]
     """
     test_epoch_loss = 0.0
     test_num_correct = 0
@@ -477,7 +543,11 @@ def mcc_acc_testing_epoch(net, testing_generator, optimizer, criterion):
     return test_epoch_loss, test_num_correct
 
 
-def train_mc_cnn_acc(cfg, output_dir, dataloader_params, experiment_id):
+def train_mc_cnn_acc(
+    cfg: Dict[str, Any],
+    output_dir: str,
+    dataloader_params: Dict[str, Any],
+    experiment_id: str):
     """
     Train the accurate mc_cnn network
 
@@ -487,6 +557,8 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params, experiment_id):
     :type output_dir: string
     :param dataloader_params: params for DataLoader
     :type dataloader_params: dict
+    :param experiment_id: Mlflow experiment id
+    :type experiment_id: string
     """
     # Create the output directory
     mkdir_p(output_dir)
@@ -569,12 +641,13 @@ def train_mc_cnn_acc(cfg, output_dir, dataloader_params, experiment_id):
     mlflow.end_run()
 
 
-def read_config_file(config_file):
+def read_config_file(config_file: str) -> Dict[str, Any]:
     """
     Read a json configuration file
 
     :param config_file: path to a json file containing the algorithm parameters
     :type config_file: string
+
     :return: the configuration
     :rtype: dict
     """
@@ -583,23 +656,28 @@ def read_config_file(config_file):
     return user_configuration
 
 
-def save_cfg(output, configuration):
+def save_cfg(output: str, configuration: Dict[str, Any]):
     """
     Save user configuration in the json file : config.json
 
     :param output: output directory
+    :type output: string
     :param configuration: user configuration
+    :type configuration: dict
     """
     with open(os.path.join(output, "config.json"), "w", encoding="utf-8") as file:
         json.dump(configuration, file, indent=2)
 
 
-def setup_mlflow(cfg_mlflow):
+def setup_mlflow(cfg_mlflow: Dict[str, Any]) -> str:
     """
     Setup MLFlow
 
     :param cfg_mlflow: mlflow config
     :type cfg_mlflow: dict
+
+    :return: experiment id
+    :rtype: str
     """
     mlflow.set_tracking_uri(cfg_mlflow["tracking_uri"])
     try:

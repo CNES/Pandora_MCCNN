@@ -34,7 +34,7 @@ from numba import njit
 
 
 @njit()
-def compute_mask(disp_map, mask_left, mask_right, patch_size):
+def compute_mask(disp_map: np.ndarray, mask_left: np.ndarray, mask_right: np.ndarray, patch_size: int) -> np.ndarray:
     """
     Masks invalid pixels : pixel outside epipolar image
 
@@ -46,6 +46,7 @@ def compute_mask(disp_map, mask_left, mask_right, patch_size):
     :type mask_right: 2D numpy array
     :param patch_size: patch size
     :type patch_size: int
+
     :return: the disparity map with invalid pixels = -9999
     :rtype: 2D numpy array
     """
@@ -88,7 +89,7 @@ def compute_mask(disp_map, mask_left, mask_right, patch_size):
     return disp_map
 
 
-def save_dataset(img, sample, img_name, img_file, sample_file):
+def save_dataset(img: np.ndarray, sample: np.ndarray, img_name: str, img_file: h5py.Group, sample_file: h5py.Group):
     """
     Save the sample in hdf5 files :
         - images are saved in the img_file file: creation of a dataset for each image pair
@@ -112,7 +113,7 @@ def save_dataset(img, sample, img_name, img_file, sample_file):
     img_file.create_dataset(img_name, data=img)
 
 
-def fusion_contest(input_dir, output):
+def fusion_contest(input_dir: str, output: str):
     """
     Preprocess and create data fusion contest hdf5 database
 
