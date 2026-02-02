@@ -19,7 +19,7 @@
 import numpy as np
 
 
-def cv_opt2_pixelmajor_int32(
+def cv_pixelmajor_int32(
     lf_hwc: np.ndarray,
     rf_hwc: np.ndarray,
     disp_min_ll: int,

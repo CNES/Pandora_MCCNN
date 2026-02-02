@@ -18,7 +18,7 @@
 #
 
 """
-cv_opt2_pixelmajor_loader_notorch.py
+cv_pixelmajor_loader_notorch.py
 Torch-free pixel-major kernel loader: expects HWC float32 arrays.
 The CHW -> HWC transpose is done by the caller (Python), not here.
 """
@@ -28,14 +28,14 @@ import numpy as np
 
 try:
     # Native pybind11 module (expects HWC inputs, returns HWD)
-    from . import cv_opt2_pixelmajor_notorch_int32 as _ext
+    from . import cv_pixelmajor_notorch_int32 as _ext
 
     _import_err: Optional[Exception] = None
 except Exception as e:
     _ext, _import_err = None, e
 
 
-def computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_int32(
+def computes_cost_volume_mc_cnn_fast_pixelmajor_cpp_int32(
     left_features_hwc: np.ndarray,
     right_features_hwc: np.ndarray,
     disp_min: int,
@@ -61,14 +61,14 @@ def computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_int32(
     :return: cost volume with cost = -dot; NaN in invalid regions if requested.
     :rtype: float32 (H, W, D)
 
-    :raise RuntimeError: if the native module 'cv_opt2_pixelmajor_notorch_int32' is not found.
+    :raise RuntimeError: if the native module 'cv_pixelmajor_notorch_int32' is not found.
     :raise ValueError: if left and right features
         - don't have the same number of dimensions
         - don't have the same shapes
     """
     if _ext is None:
         raise RuntimeError(
-            "Native module 'cv_opt2_pixelmajor_notorch_int32' not found. Build it (pybind11).\n"
+            "Native module 'cv_pixelmajor_notorch_int32' not found. Build it (pybind11).\n"
             f"Original import error: {_import_err}"
         )
 
@@ -84,4 +84,4 @@ def computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_int32(
     if not rf.flags.c_contiguous:
         rf = np.ascontiguousarray(rf)
 
-    return _ext.cv_opt2_pixelmajor_int32(lf, rf, int(disp_min), int(disp_max), bool(write_invalid_nan))
+    return _ext.cv_pixelmajor_int32(lf, rf, int(disp_min), int(disp_max), bool(write_invalid_nan))

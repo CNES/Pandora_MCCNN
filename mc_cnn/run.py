@@ -362,8 +362,8 @@ def computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(
 
     :return: cost volume as numpy array of shape (H, W, D), float32
     """
-    from .cv_opt2_pixelmajor_loader_notorch_int32 import (
-        computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_int32 as computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch,
+    from .cv_pixelmajor_loader_notorch_int32 import (
+        computes_cost_volume_mc_cnn_fast_pixelmajor_cpp_int32 as computes_cost_volume_mc_cnn_fast_pixelmajor_cpp_notorch,
     )
 
     # Validate CHW
@@ -381,5 +381,5 @@ def computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(
     rf_hwc = np.transpose(right_features, (1, 2, 0)).copy(order="C")
 
     # Native notorch kernel (expects HWC, returns HWD)
-    out_hwd = computes_cost_volume_mc_cnn_fast_opt2_pixelmajor_cpp_notorch(lf_hwc, rf_hwc, disp_min, disp_max)
+    out_hwd = computes_cost_volume_mc_cnn_fast_pixelmajor_cpp_notorch(lf_hwc, rf_hwc, disp_min, disp_max)
     return out_hwd
