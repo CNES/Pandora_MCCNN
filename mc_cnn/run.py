@@ -259,7 +259,7 @@ def run_mc_cnn_fast(
 
     # ---------------- Stage: Cost volume (non-IA loop) ----------------
     if variant == "cpp":
-        cv = computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(left_features, right_features, disp_min, disp_max)
+        cv = computes_cost_volume_mc_cnn_fast_cpp_notorch_int32(left_features, right_features, disp_min, disp_max)
     else:
         cv = computes_cost_volume_mc_cnn_fast(modules, left_features, right_features, disp_min, disp_max)
 
@@ -343,7 +343,7 @@ def computes_cost_volume_mc_cnn_fast(
     return np.swapaxes(cv, 0, 2)
 
 
-def computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(
+def computes_cost_volume_mc_cnn_fast_cpp_notorch_int32(
     left_features: np.ndarray,
     right_features: np.ndarray,
     disp_min: int,
@@ -382,4 +382,5 @@ def computes_cost_volume_mc_cnn_fast_cpp2_notorch_int32(
 
     # Native notorch kernel (expects HWC, returns HWD)
     out_hwd = computes_cost_volume_mc_cnn_fast_pixelmajor_cpp_notorch(lf_hwc, rf_hwc, disp_min, disp_max)
+
     return out_hwd

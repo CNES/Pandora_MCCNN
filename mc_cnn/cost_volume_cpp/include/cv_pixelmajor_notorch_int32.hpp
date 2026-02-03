@@ -28,9 +28,7 @@
 #include <limits>
 #include <stdexcept>
 
-
 namespace py = pybind11;
-
 
 /**
  * @brief Check array dimensions
@@ -53,6 +51,18 @@ static inline void ensure_hwc_3d(const py::array& arr, const char* name);
  */
 static inline void ensure_same_shape(const py::array& arr_a, const py::array& arr_b);
 
+
+/**
+ * @brief Compute cost volume with torch-free pixel-major kernel. Expects HWC float32 arrays.
+ *
+ * @param lf_hwc : left features, expects float32 array (H, W, C).
+ * @param rf_hwc : right features, expects float32 array (H, W, C).
+ * @param disp_min_ll : minimum disparity.
+ * @param disp_max_ll : maximum disparity.
+ * @param write_invalid_nan : replace invalid by NaN if set to true.
+ *
+ * @return py::array : return the cost volume (H, W, D).                 
+ */
 py::array_t<float> cv_pixelmajor_int32(
     py::array_t<float, py::array::c_style | py::array::forcecast> lf_hwc,
     py::array_t<float, py::array::c_style | py::array::forcecast> rf_hwc,

@@ -28,23 +28,53 @@ try:
 except ImportError:
     from importlib_resources import files  # python<=3.8
 
+from importlib.abc import Traversable
+from pathlib import Path
 
 AVAILABLE_WEIGHTS = {
-    "fast": {"middlebury": "mc_cnn_fast_mb_weights.pt", "dfc": "mc_cnn_fast_data_fusion_contest.pt"},
-    "accurate": {"middlebury": "mc_cnn_accurate_mb_weights.pt", "dfc": "mc_cnn_accurate_data_fusion_contest.pt"},
+    "fast": {
+        "middlebury": "mc_cnn_fast_mb_weights.pt", "dfc": "mc_cnn_fast_data_fusion_contest.pt"
+    },
+    "accurate": {
+        "middlebury": "mc_cnn_accurate_mb_weights.pt", "dfc": "mc_cnn_accurate_data_fusion_contest.pt"
+    },
+}
+
+AVAILABLE_ONNX = {
+    "onnx_int8": {
+        "middlebury": "/work/CAMPUS/etudes/3D/Development/rt_mccnn/weights/base_and_quantized_weights/mc_cnn_fast_mb_weights_dynamo_int8_excl_01.onnx"
+    },
+    "onnx_dw": {
+        "middlebury": "/work/CAMPUS/etudes/3D/Development/rt_mccnn/weights/retrained/fast_dw/mc_cnn_fast_epoch13.onnx"
+    }
 }
 
 
-def get_weights(arch="fast", training_dataset="middlebury"):
+def get_weights(arch="fast", training_dataset="middlebury") -> Traversable:
     """
     Return the absolute path of MC-CNN weights according to network and training parameters
 
     :param arch: architecture of MC-CNN : "fast" or "accurate"
     :type arch: str
     :param training_dataset: training dataset of MC-CNN : "middlebury" of "dfc" (Data Fusion Contest)
-    :type training_dataset: str
+    :type training_dataset: strk
     :return: absolute path of MC-CNN weights (.pt file)
     :rtype: PosixPath
     """
     filename = AVAILABLE_WEIGHTS[arch][training_dataset]
     return files("mc_cnn.weights").joinpath(filename)
+
+
+def get_onnx(arch="onnx_int8", training_dataset="middlebury") -> Path:
+    """
+    Return the absolute path of MC-CNN weights according to network and training parameters
+
+    :param arch: architecture of MC-CNN : "onnx_int8" or "onnx_dw"
+    :type arch: str
+    :param training_dataset: training dataset of MC-CNN : "middlebury" of "dfc" (Data Fusion Contest)
+    :type training_dataset: strk
+    :return: absolute path of MC-CNN weights (.pt file)
+    :rtype: PosixPath
+    """
+    return Path(AVAILABLE_ONNX[arch][training_dataset])
+ 
