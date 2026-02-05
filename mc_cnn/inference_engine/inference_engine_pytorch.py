@@ -1,0 +1,91 @@
+# Copyright (c) 2026 Centre National d'Etudes Spatiales (CNES).
+#
+# This file is part of PANDORA_MCCNN
+#
+#     https://github.com/CNES/Pandora_MCCNN
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+"""
+Module for PyTorch inference.
+"""
+
+import torch
+import numpy as np
+from typing import Dict, Tuple
+
+from . import inference_engine_base
+from ..model.mc_cnn_fast_dyn import FastMcCnnDyn
+
+
+@inference_engine_base.AbstractInferenceEngine.register_subclass("pytorch")
+class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
+    """
+    PyTorch engine class
+    """
+    def __init__(self, cfg: Dict) -> None:
+        super().__init__(cfg)
+        self.device = torch.device(self.cfg["device"])
+        self.nt = self.cfg["nt"]
+
+        num_layers = max(1, (int(self.cfg["window_size"]) - 1) // 2)
+        self.model = FastMcCnnDyn(num_layers)
+
+    def run_framework(self, img_left: np.ndarray, img_right: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        PyTorch inference function.
+
+        :param img_left: left image (row, col)
+        :param img_right: right image (row, col)
+
+        :return: tuple of the left and right features, Tuple[float32(C=64, row, col), float32(C=64, row, col)]
+        """
+        torch.set_num_threads(self.nt)
+        torch.set_num_interop_threads(1)
+        
+        state = torch.load(self.cfg["model_path"], map_location=self.device)
+        sd = state["model"] if isinstance(state, dict) and "model" in state else state
+        # strip DataParallel 'module.' if present
+        if isinstance(sd, dict) and any(k.startswith("module.") for k in sd.keys()):
+            sd = {k.replace("module.", "", 1): v for k, v in sd.items()}
+    
+        self.model.load_state_dict(sd)  # strict=True by default
+        self.model.to(self.device)
+        self.model.eval()
+
+        left = self.normalize(img_left)
+        right = self.normalize(img_right)
+        left_features = self.inference_func(left)  # (64, H', W') depending on model depth
+        right_features = self.inference_func(right)
+
+        return left_features, right_features
+
+    def inference_func(self, img: np.ndarray) -> np.ndarray:
+        """
+        Inference function with PyTorch
+
+        :param: image to infer (H, W). 
+    
+        :return: image features (C=64, H, W), float32
+        """
+        # Expect img_np shape (H, W)
+        img = torch.from_numpy(img.astype(np.float32, copy=False)).to(device=self.device)
+
+        with torch.no_grad():
+            feats = self.model(img, training=False)  # (64, H', W')
+    
+        return feats.numpy()
+
+
+
