@@ -38,9 +38,6 @@ AVAILABLE_WEIGHTS = {
     "accurate": {
         "middlebury": "mc_cnn_accurate_mb_weights.pt", "dfc": "mc_cnn_accurate_data_fusion_contest.pt"
     },
-}
-
-AVAILABLE_ONNX = {
     "onnx_int8": {
         "middlebury": "/work/CAMPUS/etudes/3D/Development/rt_mccnn/weights/base_and_quantized_weights/mc_cnn_fast_mb_weights_dynamo_int8_excl_01.onnx"
     },

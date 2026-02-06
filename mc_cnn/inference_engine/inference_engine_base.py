@@ -124,7 +124,7 @@ class AbstractInferenceEngine(ABC):
         return decorator
     
     @abstractmethod
-    def run_framework(self, img_left: np.ndarray, img_right: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def load_model(self) -> None:
         """
         Engine inference function.
 

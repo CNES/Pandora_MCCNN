@@ -69,7 +69,11 @@ def run_mc_cnn_fast(
 
     # ---------------- Stage: Model init ----------------
     model_inferer = inference_engine_base.AbstractInferenceEngine(cfg["framework"])
-    left_features, right_features = model_inferer.run_framework(img_left, img_right)
+    model_inferer.load_model()
+    left = model_inferer.normalize(img_left)
+    right = model_inferer.normalize(img_right)
+    left_features = model_inferer.inference_func(left)  # (64, H', W') depending on model depth
+    right_features = model_inferer.inference_func(right)
 
     cost_volume = cost_volume_base.AbstractCostVolume(cfg["cost_volume"])
     cv = cost_volume.compute_cost_volume(left_features, right_features, disp_min, disp_max)

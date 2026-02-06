@@ -22,7 +22,7 @@ Module for ONNX inference.
 """
 
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict
 from json_checker import And
 import onnxruntime as ort
 
@@ -50,9 +50,9 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
             }
         )
 
-        return schema
+        return schema        
 
-    def run_framework(self, img_left: np.ndarray, img_right: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def load_model(self) -> None:
         """
         ONNX inference function.
 
@@ -73,13 +73,6 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
         self.session = ort.InferenceSession(
             self.cfg["model_path"], sess_options=so, providers=[providers], provider_options=[provider_options]
         )
-
-        left = self.normalize(img_left)
-        right = self.normalize(img_right)
-        left_features = self.inference_func(left)  # (64, H', W') depending on model depth
-        right_features = self.inference_func(right)
-
-        return left_features, right_features
 
     def inference_func(self, img: np.ndarray) -> np.ndarray:
         """

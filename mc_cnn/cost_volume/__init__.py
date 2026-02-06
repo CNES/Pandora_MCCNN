@@ -20,4 +20,4 @@
 from . import cost_volume_baseline, cost_volume_pixel_major_cpp
 from .cost_volume_base import AbstractCostVolume
 
-__all__ = ["AbstractCostVolume", "cost_volume_baseline"]
+__all__ = ["AbstractCostVolume", "cost_volume_baseline", "cost_volume_pixel_major_cpp"]

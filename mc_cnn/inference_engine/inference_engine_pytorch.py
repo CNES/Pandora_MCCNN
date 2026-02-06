@@ -42,7 +42,7 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
         num_layers = max(1, (int(self.cfg["window_size"]) - 1) // 2)
         self.model = FastMcCnnDyn(num_layers)
 
-    def run_framework(self, img_left: np.ndarray, img_right: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def load_model(self) -> None:
         """
         PyTorch inference function.
 
@@ -51,8 +51,8 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
 
         :return: tuple of the left and right features, Tuple[float32(C=64, row, col), float32(C=64, row, col)]
         """
-        torch.set_num_threads(self.nt)
-        torch.set_num_interop_threads(1)
+        # torch.set_num_threads(self.nt)
+        # torch.set_num_interop_threads(1)
         
         state = torch.load(self.cfg["model_path"], map_location=self.device)
         sd = state["model"] if isinstance(state, dict) and "model" in state else state
@@ -63,13 +63,6 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
         self.model.load_state_dict(sd)  # strict=True by default
         self.model.to(self.device)
         self.model.eval()
-
-        left = self.normalize(img_left)
-        right = self.normalize(img_right)
-        left_features = self.inference_func(left)  # (64, H', W') depending on model depth
-        right_features = self.inference_func(right)
-
-        return left_features, right_features
 
     def inference_func(self, img: np.ndarray) -> np.ndarray:
         """
