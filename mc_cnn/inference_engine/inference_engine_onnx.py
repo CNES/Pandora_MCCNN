@@ -77,10 +77,10 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
     
         :return: image features (C=64, row, col), float32
         """
-        # Expect img_np shape (H, W)
+        # Expect img_np shape (row, col)
         img = img.astype(np.float32, copy=False)
         outs = self.session.run(None, {"input": img})
-        feats = outs[0]  # Expect (64, H, W)
+        feats = outs[0]  # Expect (64, row, col)
         return feats
 
 

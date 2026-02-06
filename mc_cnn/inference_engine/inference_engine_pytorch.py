@@ -63,15 +63,15 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
         """
         Inference function with PyTorch
 
-        :param: image to infer (H, W). 
+        :param: image to infer (row, col). 
     
-        :return: image features (C=64, H, W), float32
+        :return: image features (C=64, row, col), float32
         """
-        # Expect img_np shape (H, W)
+        # Expect img_np shape (row, col)
         img = torch.from_numpy(img.astype(np.float32, copy=False)).to(device=self.device)
 
         with torch.no_grad():
-            feats = self.model(img, training=False)  # (64, H', W')
+            feats = self.model(img, training=False)  # (64, row', col')
     
         return feats.numpy()
 
