@@ -44,12 +44,7 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
 
     def load_model(self) -> None:
         """
-        PyTorch inference function.
-
-        :param img_left: left image (row, col)
-        :param img_right: right image (row, col)
-
-        :return: tuple of the left and right features, Tuple[float32(C=64, row, col), float32(C=64, row, col)]
+        PyTorch load model function.
         """
         # torch.set_num_threads(self.nt)
         # torch.set_num_interop_threads(1)

@@ -54,12 +54,7 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
 
     def load_model(self) -> None:
         """
-        ONNX inference function.
-
-        :param img_left: left image (row, col)
-        :param img_right: right image (row, col)
-
-        :return: tuple of the left and right features, Tuple[float32(C=64, row, col), float32(C=64, row, col)]
+        ONNX load model function.
         """
         so = ort.SessionOptions()
         so.intra_op_num_threads = self.nt

@@ -126,12 +126,7 @@ class AbstractInferenceEngine(ABC):
     @abstractmethod
     def load_model(self) -> None:
         """
-        Engine inference function.
-
-        :param img_left: left image (row, col)
-        :param img_right: right image (row, col)
-
-        :return: tuple of the left and right features, Tuple[float32(C=64, row, col), float32(C=64, row, col)]
+        Load model function.
         """
 
     @abstractmethod

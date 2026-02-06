@@ -24,8 +24,11 @@ This module contains functions to test the cost volume create by mc_cnn
 import pytest
 from pathlib import Path
 import numpy as np
+import torch
 
 from mc_cnn.inference_engine import inference_engine_base
+from mc_cnn.weights import get_weights
+from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
 
 
 AVAILABLE_WEIGHTS = {
@@ -35,9 +38,9 @@ AVAILABLE_WEIGHTS = {
     "onnx_dw": {"middlebury": "mc_cnn_fast_dw.onnx"}
 }
 
-class TestMCCNN:
+class TestInferenceModel:
     """
-    TestMCCNN class allows to test the cost volume create by mc_cnn
+    TestInferenceModel class allows to test model loading and inference
     """
     @pytest.mark.parametrize(
         ["architecture", "training_dataset", "expected_training_dataset", "framework_name", "device", "window_size"],
@@ -77,3 +80,24 @@ class TestMCCNN:
         
         dummy_input = np.random.rand(256, 256).astype(np.float32)
         model_inferer.inference_func(dummy_input)
+
+    def test_accessor_accurate_weights(self):
+        """
+        Tests whether the get_weights function return the accurate path
+        """
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        # Load MC-CNN-accurate weights trained on Middlebury in the model
+        weights_path = get_weights(arch="accurate", training_dataset="middlebury")
+        assert "mb" in str(weights_path)
+        net = AccMcCnnInfer()
+        net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
+        net.eval()
+
+        # Load MC-CNN-accurate weights trained on DFC in the model
+        weights_path = get_weights(arch="accurate", training_dataset="dfc")
+        assert "data_fusion_contest" in str(weights_path)
+        net = AccMcCnnInfer()
+        net.load_state_dict(torch.load(weights_path, map_location=device)["model"])
+        net.eval()
+
