@@ -19,8 +19,8 @@
 # pyproject.toml
 
 [build-system]
-requires = ["setuptools>=61", "wheel", "setuptools-scm>=8"]
-build-backend = "setuptools.build_meta"
+requires = ["meson-python", "pybind11", "wheel", "setuptools-scm>=8", "setuptools>=61", "meson >= 1.1.0"]
+build-backend = "mesonpy"
 
 
 [tool.setuptools.packages.find]
@@ -71,6 +71,8 @@ dependencies = [
     "scipy",
     "onnxruntime",
     "psutil",
+    "tqdm",
+    "mlflow",
 ]
 
 [project.optional-dependencies]
@@ -88,8 +90,6 @@ dev = [
     "build",
     "tox",
     "mypy",
-    "tqdm",
-    "mlflow",
 ]
 
 test = ["pytest", "pytest-cov"]
