@@ -16,34 +16,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
 """
 CPU-only execution for MC-CNN fast with frameworks and variants.
 Notes:
 - All paths are CPU-only regardless of hardware availability.
-- Single-thread by default for stability (override with env MCCNN_THREADS).
 - 2 frameworks are available: PyTorch (.pt) and onnx (.onnx)
 """
 
-import os
 from typing import Dict
 from mc_cnn.cost_volume import cost_volume_base
 from mc_cnn.inference_engine import inference_engine_base
 
 import numpy as np
-
-
-def _num_threads() -> int:
-    """
-    Unified threading knob.
-    Default to 1 for reproducibility; override by setting env MCCNN_THREADS.
-
-    :return: int = 1
-    """
-    try:
-        return max(1, int(os.getenv("MCCNN_THREADS", "1")))
-    except Exception:
-        return 1
 
 
 def run_mc_cnn_fast(
@@ -63,18 +47,17 @@ def run_mc_cnn_fast(
 
     :return: cost volume as numpy array of shape (row, col, disp), float32
     """
-    # ---------------- Stage: Import library ----------------
-    nt = _num_threads()
-    cfg["framework"].update({"nt": nt})
-
     # ---------------- Stage: Model init ----------------
     model_inferer = inference_engine_base.AbstractInferenceEngine(cfg["framework"])
     model_inferer.load_model()
+
+    # ---------------- Stage: Model inference ----------------
     left = model_inferer.normalize(img_left)
     right = model_inferer.normalize(img_right)
     left_features = model_inferer.inference_func(left)  # (64, H', W') depending on model depth
     right_features = model_inferer.inference_func(right)
 
+    # ---------------- Stage: Cost volume computation ----------------
     cost_volume = cost_volume_base.AbstractCostVolume(cfg["cost_volume"])
     cv = cost_volume.compute_cost_volume(left_features, right_features, disp_min, disp_max)
 
