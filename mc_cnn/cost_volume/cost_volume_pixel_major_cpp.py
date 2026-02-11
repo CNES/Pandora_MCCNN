@@ -31,16 +31,11 @@ from ..cost_volume_cpp import cost_volume_bind
 
 @AbstractCostVolume.register_subclass("cpp")
 class CostVolumeCPP(AbstractCostVolume):
+    schema = {"cost_volume_method": And(str, lambda x: x in ["cpp"])}
 
     def __init__(self, cfg: Dict) -> None:
         self.cpp_instance = cost_volume_bind.cv_pixelmajor
         super().__init__(cfg)
-
-    @property
-    def schema(self) -> Dict[str, Any]:
-        return {
-            "method": And(str, lambda x: x in ["cpp"])
-        }
 
     def computes_cost_volume(
         self,

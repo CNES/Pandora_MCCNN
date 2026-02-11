@@ -59,17 +59,15 @@ class AbstractInferenceEngine(ABC):
 
         :return: None
         """
-        self._cfg = self.check_conf(cfg)
+        self.cfg = self.check_conf(cfg)
         self.model_path = self.cfg["model_path"]
         self.device = self.cfg["device"]
-        self._load_model()
     
     @property
     def schema(self):
         return {
-            "device": And(str, lambda x: x in ["cpu", "cuda"]),
-            "model_path": And(str, lambda x: x.endswith(".onnx", ".pt")),
-        }
+            "device": And(str, lambda x: x in ["cpu", "cuda"])
+    }
 
     def check_conf(self, cfg: Dict) -> Dict[str, str]:
         """Check the inference engine configuration
@@ -77,7 +75,7 @@ class AbstractInferenceEngine(ABC):
         :param cfg: user_config for matching cost
         :return: cfg: global configuration
         """
-        checker = Checker(self.schema)
+        checker = Checker(self.schema, ignore_extra_keys=True)
         checker.validate(cfg)
 
         return cfg

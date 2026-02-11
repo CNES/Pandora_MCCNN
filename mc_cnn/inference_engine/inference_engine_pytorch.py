@@ -37,17 +37,24 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
     """
     def __init__(self, cfg: Dict) -> None:
         super().__init__(cfg)
-        self.device = torch.device(self.device)
-
         num_layers = max(1, (int(self.cfg["window_size"]) - 1) // 2)
         self.model = FastMcCnnDyn(num_layers)
+        self.device = torch.device(self.device)
+
+        self._load_model()
+    
+    @property
+    def schema(self):
+        schema = super().schema
+        schema.update({"model_path": And(str, lambda x: x.endswith(".pt"))})
+        return schema
 
     def _load_model(self) -> None:
         """
         PyTorch load model function.
         """
-        torch.set_num_threads(1)
-        torch.set_num_interop_threads(1)
+        # torch.set_num_threads(1)
+        # torch.set_num_interop_threads(1)
         
         state = torch.load(self.model_path, map_location=self.device)
         sd = state["model"] if isinstance(state, dict) and "model" in state else state

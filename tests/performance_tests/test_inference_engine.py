@@ -45,8 +45,8 @@ class TestInferenceModel:
     @pytest.mark.parametrize(
         ["architecture", "training_dataset", "expected_training_dataset", "framework_name", "device", "window_size"],
         [
-            pytest.param("fast", "middlebury", "mb", "pytorch", "cpu", 11),
-            pytest.param("fast", "dfc", "data_fusion_contest", "pytorch", "cpu", 11),
+            pytest.param("fast", "middlebury", "mb", "pt", "cpu", 11),
+            pytest.param("fast", "dfc", "data_fusion_contest", "pt", "cpu", 11),
             pytest.param("onnx_int8", "middlebury", "int8_excl_01", "onnx", "cpu", 11),
             pytest.param("onnx_dw", "middlebury", "dw", "onnx", "cpu", 11),
         ]
@@ -64,19 +64,17 @@ class TestInferenceModel:
         Tests whether the get_weights function return the accurate path
         """
         # Load MC-CNN-fast weights trained on Middlebury in the model
-        model_path = Path("tests/data/models") / Path(AVAILABLE_WEIGHTS[architecture][training_dataset])
-        assert expected_training_dataset in str(model_path)
-        
+        model_path = str(Path("tests/data/models") / Path(AVAILABLE_WEIGHTS[architecture][training_dataset]))
+        assert expected_training_dataset in model_path
+
         cfg = {
-            "nt": 1,
-            "framework_name": framework_name,
-            "model_path": str(model_path),
+            "inference_method": framework_name,
+            "model_path": model_path,
             "device": device,
             "window_size": window_size
         }
 
         model_inferer = inference_engine_base.AbstractInferenceEngine(cfg)
-        model_inferer.load_model()
         
         dummy_input = np.random.rand(256, 256).astype(np.float32)
         model_inferer.inference_func(dummy_input)

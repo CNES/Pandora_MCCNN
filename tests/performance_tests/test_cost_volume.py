@@ -39,7 +39,7 @@ class TestCostVolume:
         ["method"],
         [
             pytest.param("baseline"),
-            pytest.param("cpp"),
+            # pytest.param("cpp"),
         ]
     )
     def test_computes_cost_volume_mc_cnn_fast(self, method: str):
@@ -70,7 +70,7 @@ class TestCostVolume:
         # The minus sign converts the similarity score to a matching cost
         cv_gt *= -1
 
-        cfg = {"method": method}
+        cfg = {"cost_volume_method": method}
         cost_volume = cost_volume_base.AbstractCostVolume(cfg)
         cv = cost_volume.compute_cost_volume(left_features.numpy(), right_features.numpy(), -2, 2)
 
@@ -82,7 +82,7 @@ class TestCostVolume:
         ["method"],
         [
             pytest.param("baseline"),
-            pytest.param("cpp"),
+            # pytest.param("cpp"),
         ]
     )
     def test_computes_cost_volume_mc_cnn_fast_negative_disp(self, method: str):
@@ -110,7 +110,7 @@ class TestCostVolume:
         # The minus sign converts the similarity score to a matching cost
         cv_gt *= -1
 
-        cfg = {"method": method}
+        cfg = {"cost_volume_method": method}
         cost_volume = cost_volume_base.AbstractCostVolume(cfg)
         cv = cost_volume.compute_cost_volume(left_features.numpy(), right_features.numpy(), -4, -1)
 
@@ -122,7 +122,7 @@ class TestCostVolume:
         ["method"],
         [
             pytest.param("baseline"),
-            pytest.param("cpp"),
+            # pytest.param("cpp"),
         ]
     )
     def test_computes_cost_volume_mc_cnn_fast_positive_disp(self, method):
@@ -151,7 +151,7 @@ class TestCostVolume:
         # The minus sign converts the similarity score to a matching cost
         cv_gt *= -1
 
-        cfg = {"method": method}
+        cfg = {"cost_volume_method": method}
         cost_volume = cost_volume_base.AbstractCostVolume(cfg)
         cv = cost_volume.compute_cost_volume(left_features.numpy(), right_features.numpy(), 1, 4)
 

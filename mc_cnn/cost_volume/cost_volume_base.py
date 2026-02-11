@@ -61,13 +61,6 @@ class AbstractCostVolume(ABC):
         """
         self.cfg = self.check_conf(cfg)
 
-    @property
-    @abstractmethod
-    def schema(self) -> Dict[str, Any]:
-        """
-        Configuration schema
-        """
-
     @classmethod
     def check_conf(cls, cfg: Dict) -> Dict:
         """

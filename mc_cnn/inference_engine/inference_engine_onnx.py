@@ -37,6 +37,14 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
     def __init__(self, cfg: Dict) -> None:
         super().__init__(cfg)
         self.provider = "GPUExecutionProvider" if self.device == "cuda" else "CPUExecutionProvider"
+        self._load_model()
+    
+    @property
+    def schema(self):
+        schema = super().schema
+        schema.update({"model_path": And(str, lambda x: x.endswith(".onnx"))})
+
+        return schema
 
     def _load_model(self) -> None:
         """
