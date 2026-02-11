@@ -40,6 +40,11 @@ class CostVolumeBaseline(AbstractCostVolume):
     schema = {"cost_volume_method": And(str, lambda x: x in ["baseline"])}
 
     def __init__(self, cfg: Dict) -> None:
+        """
+        :param cfg: configuration
+
+        :return: None
+        """
         super().__init__(cfg)
 
     def compute_cost_volume(

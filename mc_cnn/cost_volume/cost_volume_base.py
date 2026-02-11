@@ -55,7 +55,7 @@ class AbstractCostVolume(ABC):
     
     def __init__(self, cfg: Dict) -> None:
         """
-        :param cfg: optional configuration, {}
+        :param cfg: configuration
 
         :return: None
         """
@@ -64,9 +64,9 @@ class AbstractCostVolume(ABC):
     @classmethod
     def check_conf(cls, cfg: Dict) -> Dict:
         """
-        Check the refinement method configuration.
+        Check the cost volume method configuration.
 
-        :param cfg: user_config for refinement method
+        :param cfg: user_config for cost volume method
         :return: cfg: global configuration
         """
         checker = Checker(cls.schema)

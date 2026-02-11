@@ -45,6 +45,7 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
     
     @property
     def schema(self):
+        """Schema property for the inference updated for PyTorch engine"""
         schema = super().schema
         schema.update({"model_path": And(str, lambda x: x.endswith(".pt"))})
         return schema

@@ -55,7 +55,7 @@ class AbstractInferenceEngine(ABC):
     
     def __init__(self, cfg: Dict) -> None:
         """
-        :param cfg: optional configuration, {}
+        :param cfg: configuration
 
         :return: None
         """
@@ -65,6 +65,7 @@ class AbstractInferenceEngine(ABC):
     
     @property
     def schema(self):
+        """Schema property for the inference engine"""
         return {
             "device": And(str, lambda x: x in ["cpu", "cuda"])
     }
