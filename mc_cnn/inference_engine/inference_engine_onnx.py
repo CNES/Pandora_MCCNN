@@ -36,28 +36,14 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
     """
     def __init__(self, cfg: Dict) -> None:
         super().__init__(cfg)
-        self.provider = "GPUExecutionProvider" if self.cfg["device"] == "cuda" else "CPUExecutionProvider"
-        self.nt = self.cfg["nt"]
-    
-    @property
-    def schema(self):
-        schema = super().schema
+        self.provider = "GPUExecutionProvider" if self.device == "cuda" else "CPUExecutionProvider"
 
-        schema.update(
-            {
-                "framework_name": And(str, lambda x: x in ["onnx"]),
-                "model_path": And(str, lambda x: x.endswith(".onnx")),
-            }
-        )
-
-        return schema        
-
-    def load_model(self) -> None:
+    def _load_model(self) -> None:
         """
         ONNX load model function.
         """
         so = ort.SessionOptions()
-        so.intra_op_num_threads = self.nt
+        so.intra_op_num_threads = 16
         so.inter_op_num_threads = 1
         # Sequential mode to avoid extra thread pools
         so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
@@ -66,7 +52,7 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
         provider_options = {}
 
         self.session = ort.InferenceSession(
-            self.cfg["model_path"], sess_options=so, providers=[providers], provider_options=[provider_options]
+            self.model_path, sess_options=so, providers=[providers], provider_options=[provider_options]
         )
 
     def inference_func(self, img: np.ndarray) -> np.ndarray:

@@ -24,7 +24,7 @@ Module for common base of all inference engines.
 import logging
 from abc import ABC, abstractmethod
 import numpy as np
-from typing import Dict, Callable, Tuple, Mapping, Union, List
+from typing import Dict, Callable
 from typing_extensions import Self
 from json_checker import Checker, And
 import numpy as np
@@ -43,8 +43,8 @@ class AbstractInferenceEngine(ABC):
         :param cfg: dictionnary configuration
         """
         if cls is AbstractInferenceEngine:
-            if isinstance(cfg["framework_name"], str):
-                inference_engine = cfg["framework_name"]
+            if isinstance(cfg["inference_method"], str):
+                inference_engine = cfg["inference_method"]
                 try:
                     return super(AbstractInferenceEngine, cls).__new__(cls.inference_engines_avail[inference_engine])
                 except KeyError:
@@ -60,24 +60,15 @@ class AbstractInferenceEngine(ABC):
         :return: None
         """
         self._cfg = self.check_conf(cfg)
+        self.model_path = self.cfg["model_path"]
+        self.device = self.cfg["device"]
+        self._load_model()
     
     @property
     def schema(self):
         return {
-            "framework_name": And(str, lambda x: x in ["pytorch"]),
-            "model_path": And(str, lambda x: x.endswith(".pt")),
             "device": And(str, lambda x: x in ["cpu", "cuda"]),
-            "window_size": And(int, lambda x: x in [7, 11, 13, 15]),
-            "nt": And(int, lambda x: x > 0)
-        }
-
-    @property
-    def defaults(self):
-        return {
-            "framework_name": "pytorch",
-            "device": "cpu",
-            "window_size": 11,
-            "nt": 1
+            "model_path": And(str, lambda x: x.endswith(".onnx", ".pt")),
         }
 
     def check_conf(self, cfg: Dict) -> Dict[str, str]:
@@ -86,23 +77,10 @@ class AbstractInferenceEngine(ABC):
         :param cfg: user_config for matching cost
         :return: cfg: global configuration
         """
-        updated_config = self._update_with_default_config_values(cfg)
         checker = Checker(self.schema)
-        checker.validate(updated_config)
+        checker.validate(cfg)
 
-        return updated_config
-
-    def _update_with_default_config_values(self, cfg: Dict):
-        return {**self.defaults, **cfg}
-
-    @property
-    def cfg(self) -> Mapping[str, Union[str, int, List[int]]]:
-        """
-        Get used configuration
-
-        :return: cfg: dictionary with all parameters
-        """
-        return self._cfg
+        return cfg
 
     @classmethod
     def register_subclass(cls, short_name: str) -> Callable[[type[Self]], type[Self]]:
@@ -124,7 +102,7 @@ class AbstractInferenceEngine(ABC):
         return decorator
     
     @abstractmethod
-    def load_model(self) -> None:
+    def _load_model(self) -> None:
         """
         Load model function.
         """

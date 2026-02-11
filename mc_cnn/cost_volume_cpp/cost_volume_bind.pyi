@@ -19,19 +19,19 @@
 import numpy as np
 
 
-def cv_pixelmajor_int32(
-    lf_hwc: np.ndarray,
-    rf_hwc: np.ndarray,
+def cv_pixelmajor(
+    left_features_hwc: np.ndarray,
+    right_features_hwc: np.ndarray,
     disp_min_ll: int,
     disp_max_ll: int,
     write_invalid_nan: bool = True) -> np.ndarray:
     """
     Compute cost volume with torch-free pixel-major kernel. Expects HWC float32 arrays.
     
-    :param lf_hwc: left features, expects float32 array (H, W, C).
-    :type: float32 array (H, W, C)
-    :param rf_hwc: right features, expects float32 array (H, W, C).
-    :type: float32 array (H, W, C)
+    :param left_features_hwc: left features, expects float32 array (row, col, channel).
+    :type: float32 array (row, col, channel)
+    :param right_features_hwc: right features, expects float32 array (row, col, channel).
+    :type: float32 array (row, col, channel)
     :param disp_min_ll: minimum disparity.
     :type: int
     :param disp_max_ll : maximum disparity.
@@ -39,6 +39,6 @@ def cv_pixelmajor_int32(
     :param write_invalid_nan: replace invalid by NaN if set to true.
     :type: bool
     
-    :return: cost volume (H, W, D).
-    :rtype: array float[H, W, D]  
+    :return: cost volume (row, col, disparity).
+    :rtype: array float[row, col, disparity]  
     """

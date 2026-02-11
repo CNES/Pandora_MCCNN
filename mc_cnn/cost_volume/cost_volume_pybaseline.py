@@ -24,7 +24,7 @@ with the baseline (pytorch) method.
 
 
 from .cost_volume_base import AbstractCostVolume
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Any
 from json_checker import And
 
 import torch
@@ -37,14 +37,15 @@ class CostVolumeBaseline(AbstractCostVolume):
     """
     Baseline cost volume baseline class
     """
-    schema = {
-        "method": And(str, lambda x: x in ["baseline"])
-    }
-    
     def __init__(self, cfg: Dict) -> None:
-        self.schema = {"method": "baseline"}
         super().__init__(cfg)
     
+    @property
+    def schema(self) -> Dict[str, Any]:
+        return {
+            "method": And(str, lambda x: x in ["baseline"])
+        }
+
     def compute_cost_volume(
         self,
         left_features: np.ndarray,
@@ -67,32 +68,32 @@ class CostVolumeBaseline(AbstractCostVolume):
         disparity_range = np.arange(disp_min, disp_max + 1).astype(np.int32)
 
         # Allocate cost volume as (D, W, H) for intermediate fill, initialized with NaN
-        lf = torch.from_numpy(left_features)
-        rf = torch.from_numpy(right_features)
-        height, width = lf.shape[1], lf.shape[2]
+        left_features_torch = torch.from_numpy(left_features)
+        right_features_torch = torch.from_numpy(right_features)
+        row, col = left_features_torch.shape[1], left_features_torch.shape[2]
 
-        cv = np.empty((len(disparity_range), width, height), dtype=np.float32)
-        cv.fill(np.nan)
+        cost_volume = np.empty((len(disparity_range), col, row), dtype=np.float32)
+        cost_volume.fill(np.nan)
 
         cos = nn.CosineSimilarity(dim=0, eps=1e-6)  # cosine over channel dimension C
 
         with torch.no_grad():
             for disp in disparity_range:
-                left_int, right_int = point_interval(lf, rf, int(disp))
+                left_int, right_int = point_interval(left_features_torch, right_features_torch, int(disp))
                 ind_d = int(disp - disp_min)
 
                 # Compute cosine similarity for the valid interval, then move to numpy
                 sim = cos(
-                    lf[:, :, left_int[0] : left_int[1]],
-                    rf[:, :, right_int[0] : right_int[1]],
+                    left_features_torch[:, :, left_int[0] : left_int[1]],
+                    right_features_torch[:, :, right_int[0] : right_int[1]],
                 )  # shape: (H, valid_W)
 
                 # Place into cv (transpose to (valid_W, H))
-                cv[ind_d, left_int[0] : left_int[1], :] = sim.cpu().numpy().T
+                cost_volume[ind_d, left_int[0] : left_int[1], :] = sim.cpu().numpy().T
 
         # Convert similarity to cost (negate), then return as (H, W, D)
-        cv *= -1.0
-        return np.swapaxes(cv, 0, 2)
+        cost_volume *= -1.0
+        return np.swapaxes(cost_volume, 0, 2)
 
 
 def point_interval(

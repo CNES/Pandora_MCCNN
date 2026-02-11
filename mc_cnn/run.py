@@ -17,13 +17,11 @@
 # limitations under the License.
 #
 """
-CPU-only execution for MC-CNN fast with frameworks and variants.
-Notes:
-- All paths are CPU-only regardless of hardware availability.
-- 2 frameworks are available: PyTorch (.pt) and onnx (.onnx)
+Optimized MC-CNN model CPU-based
 """
 
-from typing import Dict
+from pathlib import Path
+
 from mc_cnn.cost_volume import cost_volume_base
 from mc_cnn.inference_engine import inference_engine_base
 
@@ -31,10 +29,16 @@ import numpy as np
 
 
 def run_mc_cnn_fast(
-    img_left: np.ndarray, img_right: np.ndarray, disp_min: int, disp_max: int, cfg: Dict
+    img_left: np.ndarray,
+    img_right: np.ndarray,
+    disp_min: int, disp_max: int,
+    model_path: str,
+    cost_volume_method: str = "cpp",
+    window_size: int = 11,
+    device: str = "cpu"
 ) -> np.ndarray:
     """
-    Compute the cost volume for a pair of images with MC-CNN fast (CPU-only).
+    Compute the cost volume for a pair of images with MC-CNN fast.
     Notes:
     - 2 frameworks are available for the AI part: pytorch (nominal method) and onnx (optimized method)
     - 2 variant for the cost volume loop computation: baseline (nominal method) and cpp (optimized method)
@@ -48,8 +52,17 @@ def run_mc_cnn_fast(
     :return: cost volume as numpy array of shape (row, col, disp), float32
     """
     # ---------------- Stage: Model init ----------------
-    model_inferer = inference_engine_base.AbstractInferenceEngine(cfg["framework"])
-    model_inferer.load_model()
+    inference_method = Path(model_path).suffix[1:]
+
+    cfg = {
+        "inference_method": inference_method,
+        "model_path": model_path,
+        "cost_volume_method": cost_volume_method,
+        "window_size": window_size,
+        "device": device
+    }
+
+    model_inferer = inference_engine_base.AbstractInferenceEngine(cfg)
 
     # ---------------- Stage: Model inference ----------------
     left = model_inferer.normalize(img_left)
@@ -58,7 +71,7 @@ def run_mc_cnn_fast(
     right_features = model_inferer.inference_func(right)
 
     # ---------------- Stage: Cost volume computation ----------------
-    cost_volume = cost_volume_base.AbstractCostVolume(cfg["cost_volume"])
+    cost_volume = cost_volume_base.AbstractCostVolume(cfg)
     cv = cost_volume.compute_cost_volume(left_features, right_features, disp_min, disp_max)
 
     return cv

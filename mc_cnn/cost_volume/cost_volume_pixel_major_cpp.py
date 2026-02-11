@@ -23,7 +23,7 @@ with the cpp pixel-major kernel.
 
 import numpy as np
 from json_checker import And
-from typing import Dict
+from typing import Dict, Any
 
 from .cost_volume_base import AbstractCostVolume
 from ..cost_volume_cpp import cost_volume_bind
@@ -32,13 +32,15 @@ from ..cost_volume_cpp import cost_volume_bind
 @AbstractCostVolume.register_subclass("cpp")
 class CostVolumeCPP(AbstractCostVolume):
 
-    schema = {
-        "method": And(str, lambda x: x in ["cpp"])
-    }
-
     def __init__(self, cfg: Dict) -> None:
-        self.cpp_instance = cost_volume_bind.cv_pixelmajor_int32
-        super().__init__(cfg)    
+        self.cpp_instance = cost_volume_bind.cv_pixelmajor
+        super().__init__(cfg)
+
+    @property
+    def schema(self) -> Dict[str, Any]:
+        return {
+            "method": And(str, lambda x: x in ["cpp"])
+        }
 
     def computes_cost_volume(
         self,
@@ -71,10 +73,10 @@ class CostVolumeCPP(AbstractCostVolume):
             right_features = np.ascontiguousarray(right_features)
 
         # CHW -> HWC (fast NumPy path) with C-order copy for downstream speed
-        lf_hwc = np.transpose(left_features, (1, 2, 0)).copy(order="C")
-        rf_hwc = np.transpose(right_features, (1, 2, 0)).copy(order="C")
+        left_features_hwc = np.transpose(left_features, (1, 2, 0)).copy(order="C")
+        right_features_hwc = np.transpose(right_features, (1, 2, 0)).copy(order="C")
 
         # Native notorch kernel (expects HWC, returns HWD)
-        out_hwd = self.cpp_instance(lf_hwc, rf_hwc, disp_min, disp_max)
+        out_hwd = self.cpp_instance(left_features_hwc, right_features_hwc, disp_min, disp_max)
 
         return out_hwd

@@ -24,7 +24,7 @@ Module for common base of all cost volume methods.
 import logging
 from abc import abstractmethod, ABC
 import numpy as np
-from typing import Dict, Callable
+from typing import Dict, Callable, Any
 from typing_extensions import Self
 from json_checker import Checker
 
@@ -36,8 +36,6 @@ class AbstractCostVolume(ABC):
     cv_methods_avail: Dict = {}
     cpp_instance = None
 
-    schema: Dict
-
     def __new__(cls, cfg: Dict):
         """
         Return the plugin associated with the cost volume function given in the configuration
@@ -45,8 +43,8 @@ class AbstractCostVolume(ABC):
         :param cfg: Dict
         """
         if cls is AbstractCostVolume:
-            if isinstance(cfg["method"], str):
-                cv_method = cfg["method"]
+            if isinstance(cfg["cost_volume_method"], str):
+                cv_method = cfg["cost_volume_method"]
                 try:
                     return super(AbstractCostVolume, cls).__new__(cls.cv_methods_avail[cv_method])
                 except KeyError:
@@ -62,7 +60,14 @@ class AbstractCostVolume(ABC):
         :return: None
         """
         self.cfg = self.check_conf(cfg)
-    
+
+    @property
+    @abstractmethod
+    def schema(self) -> Dict[str, Any]:
+        """
+        Configuration schema
+        """
+
     @classmethod
     def check_conf(cls, cfg: Dict) -> Dict:
         """

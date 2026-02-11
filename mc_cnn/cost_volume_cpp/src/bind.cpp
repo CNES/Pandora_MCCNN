@@ -17,15 +17,15 @@
  * limitations under the License.
  */
 
-#include "cv_pixelmajor_notorch_int32"
+#include "cv_pixelmajor_notorch"
 
 
-PYBIND11_MODULE(cv_pixelmajor_notorch_int32, m) {
+PYBIND11_MODULE(cv_pixelmajor_notorch, m) {
     m.doc() = "MC-CNN CV pixel-major (NumPy I/O, CPU, expects HWC input, returns HWD)";
-    m.def("cv_pixelmajor_int32", &cv_pixelmajor_int32,
+    m.def("cv_pixelmajor", &cv_pixelmajor,
           "Compute cost volume: inputs HWC float32, output HWD float32.",
-          py::arg("left_features"),
-          py::arg("right_features"),
+          py::arg("left_features_hwc"),
+          py::arg("right_features_hwc"),
           py::arg("disp_min"),
           py::arg("disp_max"),
           py::arg("write_invalid_nan") = true);

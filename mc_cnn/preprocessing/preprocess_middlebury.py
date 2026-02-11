@@ -62,7 +62,7 @@ def load_pfm(fname: str) -> Tuple[np.ndarray, float]:
 
         dim_match = re.match(r"^(\d+)\s(\d+)\s$", file.readline().decode("latin-1"))
         if dim_match:
-            width, height = map(int, dim_match.groups())
+            col, row = map(int, dim_match.groups())
         else:
             raise OSError("Malformed PFM header.")
 
@@ -74,7 +74,7 @@ def load_pfm(fname: str) -> Tuple[np.ndarray, float]:
             endian = ">"  # big-endian
 
         data = np.fromfile(file, endian + "f")
-        shape = (height, width, 3) if color else (height, width)
+        shape = (row, col, 3) if color else (row, col)
     return np.flipud(np.reshape(data, shape)), scale
 
 
@@ -312,9 +312,9 @@ def middleburry(in_dir_2014: str, in_dir_2006: str, in_dir_2005: str, in_dir_200
                 imgs.append(left)
                 imgs.append(right)
 
-            _, height, width = imgs[0].shape
+            _, row, col = imgs[0].shape
             # im_tensor is a list of size = 1 + number of light, im_tensor[0].shape = (3, 2, row, col )
-            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, row, col))
 
         left_disp = rasterio.open(base1 + "/disp1.png").read().astype(np.float32)
         right_disp = rasterio.open(base1 + "/disp5.png").read().astype(np.float32)
@@ -361,10 +361,10 @@ def middleburry(in_dir_2014: str, in_dir_2006: str, in_dir_2005: str, in_dir_200
                 imgs.append(left)
                 imgs.append(right)
 
-            _, height, width = imgs[0].shape
+            _, row, col = imgs[0].shape
             # im_tensor is a list of size = 1 + number of light
             # im_tensor[0].shape = (3, 2, row, col )
-            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, row, col))
 
         left_disp = rasterio.open(base1 + "/disp1.png").read().astype(np.float32)
         right_disp = rasterio.open(base1 + "/disp5.png").read().astype(np.float32)
@@ -403,11 +403,11 @@ def middleburry(in_dir_2014: str, in_dir_2006: str, in_dir_2005: str, in_dir_200
 
         left = read_im(base1 + "/im2.ppm", False)
         right = read_im(base1 + "/im6.ppm", False)
-        _, height, width = left.shape
+        _, row, col = left.shape
 
         imgs.append(left)
         imgs.append(right)
-        im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+        im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, row, col))
 
         left_disp = rasterio.open(base1 + "/disp2.pgm").read().astype(np.float32)
         right_disp = rasterio.open(base1 + "/disp6.pgm").read().astype(np.float32)
@@ -454,11 +454,11 @@ def middleburry(in_dir_2014: str, in_dir_2006: str, in_dir_2005: str, in_dir_200
 
             left = read_im(os.path.join(base2, fname_x0), False)
             right = read_im(os.path.join(base2, fname_x1), False)
-            _, height, width = left.shape
+            _, row, col = left.shape
 
             imgs.append(left)
             imgs.append(right)
-            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, row, col))
 
             left_disp = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.0
             right_disp = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.0
