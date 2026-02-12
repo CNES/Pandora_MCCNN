@@ -111,7 +111,7 @@ py::array_t<float> cv_pixelmajor(
     for (int32_t height_idx = 0; height_idx < height; ++height_idx) {
         // Loop over the columns
         for (int32_t width_idx = 0; width_idx < width; ++width_idx) {
-            const float* left_sample  = p_left_features + height_idx * nextInRow + width_idx * nextInCol;  // left[height_idx, weight_idx, :] contiguous over C
+            const float* left_sample  = p_left_features + height_idx * nextInRow + width_idx * nextInCol;  // left[height_idx, weight_idx, :]
             float* cost_volume_sample = p_out + height_idx * nextOutRow + width_idx * nextOutCol;          // out[height_idx, weight_idx, :]
 
             int32_t disp_low = std::max<int32_t>(disp_min, -width_idx);              // minimum disparity according the col index
@@ -126,7 +126,8 @@ py::array_t<float> cv_pixelmajor(
                 #pragma unroll
                 // Loop inside each tiled disparities sample 
                 for (int idx = 0; idx < BD; ++idx) {
-                    right_sample_tiled[idx] = p_right_features + height_idx * nextInRow + (width_idx + (disp_idx + idx)) * nextInCol;  // right[height_idx, weight_idx + disp_idx + idx, :]
+                    // right[height_idx, weight_idx + disp_idx + idx, :]
+                    right_sample_tiled[idx] = p_right_features + height_idx * nextInRow + (width_idx + (disp_idx + idx)) * nextInCol;
                 }
 
                 float dot_out[BD] = {0.f}; // Dot output variable
@@ -141,7 +142,8 @@ py::array_t<float> cv_pixelmajor(
                     #pragma unroll
                     // Loop inside each tiled disparities sample
                     for (int idx = 0; idx < BD; ++idx) {
-                        // Compute the dot product between the left and right features at the channel idx : channel_idx and tiled disparity idx : idx
+                        // Compute the dot product between the left and right features at the channel index: channel_idx 
+                        // and tiled disparity index : idx
                         // left[height_idx, weight_idx, channel_idx] * right[height_idx, weight_idx + disp_idx + idx, channel_idx]
                         dot_out[idx] += left_sample_chi * right_sample_tiled[idx][channel_idx];
                     }
@@ -159,7 +161,8 @@ py::array_t<float> cv_pixelmajor(
 
             // Go through the remainder disparity from the tiled disparity computation
             for (; disp_idx <= disp_high; ++disp_idx) {
-                const float* remainder_right_sample = p_right_features + height_idx * nextInRow + (width_idx + disp_idx) * nextInCol; // right[height_idx, width_idx + disp_idx, :]
+                // right[height_idx, width_idx + disp_idx, :]
+                const float* remainder_right_sample = p_right_features + height_idx * nextInRow + (width_idx + disp_idx) * nextInCol;
                 float sum = 0.f;
                 #if defined(__clang__)
                 #pragma clang loop vectorize(enable)
@@ -168,7 +171,8 @@ py::array_t<float> cv_pixelmajor(
                 #endif
                 // Loop over the channels
                 for (int32_t channel_idx = 0; channel_idx < channel; ++channel_idx) {
-                    // Compute the dot product between the left and right features at the channel idx : channel_idx and disparity idx : idx
+                    // Compute the dot product between the left and right features at the channel index : channel_idx
+                    // and disparity index : idx
                     // left[height_idx, weight_idx, channel_idx] * right[height_idx, weight_idx + disp_idx, channel_idx]
                     sum += left_sample[channel_idx] * remainder_right_sample[channel_idx];
                 }

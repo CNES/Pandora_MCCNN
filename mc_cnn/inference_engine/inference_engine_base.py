@@ -68,7 +68,7 @@ class AbstractInferenceEngine(ABC):
         """Schema property for the inference engine"""
         return {
             "device": And(str, lambda x: x in ["cpu", "cuda"])
-    }
+        }
 
     def check_conf(self, cfg: Dict) -> Dict[str, str]:
         """Check the inference engine configuration
