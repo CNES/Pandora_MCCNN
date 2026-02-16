@@ -27,7 +27,7 @@ using namespace pybind11::literals;
 PYBIND11_MODULE(cv_pixelmajor_notorch, m) {
     m.doc() = "MC-CNN CV pixel-major (NumPy I/O, CPU, expects HWC input, returns HWD)";
     m.def("cv_pixelmajor", &cv_pixelmajor, "left_features_hwc" _a, "right_features_hwc" _a,
-          "disp_min" _a, "disp_max" _a, "write_invalid_nan" _a,
+          "disp_min" _a, "disp_max" _a,
           R"mydelimiter( 
             "Compute cost volume: inputs HWC float32, output HWD float32."
 
@@ -39,8 +39,6 @@ PYBIND11_MODULE(cv_pixelmajor_notorch, m) {
             :type: int
             :param disp_max : maximum disparity.
             :type: int
-            :param write_invalid_nan: replace invalid by NaN if set to true.
-            :type: bool
             
             :return: cost volume (row, col, disparity).
             :rtype: array float[row, col, disparity] 

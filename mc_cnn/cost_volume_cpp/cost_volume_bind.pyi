@@ -23,8 +23,7 @@ def cv_pixelmajor(
     left_features_hwc: np.ndarray,
     right_features_hwc: np.ndarray,
     disp_min: int,
-    disp_max: int,
-    write_invalid_nan: bool = True) -> np.ndarray:
+    disp_max: int) -> np.ndarray:
     """
     Compute cost volume with torch-free pixel-major kernel. Expects (row, col, channel) float32 arrays.
     
@@ -36,8 +35,6 @@ def cv_pixelmajor(
     :type: int
     :param disp_max : maximum disparity.
     :type: int
-    :param write_invalid_nan: replace invalid by NaN if set to true.
-    :type: bool
     
     :return: cost volume (row, col, disparity).
     :rtype: array float[row, col, disparity]  

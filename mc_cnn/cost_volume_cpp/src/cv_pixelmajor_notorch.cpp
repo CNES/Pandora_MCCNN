@@ -31,7 +31,6 @@
  * @param right_features_hwc : right features, expects float32 array (height, width, channel).
  * @param disp_min : minimum disparity.
  * @param disp_max : maximum disparity.
- * @param write_invalid_nan : replace invalid by NaN if set to true.
  *
  * @return py::array : return the cost volume (height, width, disparity).                 
  */
@@ -40,15 +39,11 @@ py::array_t<float> cv_pixelmajor(
     py::array_t<float, py::array::c_style | py::array::forcecast> right_features_hwc,
     int32_t disp_min,
     int32_t disp_max,
-    bool write_invalid_nan = true
 ) {
     // Inputs are already HWC contiguous (Python did transpose + copy).
     ensure_3d_dimensions(left_features_hwc, "left_features");
     ensure_3d_dimensions(right_features_hwc, "right_features");
     ensure_same_shape(left_features_hwc, right_features_hwc);
-
-    // Check disp_min is smaller than disp_max
-    if (disp_min > disp_max) throw std::invalid_argument("disp_min must be <= disp_max");
 
     const auto height = left_features_hwc.shape(0);
     const auto width = left_features_hwc.shape(1);
@@ -58,18 +53,8 @@ py::array_t<float> cv_pixelmajor(
     // Output (height, width, disparity)
     auto cost_volume = py::array_t<float>({height, width, disparity});
 
-    // If write_invalid_nan is activated, fill output data with NaN
-    if (write_invalid_nan) {
-        std::fill(cost_volume, cost_volume + (height * width * disparity), std::numeric_limits<float>::quiet_NaN());
-    }
-
     const auto left_data = left_features_hwc.unchecked<3>();      // left features data
     const auto right_data = right_features_hwc.unchecked<3>();    // right features data
-
-    const auto nextInRow  = width * channel;   // next row in (height, width, channel)
-    const auto nextInCol  = channel;           // next col in (height, width, channel)
-    const auto nextOutRow = width * disparity; // next row in (height, width, disparity)
-    const auto nextOutCol = disparity;         // next col in (height, width, disparity)
 
     constexpr auto BD = 8; // disparity tile
 
@@ -77,8 +62,7 @@ py::array_t<float> cv_pixelmajor(
     for (auto height_idx = 0; height_idx < height; ++height_idx) {
         // Loop over the columns
         for (auto width_idx = 0; width_idx < width; ++width_idx) {
-            const float* left_sample  = p_left_features + height_idx * nextInRow + width_idx * nextInCol;  // left[height_idx, weight_idx, :]
-            float* cost_volume_sample = cost_volume + height_idx * nextOutRow + width_idx * nextOutCol;          // out[height_idx, weight_idx, :]
+            const auto& left_pixel = left_data(height_idx, width_idx, py::ellipsis()) // left_features[height_idx, width_idx, :]
 
             // minimum disparity according the col index
             int32_t disp_low = std::max(disp_min, -static_cast<std::int32_t>(width_idx));
@@ -86,66 +70,33 @@ py::array_t<float> cv_pixelmajor(
             int32_t disp_high = std::min(disp_max, static_cast<std::int32_t>(width) - 1 - static_cast<std::int32_t>(width_idx));
 
             auto disp_idx = disp_low;
-
             // Tiled disparities
             for (; disp_idx + BD - 1 <= disp_high; disp_idx += BD) {
-                const float* right_sample_tiled[BD];  // Right tiled disparities vector
-                #pragma unroll
-                // Loop inside each tiled disparities sample 
-                for (int idx = 0; idx < BD; ++idx) {
-                    // right[height_idx, weight_idx + disp_idx + idx, :]
-                    right_sample_tiled[idx] = p_right_features + height_idx * nextInRow + (width_idx + (disp_idx + idx)) * nextInCol;
-                }
+                // Loop inside each tiled disparities sample
+                const auto base_right = width_idx + disp_idx
+                const auto base_cv = disp_idx - disp_min;
+                for (auto idx = 0; idx < BD; ++idx) {
+                    const auto& right_pixel = right_data[height_idx, base_right + idx, py::ellipsis()];
 
-                float dot_out[BD] = {0.f}; // Dot output variable
-                #if defined(__clang__)
-                #pragma clang loop vectorize(enable)
-                #elif defined(__GNUC__)
-                #pragma GCC ivdep
-                #endif
-                // Loop over the channels
-                for (auto channel_idx = 0; channel_idx < channel; ++channel_idx) {
-                    const auto left_sample_chi = left_sample[channel_idx];  // left[height_idx, weight_idx, channel_idx]
-                    #pragma unroll
-                    // Loop inside each tiled disparities sample
-                    for (int idx = 0; idx < BD; ++idx) {
+                    if (right_idx >= 0 && right_idx < width) {
                         // Compute the dot product between the left and right features at the channel index: channel_idx 
                         // and tiled disparity index : idx
                         // left[height_idx, weight_idx, channel_idx] * right[height_idx, weight_idx + disp_idx + idx, channel_idx]
-                        dot_out[idx] += left_sample_chi * right_sample_tiled[idx][channel_idx];
+                        auto dot_out = std::inner_product(left_pixel.begin(), left_pixel.end(), right_pixel.begin(), 0.f);
+                        cost_volume[height_idx, weight_idx, base_cv + idx] = -dot_out[idx];
                     }
-                }
-
-                const auto base = disp_low - disp_min;
-                #pragma unroll
-                // Loop inside each tiled disparities sample
-                for (int idx = 0; idx < BD; ++idx) {
-                    // Store the cost volume at base + idx disparity as
-                    // cost = -dot
-                    cost_volume_sample[base + idx] = -dot_out[idx];
                 }
             }
 
             // Go through the remainder disparity from the tiled disparity computation
             for (; disp_idx <= disp_high; ++disp_idx) {
                 // right[height_idx, width_idx + disp_idx, :]
-                const float* remainder_right_sample = p_right_features + height_idx * nextInRow + (width_idx + disp_idx) * nextInCol;
-                float sum = 0.f;
-                #if defined(__clang__)
-                #pragma clang loop vectorize(enable)
-                #elif defined(__GNUC__)
-                #pragma GCC ivdep
-                #endif
-                // Loop over the channels
-                for (int32_t channel_idx = 0; channel_idx < channel; ++channel_idx) {
-                    // Compute the dot product between the left and right features at the channel index : channel_idx
-                    // and disparity index : idx
-                    // left[height_idx, weight_idx, channel_idx] * right[height_idx, weight_idx + disp_idx, channel_idx]
-                    sum += left_sample[channel_idx] * remainder_right_sample[channel_idx];
-                }
+                const float* right_idx = width_idx + disp_idx;
+                const auto& right_pixel = right_data[height_idx, right_idx, py::ellipsis()];
+                auto sum = std::inner_product(left_pixel.begin(), left_pixel.end(), right_pixel.begin(), 0.f).begin();
                 // Store the cost volume at base + idx disparity as
                 // cost = -dot
-                cost_volume_sample[disp_idx - disp_min] = -sum;
+                cost_volume(height_ix, width_idx, disp_idx - disp_min) = -sum;
             }
         }
     }

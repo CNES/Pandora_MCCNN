@@ -50,6 +50,16 @@ def right_features(nb_row, nb_col):
     return torch.randn((64, nb_row, nb_col), dtype=torch.float32)
 
 
+@pytest.fixture
+def left_features_4D(nb_row, nb_col):
+    return torch.randn((1, 112, nb_row, nb_col), dtype=torch.float32)
+
+
+@pytest.fixture
+def right_features_4D(nb_row, nb_col):
+    return torch.randn((1, 112, nb_row, nb_col), dtype=torch.float32)
+
+
 class TestCostVolume:
     """
     TestCostVolume class allows to test the cost volume create by mc_cnn

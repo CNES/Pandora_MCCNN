@@ -69,7 +69,6 @@ inline void ensure_same_shape(const py::array& data_features_a, const py::array&
  * @param right_features_hwc : right features, expects float32 array (H, W, C).
  * @param int32_t : minimum disparity.
  * @param int32_t : maximum disparity.
- * @param write_invalid_nan : replace invalid by NaN if set to true.
  *
  * @return py::array : return the cost volume (H, W, D).                 
  */
@@ -78,5 +77,4 @@ py::array_t<float> cv_pixelmajor(
     py::array_t<float, py::array::c_style | py::array::forcecast> right_features_hwc,
     int32_t disp_min,
     int32_t disp_max,
-    bool write_invalid_nan = true
 )
