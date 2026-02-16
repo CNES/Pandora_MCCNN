@@ -20,8 +20,7 @@
 Dynamic MC-CNN module
 """
 
-import torch
-import torch.nn as nn
+from torch import nn, squeeze, Tensor, no_grad
 
 
 class FastMcCnnDyn(nn.Module):
@@ -46,7 +45,7 @@ class FastMcCnnDyn(nn.Module):
             in_ch = out_ch
         self.conv_blocks = nn.Sequential(*layers)
 
-    def forward(self, sample: torch.Tensor, training: bool):
+    def forward(self, sample: Tensor, training: bool):
         """
         Forward function
 
@@ -76,6 +75,6 @@ class FastMcCnnDyn(nn.Module):
 
             return left, pos, neg
         else:
-            with torch.no_grad():
+            with no_grad():
                 feats = self.conv_blocks(sample.unsqueeze(0).unsqueeze(0))
-                return torch.squeeze(nn.functional.normalize(feats, p=2, dim=1))
+                return squeeze(nn.functional.normalize(feats, p=2, dim=1))

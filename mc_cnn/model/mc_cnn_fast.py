@@ -20,11 +20,7 @@
 This module contains the mc-cnn fast network
 """
 
-# pylint:disable=too-few-public-methods
-import torch
-from torch import Tensor, nn
-import torch.nn.functional as F
-
+from torch import Tensor, nn, squeeze, no_grad
 from typing import Union, Tuple
 
 
@@ -101,22 +97,22 @@ class FastMcCnn(nn.Module):
         if training:
             left = self.conv_blocks(sample[:, 0:1, :, :])
             # left of shape : torch.Size([batch_size, 64, 1, 1])
-            left = F.normalize(left, p=2, dim=1)
+            left = nn.functional.normalize(left, p=2, dim=1)
 
             pos = self.conv_blocks(sample[:, 1:2, :, :])
             # pos of shape : torch.Size([batch_size, 64, 1, 1])
-            pos = F.normalize(pos, p=2, dim=1)
+            pos = nn.functional.normalize(pos, p=2, dim=1)
 
             neg = self.conv_blocks(sample[:, 2:3, :, :])
             # neg of shape : torch.Size([batch_size, 64, 1, 1])
-            neg = F.normalize(neg, p=2, dim=1)
+            neg = nn.functional.normalize(neg, p=2, dim=1)
 
             return left, pos, neg
 
         # Testing mode
         else:
             # Disabling gradient calculation in evaluation mode. It will reduce memory consumption
-            with torch.no_grad():
+            with no_grad():
                 # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 2 dimensions
                 features = self.conv_blocks(sample.unsqueeze(0).unsqueeze(0))
-                return torch.squeeze(F.normalize(features, p=2, dim=1))
+                return squeeze(nn.functional.normalize(features, p=2, dim=1))

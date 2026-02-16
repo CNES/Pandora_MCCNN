@@ -28,17 +28,32 @@ from mc_cnn.dataset_generator.datas_fusion_contest_generator import DataFusionCo
 
 
 @pytest.fixture
-def setup():
-    """
-    Method called to prepare the test fixture
-    """
-    left_img_0 = np.tile(np.arange(13, dtype=np.float32), (13, 1))
-    right_img_0 = np.tile(np.arange(13, dtype=np.float32), (13, 1)) + 1
+def left_img():
+    return np.tile(np.arange(13, dtype=np.float32), (13, 1))
 
-    left_img_1 = np.tile(np.arange(13, dtype=np.float32), (13, 1))
-    right_img_1 = np.tile(np.arange(13, dtype=np.float32), (13, 1)) - 1
+@pytest.fixture
+def right_img_positive():
+    return np.tile(np.arange(13, dtype=np.float32), (13, 1)) + 1
 
-    return left_img_0, right_img_0, left_img_1, right_img_1
+@pytest.fixture
+def right_img_negative():
+    return np.tile(np.arange(13, dtype=np.float32), (13, 1)) - 1
+
+@pytest.fixture
+def middlebury_file():
+    return "tests/data/sample_middlebury.hdf5"
+
+@pytest.fixture
+def middlebury_images():
+    return "tests/data/images_middlebury.hdf5"
+
+@pytest.fixture
+def dfc_file():
+    return "tests/data/sample_dfc.hdf5"
+
+@pytest.fixture
+def dfc_images():
+    return "tests/data/images_dfc.hdf5"
 
 
 class TestDatasetGenerator:
@@ -48,7 +63,7 @@ class TestDatasetGenerator:
 
     # pylint: disable=invalid-name
     # -> because changing the name here loses the reference to the actual name of the checked function
-    def test_MiddleburyGenerator(self, setup):
+    def test_MiddleburyGenerator(self, left_img, right_img_positive, middlebury_file, middlebury_images):
         """
         test the function MiddleburyGenerator
         """
@@ -113,16 +128,15 @@ class TestDatasetGenerator:
             },
         }
 
-        training_loader = MiddleburyGenerator("tests/data/sample_middlebury.hdf5", "tests/data/images_middlebury.hdf5", cfg)
+        training_loader = MiddleburyGenerator(middlebury_file, middlebury_images, cfg)
         # Patch of shape 3, 11, 11
         # With the firt dimension = left patch, right positive patch, right negative patch
         patch = training_loader[0]
-        left_img_0, right_img_0, _, _ = setup
 
         x_left_patch = 6
         y_left_patch = 5
         patch_size = 5
-        gt_left_patch = left_img_0[
+        gt_left_patch = left_img[
             y_left_patch - patch_size : y_left_patch + patch_size + 1,
             x_left_patch - patch_size : x_left_patch + patch_size + 1,
         ]
@@ -131,7 +145,7 @@ class TestDatasetGenerator:
         disp = 1
         x_right_pos_patch = x_left_patch - disp
         y_right_pos_patch = 5
-        gt_right_pos_patch = right_img_0[
+        gt_right_pos_patch = right_img_positive[
             y_right_pos_patch - patch_size : y_right_pos_patch + patch_size + 1,
             x_right_pos_patch - patch_size : x_right_pos_patch + patch_size + 1,
         ]
@@ -140,7 +154,7 @@ class TestDatasetGenerator:
         dataset_neg = 1
         x_right_neg_patch = x_left_patch - disp + dataset_neg
         y_right_neg_patch = 5
-        gt_right_neg_patch = right_img_0[
+        gt_right_neg_patch = right_img_positive[
             y_right_neg_patch - patch_size : y_right_neg_patch + patch_size + 1,
             x_right_neg_patch - patch_size : x_right_neg_patch + patch_size + 1,
         ]
@@ -156,7 +170,7 @@ class TestDatasetGenerator:
         x_left_patch = 5
         y_left_patch = 7
         patch_size = 5
-        gt_left_patch = left_img_0[
+        gt_left_patch = left_img[
             y_left_patch - patch_size : y_left_patch + patch_size + 1,
             x_left_patch - patch_size : x_left_patch + patch_size + 1,
         ]
@@ -165,7 +179,7 @@ class TestDatasetGenerator:
         disp = -1
         x_right_pos_patch = x_left_patch - disp
         y_right_pos_patch = 5
-        gt_right_pos_patch = right_img_0[
+        gt_right_pos_patch = right_img_positive[
             y_right_pos_patch - patch_size : y_right_pos_patch + patch_size + 1,
             x_right_pos_patch - patch_size : x_right_pos_patch + patch_size + 1,
         ]
@@ -174,7 +188,7 @@ class TestDatasetGenerator:
         dataset_neg = 1
         x_right_neg_patch = x_left_patch - disp + dataset_neg
         y_right_neg_patch = 5
-        gt_right_neg_patch = right_img_0[
+        gt_right_neg_patch = right_img_positive[
             y_right_neg_patch - patch_size : y_right_neg_patch + patch_size + 1,
             x_right_neg_patch - patch_size : x_right_neg_patch + patch_size + 1,
         ]
@@ -186,7 +200,7 @@ class TestDatasetGenerator:
 
     # pylint: disable=invalid-name
     # -> because changing the name here loses the reference to the actual name of the checked function
-    def test_DataFusionContestGenerator(self, setup):
+    def test_DataFusionContestGenerator(self, left_img, right_img_positive, right_img_negative, dfc_file, dfc_images):
         """
         test the function DataFusionContestGenerator
         """
@@ -242,17 +256,15 @@ class TestDatasetGenerator:
             },
         }
 
-        training_loader = DataFusionContestGenerator("tests/data/sample_dfc.hdf5", "tests/data/images_dfc.hdf5", cfg)
+        training_loader = DataFusionContestGenerator(dfc_file, dfc_images, cfg)
         # Patch of shape 3, 11, 11
         # With the firt dimension = left patch, right positive patch, right negative patch
         patch = training_loader[0]
 
-        left_img_0, right_img_0, left_img_1, right_img_1 = setup
-
         x_left_patch = 6
         y_left_patch = 5
         patch_size = 5
-        gt_left_patch = left_img_0[
+        gt_left_patch = left_img[
             y_left_patch - patch_size : y_left_patch + patch_size + 1,
             x_left_patch - patch_size : x_left_patch + patch_size + 1,
         ]
@@ -261,7 +273,7 @@ class TestDatasetGenerator:
         disp = 1
         x_right_pos_patch = x_left_patch - disp
         y_right_pos_patch = 5
-        gt_right_pos_patch = right_img_0[
+        gt_right_pos_patch = right_img_positive[
             y_right_pos_patch - patch_size : y_right_pos_patch + patch_size + 1,
             x_right_pos_patch - patch_size : x_right_pos_patch + patch_size + 1,
         ]
@@ -270,7 +282,7 @@ class TestDatasetGenerator:
         dataset_neg = 1
         x_right_neg_patch = x_left_patch - disp + dataset_neg
         y_right_neg_patch = 5
-        gt_right_neg_patch = right_img_0[
+        gt_right_neg_patch = right_img_positive[
             y_right_neg_patch - patch_size : y_right_neg_patch + patch_size + 1,
             x_right_neg_patch - patch_size : x_right_neg_patch + patch_size + 1,
         ]
@@ -285,7 +297,7 @@ class TestDatasetGenerator:
         x_left_patch = 5
         y_left_patch = 7
         patch_size = 5
-        gt_left_patch = left_img_1[
+        gt_left_patch = left_img[
             y_left_patch - patch_size : y_left_patch + patch_size + 1,
             x_left_patch - patch_size : x_left_patch + patch_size + 1,
         ]
@@ -294,7 +306,7 @@ class TestDatasetGenerator:
         disp = -1
         x_right_pos_patch = x_left_patch - disp
         y_right_pos_patch = 7
-        gt_right_pos_patch = right_img_1[
+        gt_right_pos_patch = right_img_negative[
             y_right_pos_patch - patch_size : y_right_pos_patch + patch_size + 1,
             x_right_pos_patch - patch_size : x_right_pos_patch + patch_size + 1,
         ]
@@ -303,7 +315,7 @@ class TestDatasetGenerator:
         dataset_neg = 1
         x_right_neg_patch = x_left_patch - disp + dataset_neg
         y_right_neg_patch = 7
-        gt_right_neg_patch = right_img_1[
+        gt_right_neg_patch = right_img_negative[
             y_right_neg_patch - patch_size : y_right_neg_patch + patch_size + 1,
             x_right_neg_patch - patch_size : x_right_neg_patch + patch_size + 1,
         ]

@@ -30,27 +30,42 @@ from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
 from mc_cnn.cost_volume import cost_volume_base
 
 
+@pytest.fixture
+def nb_row():
+    return 4
+
+
+@pytest.fixture
+def nb_col():
+    return 4
+
+
+@pytest.fixture
+def left_features(nb_row, nb_col):
+    return torch.randn((64, nb_row, nb_col), dtype=torch.float32)
+
+
+@pytest.fixture
+def right_features(nb_row, nb_col):
+    return torch.randn((64, nb_row, nb_col), dtype=torch.float32)
+
+
 class TestCostVolume:
     """
     TestCostVolume class allows to test the cost volume create by mc_cnn
     """
-    # load-plugins=pylint.extensions.no_self_use
     @pytest.mark.parametrize(
         ["method"],
         [
             pytest.param("baseline"),
-            # pytest.param("cpp"),
+            pytest.param("cpp"),
         ]
     )
-    def test_computes_cost_volume_mc_cnn_fast(self, method: str):
+    def test_computes_cost_volume_mc_cnn_fast(self, method: str, left_features, right_features):
         """ "
         Test the computes_cost_volume_mc_cnn_fast function
 
         """
-        # create left and left features
-        left_features = torch.randn((64, 4, 4), dtype=torch.float64)
-        right_features = torch.randn((64, 4, 4), dtype=torch.float64)
-
         cos = nn.CosineSimilarity(dim=0, eps=1e-6)
 
         # Create the ground truth cost volume (row, col, disp)
@@ -77,22 +92,17 @@ class TestCostVolume:
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
-    # load-plugins=pylint.extensions.no_self_use
     @pytest.mark.parametrize(
         ["method"],
         [
             pytest.param("baseline"),
-            # pytest.param("cpp"),
+            pytest.param("cpp"),
         ]
     )
-    def test_computes_cost_volume_mc_cnn_fast_negative_disp(self, method: str):
+    def test_computes_cost_volume_mc_cnn_fast_negative_disp(self, method: str, left_features, right_features):
         """ "
         Test the computes_cost_volume_mc_cnn_fast function with negative disparities
         """
-        # create left and right features
-        left_features = torch.randn((64, 4, 4), dtype=torch.float64)
-        right_features = torch.randn((64, 4, 4), dtype=torch.float64)
-
         cos = nn.CosineSimilarity(dim=0, eps=1e-6)
 
         # Create the ground truth cost volume (row, col, disp)
@@ -122,18 +132,14 @@ class TestCostVolume:
         ["method"],
         [
             pytest.param("baseline"),
-            # pytest.param("cpp"),
+            pytest.param("cpp"),
         ]
     )
-    def test_computes_cost_volume_mc_cnn_fast_positive_disp(self, method):
+    def test_computes_cost_volume_mc_cnn_fast_positive_disp(self, method, left_features, right_features):
         """ "
         Test the computes_cost_volume_mc_cnn_fast function with positive disparities
 
         """
-        # create left and right features
-        left_features = torch.randn((64, 4, 4), dtype=torch.float64)
-        right_features = torch.randn((64, 4, 4), dtype=torch.float64)
-
         cos = nn.CosineSimilarity(dim=0, eps=1e-6)
 
         # Create the ground truth cost volume (row, col, disp)
@@ -159,7 +165,7 @@ class TestCostVolume:
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
 
-    def sad_cost(self, left_features: torch.Tensor, right_features: torch.Tensor) -> np.ndarray:
+    def sad_cost(self, left_features, right_features) -> np.ndarray:
         """
         Useful to test the computes_cost_volume_mc_cnn_accurate function
         """
@@ -197,14 +203,10 @@ class TestCostVolume:
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
-    def test_computes_cost_volume_mc_cnn_accuratenegative_disp(self):
+    def test_computes_cost_volume_mc_cnn_accuratenegative_disp(self, left_features, right_features):
         """
         Test the computes_cost_volume_mc_cnn_accurate function with negative disparities
         """
-        # create left and right features
-        left_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
-        right_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
-
         # Create the ground truth cost volume (row, col, disp)
         cv_gt = np.full((4, 4, 4), np.nan)
 

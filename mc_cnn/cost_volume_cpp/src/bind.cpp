@@ -25,12 +25,24 @@ using namespace pybind11::literals;
 
 
 PYBIND11_MODULE(cv_pixelmajor_notorch, m) {
-    m.doc() = "MC-CNN CV pixel-major (NumPy I/O, CPU, expects HWC (row, col, channel) input, returns HWD (row, col, disp))";
-    m.def("cv_pixelmajor", &cv_pixelmajor,
-          "Compute cost volume: inputs HWC float32, output HWD float32.",
-          py::arg("left_features_hwc"),
-          py::arg("right_features_hwc"),
-          py::arg("disp_min"),
-          py::arg("disp_max"),
-          py::arg("write_invalid_nan") = true);
+    m.doc() = "MC-CNN CV pixel-major (NumPy I/O, CPU, expects HWC input, returns HWD)";
+    m.def("cv_pixelmajor", &cv_pixelmajor, "left_features_hwc" _a, "right_features_hwc" _a,
+          "disp_min" _a, "disp_max" _a, "write_invalid_nan" _a,
+          R"mydelimiter( 
+            "Compute cost volume: inputs HWC float32, output HWD float32."
+
+            :param left_features_hwc: left features, expects float32 array (row, col, channel).
+            :type: float32 array (row, col, channel)
+            :param right_features_hwc: right features, expects float32 array (row, col, channel).
+            :type: float32 array (row, col, channel)
+            :param disp_min: minimum disparity.
+            :type: int
+            :param disp_max : maximum disparity.
+            :type: int
+            :param write_invalid_nan: replace invalid by NaN if set to true.
+            :type: bool
+            
+            :return: cost volume (row, col, disparity).
+            :rtype: array float[row, col, disparity] 
+          )mydelimiter");
 }

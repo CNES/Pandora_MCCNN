@@ -76,6 +76,8 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
         img = torch.from_numpy(img).to(device=self.device)
 
         with torch.no_grad():
+            # Model inference: as outputs left_features and right _features have the followging shape
+            # (64, row', col') where row', col' is different from row, col.
             feats = self.model(img, training=False)
     
         return feats.numpy()

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-// cv_pixelmajor_notorch_int32.cpp
+// cv_pixelmajor_notorch.cpp
 // Torch-free pixel-major kernel (NumPy I/O).
 // Expects HWC float32 inputs (already transposed on Python side) and returns HWD.
 
@@ -50,10 +50,10 @@ py::array_t<float> cv_pixelmajor(
     // Check disp_min is smaller than disp_max
     if (disp_min > disp_max) throw std::invalid_argument("disp_min must be <= disp_max");
 
-    const int32_t height = static_cast<int32_t>(left_features_hwc.shape(0));
-    const int32_t width = static_cast<int32_t>(left_features_hwc.shape(1));
-    const int32_t channel = static_cast<int32_t>(left_features_hwc.shape(2));
-    const int32_t disparity = disp_max - disp_min + 1;
+    const auto height = left_features_hwc.shape(0);
+    const auto width = left_features_hwc.shape(1);
+    const auto channel = left_features_hwc.shape(2);
+    const auto disparity = disp_max - disp_min + 1;
 
     // Output (height, width, disparity)
     auto cost_volume = py::array_t<float>({height, width, disparity});
@@ -71,20 +71,21 @@ py::array_t<float> cv_pixelmajor(
     const auto nextOutRow = width * disparity; // next row in (height, width, disparity)
     const auto nextOutCol = disparity;         // next col in (height, width, disparity)
 
-    constexpr int BD = 8; // disparity tile
+    constexpr auto BD = 8; // disparity tile
 
     // Loop over the rows
-    for (int32_t height_idx = 0; height_idx < height; ++height_idx) {
+    for (auto height_idx = 0; height_idx < height; ++height_idx) {
         // Loop over the columns
-        for (int32_t width_idx = 0; width_idx < width; ++width_idx) {
+        for (auto width_idx = 0; width_idx < width; ++width_idx) {
             const float* left_sample  = p_left_features + height_idx * nextInRow + width_idx * nextInCol;  // left[height_idx, weight_idx, :]
             float* cost_volume_sample = cost_volume + height_idx * nextOutRow + width_idx * nextOutCol;          // out[height_idx, weight_idx, :]
 
-            int32_t disp_low = std::max<int32_t>(disp_min, -width_idx);              // minimum disparity according the col index
-            int32_t disp_high = std::min<int32_t>(disp_max, width - 1 - width_idx);  // maximum disparity according the col index
-            if (disp_low > disp_high) continue;                                      // check new min disp is smaller than new max disp
+            // minimum disparity according the col index
+            int32_t disp_low = std::max(disp_min, -static_cast<std::int32_t>(width_idx));
+             // maximum disparity according the col index
+            int32_t disp_high = std::min(disp_max, static_cast<std::int32_t>(width) - 1 - static_cast<std::int32_t>(width_idx));
 
-            int32_t disp_idx = disp_low;
+            auto disp_idx = disp_low;
 
             // Tiled disparities
             for (; disp_idx + BD - 1 <= disp_high; disp_idx += BD) {
@@ -103,8 +104,8 @@ py::array_t<float> cv_pixelmajor(
                 #pragma GCC ivdep
                 #endif
                 // Loop over the channels
-                for (int32_t channel_idx = 0; channel_idx < channel; ++channel_idx) {
-                    const float left_sample_chi = left_sample[channel_idx];  // left[height_idx, weight_idx, channel_idx]
+                for (auto channel_idx = 0; channel_idx < channel; ++channel_idx) {
+                    const auto left_sample_chi = left_sample[channel_idx];  // left[height_idx, weight_idx, channel_idx]
                     #pragma unroll
                     // Loop inside each tiled disparities sample
                     for (int idx = 0; idx < BD; ++idx) {
@@ -115,7 +116,7 @@ py::array_t<float> cv_pixelmajor(
                     }
                 }
 
-                const int32_t base = disp_low - disp_min;
+                const auto base = disp_low - disp_min;
                 #pragma unroll
                 // Loop inside each tiled disparities sample
                 for (int idx = 0; idx < BD; ++idx) {

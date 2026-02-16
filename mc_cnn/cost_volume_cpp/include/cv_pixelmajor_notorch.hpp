@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-// cv_pixelmajor_notorch_int32.cpp
+// cv_pixelmajor_notorch.cpp
 // Torch-free pixel-major kernel (NumPy I/O).
 // Expects HWC float32 inputs (already transposed on Python side) and returns HWD.
 
