@@ -21,10 +21,8 @@ This module contains the mc-cnn fast network
 """
 
 # pylint:disable=too-few-public-methods
-
-from torch import nn
-from torch import Tensor
 import torch
+from torch import Tensor, nn
 import torch.nn.functional as F
 
 from typing import Union, Tuple

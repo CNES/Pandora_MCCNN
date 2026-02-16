@@ -23,45 +23,14 @@
 
 #include "cv_pixelmajor_notorch"
 
-/**
- * @brief Check array dimensions
- *
- * @param arr : array to check
- * @param name : name of the checked array
- *
- * @throws std::invalid_argument if the number of dimension if different then 3.
- */
-static inline void ensure_hwc_3d(const py::array& arr, const char* name) {
-    if (arr.ndim() != 3) {
-        throw std::invalid_argument(std::string(name) + " must be 3D (H,W,C)");
-    }
-}
-
-/**
- * @brief Check arrays shape equality
- *
- * @param arr_a : first array to check
- * @param arr_b : second array to check
- *
- * @throws std::invalid_argument if the number of dimension of arr_a and arr_b is different
- * @throws std::invalid_argument if the shapes of arr_a and arr_b are different                       
- */
-static inline void ensure_same_shape(const py::array& arr_a, const py::array& arr_b) {
-    if (arr_a.ndim() != arr_b.ndim()) throw std::invalid_argument("left/right must have same rank");
-    for (ssize_t dim_i = 0; dim_i < arr_a.ndim(); ++dim_i) {
-        if (arr_a.shape(i) != arr_b.shape(dim_i)) {
-            throw std::invalid_argument("left/right shapes must match exactly");
-        }
-    }
-}
 
 /**
  * @brief Compute cost volume with torch-free pixel-major kernel. Expects HWC float32 arrays.
  *
  * @param left_features_hwc : left features, expects float32 array (height, width, channel).
  * @param right_features_hwc : right features, expects float32 array (height, width, channel).
- * @param disp_min_ll : minimum disparity.
- * @param disp_max_ll : maximum disparity.
+ * @param disp_min : minimum disparity.
+ * @param disp_max : maximum disparity.
  * @param write_invalid_nan : replace invalid by NaN if set to true.
  *
  * @return py::array : return the cost volume (height, width, disparity).                 
@@ -69,17 +38,15 @@ static inline void ensure_same_shape(const py::array& arr_a, const py::array& ar
 py::array_t<float> cv_pixelmajor(
     py::array_t<float, py::array::c_style | py::array::forcecast> left_features_hwc,
     py::array_t<float, py::array::c_style | py::array::forcecast> right_features_hwc,
-    long long disp_min_ll,
-    long long disp_max_ll,
+    int32_t disp_min,
+    int32_t disp_max,
     bool write_invalid_nan = true
 ) {
     // Inputs are already HWC contiguous (Python did transpose + copy).
-    ensure_hwc_3d(left_features_hwc, "left_features");
-    ensure_hwc_3d(right_features_hwc, "right_features");
+    ensure_3d_dimensions(left_features_hwc, "left_features");
+    ensure_3d_dimensions(right_features_hwc, "right_features");
     ensure_same_shape(left_features_hwc, right_features_hwc);
 
-    const int32_t disp_min = static_cast<int32_t>(disp_min_ll);
-    const int32_t disp_max = static_cast<int32_t>(disp_max_ll);
     // Check disp_min is smaller than disp_max
     if (disp_min > disp_max) throw std::invalid_argument("disp_min must be <= disp_max");
 
@@ -89,21 +56,20 @@ py::array_t<float> cv_pixelmajor(
     const int32_t disparity = disp_max - disp_min + 1;
 
     // Output (height, width, disparity)
-    py::array_t<float> cost_volume({height, width, disparity});
-    float* p_out = cost_volume.mutable_data();  // access to out data
+    auto cost_volume = py::array_t<float>({height, width, disparity});
 
     // If write_invalid_nan is activated, fill output data with NaN
     if (write_invalid_nan) {
-        std::fill(p_out, p_out + (height * width * disparity), std::numeric_limits<float>::quiet_NaN());
+        std::fill(cost_volume, cost_volume + (height * width * disparity), std::numeric_limits<float>::quiet_NaN());
     }
 
-    const float* p_left_features = left_features_hwc.data();      // left features data
-    const float* p_right_features = right_features_hwc.data();    // right features data
+    const auto left_data = left_features_hwc.unchecked<3>();      // left features data
+    const auto right_data = right_features_hwc.unchecked<3>();    // right features data
 
-    const int32_t nextInRow  = width * channel;   // next row in (height, width, channel)
-    const int32_t nextInCol  = channel;           // next col in (height, width, channel)
-    const int32_t nextOutRow = width * disparity; // next row in (height, width, disparity)
-    const int32_t nextOutCol = disparity;         // next col in (height, width, disparity)
+    const auto nextInRow  = width * channel;   // next row in (height, width, channel)
+    const auto nextInCol  = channel;           // next col in (height, width, channel)
+    const auto nextOutRow = width * disparity; // next row in (height, width, disparity)
+    const auto nextOutCol = disparity;         // next col in (height, width, disparity)
 
     constexpr int BD = 8; // disparity tile
 
@@ -112,13 +78,13 @@ py::array_t<float> cv_pixelmajor(
         // Loop over the columns
         for (int32_t width_idx = 0; width_idx < width; ++width_idx) {
             const float* left_sample  = p_left_features + height_idx * nextInRow + width_idx * nextInCol;  // left[height_idx, weight_idx, :]
-            float* cost_volume_sample = p_out + height_idx * nextOutRow + width_idx * nextOutCol;          // out[height_idx, weight_idx, :]
+            float* cost_volume_sample = cost_volume + height_idx * nextOutRow + width_idx * nextOutCol;          // out[height_idx, weight_idx, :]
 
             int32_t disp_low = std::max<int32_t>(disp_min, -width_idx);              // minimum disparity according the col index
             int32_t disp_high = std::min<int32_t>(disp_max, width - 1 - width_idx);  // maximum disparity according the col index
             if (disp_low > disp_high) continue;                                      // check new min disp is smaller than new max disp
 
-            int32_t disp_idx = d_low;
+            int32_t disp_idx = disp_low;
 
             // Tiled disparities
             for (; disp_idx + BD - 1 <= disp_high; disp_idx += BD) {

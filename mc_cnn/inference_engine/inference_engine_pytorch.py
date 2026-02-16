@@ -41,7 +41,7 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
         self.model = FastMcCnnDyn(num_layers)
         self.device = torch.device(self.device)
 
-        self._load_model()
+        self.load_model()
     
     @property
     def schema(self):
@@ -50,20 +50,17 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
         schema.update({"model_path": And(str, lambda x: x.endswith(".pt"))})
         return schema
 
-    def _load_model(self) -> None:
+    def load_model(self) -> None:
         """
         PyTorch load model function.
         """
-        # torch.set_num_threads(1)
-        # torch.set_num_interop_threads(1)
-        
         state = torch.load(self.model_path, map_location=self.device)
-        sd = state["model"] if isinstance(state, dict) and "model" in state else state
+        state_dict = state["model"] if isinstance(state, dict) and "model" in state else state
         # strip DataParallel 'module.' if present
-        if isinstance(sd, dict) and any(k.startswith("module.") for k in sd.keys()):
-            sd = {k.replace("module.", "", 1): v for k, v in sd.items()}
+        if isinstance(state_dict, dict) and any(k.startswith("module.") for k in state_dict.keys()):
+            state_dict = {k.replace("module.", "", 1): v for k, v in state_dict.items()}
     
-        self.model.load_state_dict(sd)  # strict=True by default
+        self.model.load_state_dict(state_dict)  # strict=True by default
         self.model.to(self.device)
         self.model.eval()
 
@@ -73,13 +70,13 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
 
         :param: image to infer (row, col). 
     
-        :return: image features (C=64, row, col), float32
+        :return: image features (channel=64, row', col'), float32
         """
-        # Expect img_np shape (row, col)
-        img = torch.from_numpy(img.astype(np.float32, copy=False)).to(device=self.device)
+        # Convert img array into tensor
+        img = torch.from_numpy(img).to(device=self.device)
 
         with torch.no_grad():
-            feats = self.model(img, training=False)  # (64, row', col')
+            feats = self.model(img, training=False)
     
         return feats.numpy()
 

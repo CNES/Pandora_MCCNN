@@ -21,17 +21,17 @@ Optimized MC-CNN model CPU-based
 """
 
 from pathlib import Path
+import numpy as np
 
 from mc_cnn.cost_volume import cost_volume_base
 from mc_cnn.inference_engine import inference_engine_base
-
-import numpy as np
 
 
 def run_mc_cnn_fast(
     img_left: np.ndarray,
     img_right: np.ndarray,
-    disp_min: int, disp_max: int,
+    disp_min: int,
+    disp_max: int,
     model_path: str,
     cost_volume_method: str = "cpp",
     window_size: int = 11,
@@ -52,10 +52,8 @@ def run_mc_cnn_fast(
     :return: cost volume as numpy array of shape (row, col, disp), float32
     """
     # ---------------- Stage: Model init ----------------
-    inference_method = Path(model_path).suffix[1:]
-
     cfg = {
-        "inference_method": inference_method,
+        "inference_method": Path(model_path).suffix.lstrip('.'),
         "model_path": model_path,
         "cost_volume_method": cost_volume_method,
         "window_size": window_size,
@@ -67,11 +65,14 @@ def run_mc_cnn_fast(
     # ---------------- Stage: Model inference ----------------
     left = model_inferer.normalize(img_left)
     right = model_inferer.normalize(img_right)
-    left_features = model_inferer.inference_func(left)  # (64, H', W') depending on model depth
+
+    # Model inference: as outputs left_features and right _features have the followging shape
+    # (64, row', col') where row', col' is different from row, col.
+    left_features = model_inferer.inference_func(left)
     right_features = model_inferer.inference_func(right)
 
     # ---------------- Stage: Cost volume computation ----------------
     cost_volume = cost_volume_base.AbstractCostVolume(cfg)
-    cv = cost_volume.compute_cost_volume(left_features, right_features, disp_min, disp_max)
+    cv = cost_volume.computes_cost_volume(left_features, right_features, disp_min, disp_max)
 
     return cv

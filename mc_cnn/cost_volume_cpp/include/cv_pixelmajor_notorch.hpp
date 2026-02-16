@@ -33,23 +33,33 @@ namespace py = pybind11;
 /**
  * @brief Check array dimensions
  *
- * @param arr : array to check
+ * @param data_features : array to check
  * @param name : name of the checked array
  *
  * @throws std::invalid_argument if the number of dimension if different then 3.
  */
-static inline void ensure_hwc_3d(const py::array& arr, const char* name);
+inline void ensure_3d_dimensions(const py::array& data_features, const char* name) {
+    if (data_features.ndim() != 3) {
+        throw std::invalid_argument(std::string(name) + " must be 3D (H, W, C)");
+    }
+}
+
 
 /**
  * @brief Check arrays shape equality
  *
- * @param arr_a : first array to check
- * @param arr_b : second array to check
+ * @param data_features_a : first array to check
+ * @param data_features_b : second array to check
  *
- * @throws std::invalid_argument if the number of dimension of arr_a and arr_b is different
- * @throws std::invalid_argument if the shapes of arr_a and arr_b are different                       
+ * @throws std::invalid_argument if the shapes of data_features_a and data_features_b are different                       
  */
-static inline void ensure_same_shape(const py::array& arr_a, const py::array& arr_b);
+inline void ensure_same_shape(const py::array& data_features_a, const py::array& data_features_b) {
+    for (ssize_t dim_i = 0; dim_i < data_features_a.ndim(); ++dim_i) {
+        if (data_features_a.shape(i) != data_features_b.shape(dim_i)) {
+            throw std::invalid_argument("left/right shapes must match exactly");
+        }
+    }
+}
 
 
 /**
@@ -57,8 +67,8 @@ static inline void ensure_same_shape(const py::array& arr_a, const py::array& ar
  *
  * @param left_features_hwc : left features, expects float32 array (H, W, C).
  * @param right_features_hwc : right features, expects float32 array (H, W, C).
- * @param disp_min_ll : minimum disparity.
- * @param disp_max_ll : maximum disparity.
+ * @param int32_t : minimum disparity.
+ * @param int32_t : maximum disparity.
  * @param write_invalid_nan : replace invalid by NaN if set to true.
  *
  * @return py::array : return the cost volume (H, W, D).                 
@@ -66,7 +76,7 @@ static inline void ensure_same_shape(const py::array& arr_a, const py::array& ar
 py::array_t<float> cv_pixelmajor(
     py::array_t<float, py::array::c_style | py::array::forcecast> left_features_hwc,
     py::array_t<float, py::array::c_style | py::array::forcecast> right_features_hwc,
-    long long disp_min_ll,
-    long long disp_max_ll,
+    int32_t disp_min,
+    int32_t disp_max,
     bool write_invalid_nan = true
 )

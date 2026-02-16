@@ -23,7 +23,7 @@ with the cpp pixel-major kernel.
 
 import numpy as np
 from json_checker import And
-from typing import Dict, Any
+from typing import Dict
 
 from .cost_volume_base import AbstractCostVolume
 from ..cost_volume_cpp import cost_volume_bind
@@ -42,7 +42,6 @@ class CostVolumeCPP(AbstractCostVolume):
 
         :return: None
         """
-        self.cpp_instance = cost_volume_bind.cv_pixelmajor
         super().__init__(cfg)
 
     def computes_cost_volume(
@@ -55,9 +54,8 @@ class CostVolumeCPP(AbstractCostVolume):
         """
         Calls native pixel-major kernel (returns row, col, disp) and returns as-is.
         Accepts torch.Tensor or np.ndarray as inputs; converts to NumPy (channel, row, col),
-        then performs CHW -> HWC in Python and calls the native HWC kernel.
+        then performs CHW -> HWC in Python and calls the native HWC kernel (row, col, channel).
 
-        :param modules: dict with the libraries to import
         :param left_features: features from the left images encoded by convolutional network part (64, row, col)
         :param right_features: features from the right images encoded by convolutional network part (64, row, col)
         :param disp_min: minimum disparity (inclusive, negative or zero)
@@ -75,11 +73,12 @@ class CostVolumeCPP(AbstractCostVolume):
         if not right_features.flags.c_contiguous:
             right_features = np.ascontiguousarray(right_features)
 
-        # CHW -> HWC (fast NumPy path) with C-order copy for downstream speed
+        # Transpose CHW -> HWC (fast NumPy path) with C-order copy for downstream speed
         left_features_hwc = np.transpose(left_features, (1, 2, 0)).copy(order="C")
         right_features_hwc = np.transpose(right_features, (1, 2, 0)).copy(order="C")
 
-        # Native notorch kernel (expects HWC, returns HWD)
-        out_hwd = self.cpp_instance(left_features_hwc, right_features_hwc, disp_min, disp_max)
+        # Native notorch kernel
+        # Expects HWC format (row, col, channel) as inputs, returns HWD (row, col, disp)
+        out_hwd = cost_volume_bind.cv_pixelmajor(left_features_hwc, right_features_hwc, disp_min, disp_max)
 
         return out_hwd

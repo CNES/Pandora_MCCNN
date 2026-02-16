@@ -23,11 +23,10 @@ Module for common base of all inference engines.
 
 import logging
 from abc import ABC, abstractmethod
+from json_checker import Checker, And
 import numpy as np
 from typing import Dict, Callable
 from typing_extensions import Self
-from json_checker import Checker, And
-import numpy as np
 
 
 class AbstractInferenceEngine(ABC):
@@ -101,7 +100,7 @@ class AbstractInferenceEngine(ABC):
         return decorator
     
     @abstractmethod
-    def _load_model(self) -> None:
+    def load_model(self) -> None:
         """
         Load model function.
         """
@@ -111,29 +110,25 @@ class AbstractInferenceEngine(ABC):
         """
         Inference function
 
-        :param: image to infer (row, col). 
+        :param: image to infer (row, col), should be cast in float32.
     
-        :return: image features (C=64, row, col), float32
+        :return: image features (channel=64, row, col)
         """
 
     def normalize(self, img: np.ndarray) -> np.ndarray:
         """
         Image normalization
 
-                    img - mean
-        img_norm  = ----------
+                     img - mean
+        img_norm  = ------------
                        std
     
-        :param img: image to normalized (row, col)
+        :param img: image to normalized (row, col), should be cast in float32.
 
-        :return: normalized image (row, col), float32
+        :return: normalized image (row, col)
         """
-        img = img.astype(np.float32, copy=False)
-        mean = float(img.mean())
         std = float(img.std())
-        if std == 0.0:
-            std = 1.0
-        return (img - mean) / std
+        return (img - img.mean()) / (std if std != 0. else 1.0)
 
 
 

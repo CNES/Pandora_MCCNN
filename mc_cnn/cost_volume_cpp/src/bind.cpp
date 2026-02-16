@@ -19,9 +19,13 @@
 
 #include "cv_pixelmajor_notorch"
 
+#include <pybind11/pybind11.h>
+
+using namespace pybind11::literals;
+
 
 PYBIND11_MODULE(cv_pixelmajor_notorch, m) {
-    m.doc() = "MC-CNN CV pixel-major (NumPy I/O, CPU, expects HWC input, returns HWD)";
+    m.doc() = "MC-CNN CV pixel-major (NumPy I/O, CPU, expects HWC (row, col, channel) input, returns HWD (row, col, disp))";
     m.def("cv_pixelmajor", &cv_pixelmajor,
           "Compute cost volume: inputs HWC float32, output HWD float32.",
           py::arg("left_features_hwc"),

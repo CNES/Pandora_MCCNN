@@ -22,8 +22,9 @@ This module contains the mc-cnn accurate network
 
 # pylint:disable=too-few-public-methods
 
-from torch import Tensor, nn
 import torch
+import torch.nn as nn
+
 import numpy as np
 from typing import Tuple, Callable
 
@@ -90,7 +91,7 @@ class AccMcCnn(nn.Module):
         )
 
     # pylint: disable=arguments-differ
-    def forward(self, sample: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, sample: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Forward function
 
@@ -180,7 +181,7 @@ class AccMcCnnInfer(nn.Module):
         )
 
     # pylint: disable=arguments-differ
-    def forward(self, left: Tensor, right: Tensor, disp_min: int, disp_max: int) -> np.ndarray:
+    def forward(self, left: torch.Tensor, right: torch.Tensor, disp_min: int, disp_max: int) -> np.ndarray:
         """
         Extract left and right features and computes the cost volume for a pair of images
 
@@ -211,11 +212,11 @@ class AccMcCnnInfer(nn.Module):
 
     @staticmethod
     def computes_cost_volume_mc_cnn_accurate(
-        left_features: Tensor,
-        right_features: Tensor,
+        left_features: torch.Tensor,
+        right_features: torch.Tensor,
         disp_min: int,
         disp_max: int,
-        measure: Callable[[Tensor, Tensor], np.ndarray]
+        measure: Callable[[torch.Tensor, torch.Tensor], np.ndarray]
     ) -> np.ndarray:
         """
         Computes the cost volume using the left and right features computing by mc_cnn accurate
@@ -259,7 +260,7 @@ class AccMcCnnInfer(nn.Module):
 
         return np.swapaxes(cv, 0, 2)
 
-    def compute_cost_mc_cnn_accurate(self, left_features: Tensor, right_features: Tensor) -> np.ndarray:
+    def compute_cost_mc_cnn_accurate(self, left_features: torch.Tensor, right_features: torch.Tensor) -> np.ndarray:
         """
         Compute the cost between the left and right features using the last part of the mc_cnn accurate
 

@@ -24,7 +24,7 @@ Module for common base of all cost volume methods.
 import logging
 from abc import abstractmethod, ABC
 import numpy as np
-from typing import Dict, Callable, Any
+from typing import Dict, Callable
 from typing_extensions import Self
 from json_checker import Checker
 
@@ -34,7 +34,6 @@ class AbstractCostVolume(ABC):
     Abstract Cost Volume class
     """
     cv_methods_avail: Dict = {}
-    cpp_instance = None
 
     def __new__(cls, cfg: Dict):
         """
@@ -61,15 +60,14 @@ class AbstractCostVolume(ABC):
         """
         self.cfg = self.check_conf(cfg)
 
-    @classmethod
-    def check_conf(cls, cfg: Dict) -> Dict:
+    def check_conf(self, cfg: Dict) -> Dict:
         """
         Check the cost volume method configuration.
 
         :param cfg: user_config for cost volume method
         :return: cfg: global configuration
         """
-        checker = Checker(cls.schema)
+        checker = Checker(self.schema)
         checker.validate(cfg)
 
         return cfg
@@ -95,14 +93,13 @@ class AbstractCostVolume(ABC):
 
 
     @abstractmethod
-    def compute_cost_volume(
+    def computes_cost_volume(
         self, left_features: np.ndarray, right_features: np.ndarray, disp_min: int, disp_max: int
     ) -> np.ndarray:
         """
         Compute the horizontal intervals over which similarity is applied for a given disparity.
         left_features/right_features shape: (channel=64, row, col)
 
-        :param modules: dict with the libraries to import
         :param left_features: features from the left images encoded by convolutional network part (64, row, col)
         :param right_features: features from the right images encoded by convolutional network part (64, row, col)
         :param disp_min: minimum disparity (inclusive, negative or zero)

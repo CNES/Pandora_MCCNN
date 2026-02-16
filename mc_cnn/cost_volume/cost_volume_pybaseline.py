@@ -22,20 +22,19 @@ This module contains functions associated to the cost volume computation step
 with the baseline (pytorch) method.
 """
 
-
-from .cost_volume_base import AbstractCostVolume
-from typing import Dict, Tuple, Any
 from json_checker import And
-
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
+from typing import Dict, Tuple
+
+from .cost_volume_base import AbstractCostVolume
 
 
 @AbstractCostVolume.register_subclass("baseline")
 class CostVolumeBaseline(AbstractCostVolume):
     """
-    Baseline cost volume baseline class
+    Baseline cost volume class
     """
     schema = {"cost_volume_method": And(str, lambda x: x in ["baseline"])}
 
@@ -47,7 +46,7 @@ class CostVolumeBaseline(AbstractCostVolume):
         """
         super().__init__(cfg)
 
-    def compute_cost_volume(
+    def computes_cost_volume(
         self,
         left_features: np.ndarray,
         right_features: np.ndarray,
@@ -68,15 +67,15 @@ class CostVolumeBaseline(AbstractCostVolume):
         # Construct the cost volume
         disparity_range = np.arange(disp_min, disp_max + 1).astype(np.int32)
 
-        # Allocate cost volume as (D, W, H) for intermediate fill, initialized with NaN
+        # Allocate cost volume as (disp, col, row) for intermediate fill, initialized with NaN
         left_features_torch = torch.from_numpy(left_features)
         right_features_torch = torch.from_numpy(right_features)
         row, col = left_features_torch.shape[1], left_features_torch.shape[2]
 
-        cost_volume = np.empty((len(disparity_range), col, row), dtype=np.float32)
-        cost_volume.fill(np.nan)
+        cost_volume = np.full((len(disparity_range), col, row), fill_value=np.nan, dtype=np.float32)
 
-        cos = nn.CosineSimilarity(dim=0, eps=1e-6)  # cosine over channel dimension C
+        # cosine over channel dimension C
+        cos = nn.CosineSimilarity(dim=0, eps=1e-6)
 
         with torch.no_grad():
             for disp in disparity_range:
@@ -87,12 +86,12 @@ class CostVolumeBaseline(AbstractCostVolume):
                 sim = cos(
                     left_features_torch[:, :, left_int[0] : left_int[1]],
                     right_features_torch[:, :, right_int[0] : right_int[1]],
-                )  # shape: (H, valid_W)
+                )  # shape: (row, valid_col)
 
-                # Place into cv (transpose to (valid_W, H))
+                # Place into cv (transpose to (valid_col, row))
                 cost_volume[ind_d, left_int[0] : left_int[1], :] = sim.cpu().numpy().T
 
-        # Convert similarity to cost (negate), then return as (H, W, D)
+        # Convert similarity to cost (negate), then return as (row, col, disp)
         cost_volume *= -1.0
         return np.swapaxes(cost_volume, 0, 2)
 

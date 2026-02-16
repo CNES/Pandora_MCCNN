@@ -22,7 +22,7 @@ Module for ONNX inference.
 """
 
 import numpy as np
-from typing import Dict
+from typing import Dict, Any
 from json_checker import And
 import onnxruntime as ort
 
@@ -37,28 +37,28 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
     def __init__(self, cfg: Dict) -> None:
         super().__init__(cfg)
         self.provider = "GPUExecutionProvider" if self.device == "cuda" else "CPUExecutionProvider"
-        self._load_model()
+        self.load_model()
     
     @property
-    def schema(self):
+    def schema(self) -> Dict[str, Any]:
         """Schema property for the inference updated for ONNX engine"""
         schema = super().schema
         schema.update({"model_path": And(str, lambda x: x.endswith(".onnx"))})
 
         return schema
 
-    def _load_model(self) -> None:
+    def load_model(self) -> None:
         """
         ONNX load model function.
         """
         so = ort.SessionOptions()
-        so.intra_op_num_threads = 16
-        so.inter_op_num_threads = 1
+        so.intra_op_num_threads = 1  # set the number of physical CPU cores
+        so.inter_op_num_threads = 1  # set the number of threads to parallelize computation inside each operator
         # Sequential mode to avoid extra thread pools
         so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
 
         providers = self.provider
-        provider_options = {}
+        provider_options: Dict[str, Any] = {}
 
         self.session = ort.InferenceSession(
             self.model_path, sess_options=so, providers=[providers], provider_options=[provider_options]
@@ -73,10 +73,6 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
         :return: image features (C=64, row, col), float32
         """
         # Expect img_np shape (row, col)
-        img = img.astype(np.float32, copy=False)
         outs = self.session.run(None, {"input": img})
         feats = outs[0]  # Expect (64, row, col)
         return feats
-
-
-

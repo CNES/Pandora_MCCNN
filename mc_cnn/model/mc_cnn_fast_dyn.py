@@ -17,6 +17,7 @@
 # limitations under the License.
 #
 """
+Dynamic MC-CNN module
 """
 
 import torch
@@ -65,16 +66,16 @@ class FastMcCnnDyn(nn.Module):
         """
         if training:
             left = self.conv_blocks(sample[:, 0:1, :, :])
-            left = torch.nn.functional.normalize(left, p=2, dim=1)
+            left = nn.functional.normalize(left, p=2, dim=1)
 
             pos = self.conv_blocks(sample[:, 1:2, :, :])
-            pos = torch.nn.functional.normalize(pos, p=2, dim=1)
+            pos = nn.functional.normalize(pos, p=2, dim=1)
 
             neg = self.conv_blocks(sample[:, 2:3, :, :])
-            neg = torch.nn.functional.normalize(neg, p=2, dim=1)
+            neg = nn.functional.normalize(neg, p=2, dim=1)
 
             return left, pos, neg
         else:
             with torch.no_grad():
                 feats = self.conv_blocks(sample.unsqueeze(0).unsqueeze(0))
-                return torch.squeeze(torch.nn.functional.normalize(feats, p=2, dim=1))
+                return torch.squeeze(nn.functional.normalize(feats, p=2, dim=1))

@@ -67,6 +67,7 @@ def load_dataset(
     Load training and testing data.
 
     :param cfg: dict configuration
+    :type cfg: dict
 
     :return: training and testing datasets.
     :rtype: Tuple[torch.utils.data.Dataset, torch.utils.data.Dataset]
@@ -96,6 +97,7 @@ def get_parameters_for_mlflow_logs(cfg: Dict[str, Any]) -> Dict[str, Any]:
     Get parameters for logs.
 
     :param cfg: dict configuration
+    :type cdg: dict
 
     :return: parameters dict
     """
