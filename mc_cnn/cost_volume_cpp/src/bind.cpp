@@ -17,15 +17,15 @@
  * limitations under the License.
  */
 
-#include "cv_pixelmajor_notorch"
+#include "cv_pixelmajor_notorch.hpp"
 
 #include <pybind11/pybind11.h>
 
 using namespace pybind11::literals;
 
 
-PYBIND11_MODULE(cv_pixelmajor_notorch, m) {
-    m.doc() = "MC-CNN CV pixel-major (NumPy I/O, CPU, expects HWC input, returns HWD)";
+PYBIND11_MODULE(cost_volume_bind, m) {
+    m.doc() = "MC-CNN CV pixel-major (NumPy I/O, CPU, expects (row, col, channel) input, returns (row, col disparity))";
     m.def("cv_pixelmajor", &cv_pixelmajor, "left_features_hwc" _a, "right_features_hwc" _a,
           "disp_min" _a, "disp_max" _a,
           R"mydelimiter( 

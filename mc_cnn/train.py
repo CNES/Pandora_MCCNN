@@ -31,11 +31,9 @@ import json
 import copy
 
 import torch
-from torch import nn, optim
-from torch.utils import data
 from tqdm import tqdm
 import mlflow
-from typing import Dict, Any, Tuple
+from typing import Any
 
 from mc_cnn.model.mc_cnn_accurate import AccMcCnn
 from mc_cnn.model.mc_cnn_fast import FastMcCnn
@@ -61,8 +59,7 @@ def mkdir_p(path: str):
             raise
 
 
-def load_dataset(
-    cfg: Dict[str, Any]) -> Tuple[data.Dataset, data.Dataset]:
+def load_dataset(cfg: dict[str, Any]) -> tuple[torch.utils.data.Dataset, torch.utils.data.Dataset]:
     """
     Load training and testing data.
 
@@ -70,7 +67,7 @@ def load_dataset(
     :type cfg: dict
 
     :return: training and testing datasets.
-    :rtype: Tuple[torch.utils.data.Dataset, torch.utils.data.Dataset]
+    :rtype: tuple[torch.utils.data.Dataset, torch.utils.data.Dataset]
     """
 
     # Testing configuration : deactivate data augmentation
@@ -92,7 +89,7 @@ def load_dataset(
     return training_loader, testing_loader
 
 
-def get_parameters_for_mlflow_logs(cfg: Dict[str, Any]) -> Dict[str, Any]:
+def get_parameters_for_mlflow_logs(cfg: dict[str, Any]) -> dict[str, Any]:
     """
     Get parameters for logs.
 
@@ -127,11 +124,8 @@ def get_parameters_for_mlflow_logs(cfg: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def load_checkpoint(
-    cfg: Dict[str, Any],
-    net: nn.Module,
-    optimizer: optim.Optimizer,
-    scheduler: optim.LRScheduler
-) -> Tuple[int, int]:
+    cfg: dict[str, Any], net: torch.nn.Module, optimizer: torch.optim.Optimizer, scheduler: torch.optim.LRScheduler
+) -> tuple[int, int]:
     """
     Run a mccnn fast testing epoch.
 
@@ -144,7 +138,7 @@ def load_checkpoint(
     :param scheduler: scheduler
     :type scheduler: torch.optim.LRScheduler
 
-    :return: start and end epoch; Tuple(int, int)
+    :return: start and end epoch; tuple(int, int)
     """
     # Get run and params
     run = mlflow.active_run()
@@ -183,11 +177,11 @@ def load_checkpoint(
 
 def mcc_fast_training_epoch(
     epoch: int,
-    net: nn.Module,
-    training_generator: data.DataLoader,
-    optimizer: optim.Optimizer,
-    criterion: nn.Module
-) -> Tuple[float, int]:
+    net: torch.nn.Module,
+    training_generator: torch.utils.data.DataLoader,
+    optimizer: torch.optim.Optimizer,
+    criterion: torch.nn.Module,
+) -> tuple[float, int]:
     """
     Run a mccnn fast training epoch.
     :param epoch: Number of epoch
@@ -202,9 +196,9 @@ def mcc_fast_training_epoch(
     :type criterion: torch.nn.Module
 
     :return: mean train loss per epoch and train number of accurate prediction per epoch
-    :rtype: Tuple[float, int]
+    :rtype: tuple[float, int]
     """
-    cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+    cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
 
     train_epoch_loss = 0.0
     train_num_correct = 0
@@ -248,11 +242,11 @@ def mcc_fast_training_epoch(
 
 
 def mcc_fast_testing_epoch(
-    net: nn.Module,
-    testing_generator: data.DataLoader,
-    optimizer: optim.Optimizer,
-    criterion: nn.Module
-) -> Tuple[float, int]:
+    net: torch.nn.Module,
+    testing_generator: torch.utils.data.DataLoader,
+    optimizer: torch.optim.Optimizer,
+    criterion: torch.nn.Module,
+) -> tuple[float, int]:
     """
     Run a mccnn fast testing epoch.
 
@@ -266,9 +260,9 @@ def mcc_fast_testing_epoch(
     :type criterion: torch.nn.Module
 
     :return: mean train loss per epoch and train number of accurate prediction per epoch
-    :rtype: Tuple[float, int]
+    :rtype: tuple[float, int]
     """
-    cos = nn.CosineSimilarity(dim=1, eps=1e-6)
+    cos = torch.nn.CosineSimilarity(dim=1, eps=1e-6)
 
     test_epoch_loss = 0.0
     test_num_correct = 0
@@ -305,12 +299,7 @@ def mcc_fast_testing_epoch(
     return test_epoch_loss, test_num_correct
 
 
-def train_mc_cnn_fast(
-    cfg: Dict[str, Any],
-    output_dir: str,
-    dataloader_params: Dict[str, Any],
-    experiment_id: str
-):
+def train_mc_cnn_fast(cfg: dict[str, Any], output_dir: str, dataloader_params: dict[str, Any], experiment_id: str):
     """
     Train the fast mc_cnn network
 
@@ -345,15 +334,15 @@ def train_mc_cnn_fast(
 
     # Optimizer
     if cfg["optimizer"] == "SGD":
-        optimizer = optim.SGD(net.parameters(), lr=cfg["learning_rate"], momentum=0.9)
+        optimizer = torch.optim.SGD(net.parameters(), lr=cfg["learning_rate"], momentum=0.9)
     elif cfg["optimizer"] == "Adam":
-        optimizer = optim.Adam(net.parameters(), lr=cfg["learning_rate"])
+        optimizer = torch.optim.Adam(net.parameters(), lr=cfg["learning_rate"])
     else:
         raise ValueError(
             f"optimizer {cfg['optimizer']} does not correspond to one of the options in the list ['SGD', 'Adam']."
         )
 
-    criterion = nn.MarginRankingLoss(margin=0.2, reduction="mean")
+    criterion = torch.nn.MarginRankingLoss(margin=0.2, reduction="mean")
 
     # lr = 0.002 if epoch < 9
     # lr = 0.0002 if 9 <= epoch < 18 ...
@@ -362,8 +351,8 @@ def train_mc_cnn_fast(
     # Load training and testing data
     training_loader, testing_loader = load_dataset(cfg)
 
-    training_generator = data.DataLoader(training_loader, **dataloader_params)
-    testing_generator = data.DataLoader(testing_loader, **dataloader_params)
+    training_generator = torch.utils.data.DataLoader(training_loader, **dataloader_params)
+    testing_generator = torch.utils.data.DataLoader(testing_loader, **dataloader_params)
 
     # Start or resume mlflow run
     resume = cfg.get("resume", None)
@@ -426,14 +415,14 @@ def train_mc_cnn_fast(
 
 def mcc_acc_training_epoch(
     epoch: int,
-    net: nn.Module,
-    training_generator: data.DataLoader,
-    optimizer: optim.Optimizer,
-    criterion: nn.Module
-) -> Tuple[float, int]:
+    net: torch.nn.Module,
+    training_generator: torch.utils.data.DataLoader,
+    optimizer: torch.optim.Optimizer,
+    criterion: torch.nn.Module,
+) -> tuple[float, int]:
     """
     Run a mccnn acc training epoch.
-    
+
     :param epoch; number of epoch
     :type epoch: int
     :param net: network
@@ -446,7 +435,7 @@ def mcc_acc_training_epoch(
     :type criterion: torch.nn.Module
 
     :return: mean train loss per epoch and train number of accurate prediction per epoch
-    :rtype: Tuple[float, int]
+    :rtype: tuple[float, int]
     """
     train_epoch_loss = 0.0
     train_num_correct = 0
@@ -490,11 +479,11 @@ def mcc_acc_training_epoch(
 
 
 def mcc_acc_testing_epoch(
-    net: nn.Module,
-    testing_generator: data.DataLoader,
-    optimizer: optim.Optimizer,
-    criterion: nn.Module
-) -> Tuple[float, int]:
+    net: torch.nn.Module,
+    testing_generator: torch.utils.data.DataLoader,
+    optimizer: torch.optim.Optimizer,
+    criterion: torch.nn.Module,
+) -> tuple[float, int]:
     """
     Run a mccnn acc testing epoch.
 
@@ -508,7 +497,7 @@ def mcc_acc_testing_epoch(
     :type criterion: torch.nn.Module
 
     :return: mean test loss per epoch and test number of accurate prediction per epoch
-    :rtype: Tuple[float, int]
+    :rtype: tuple[float, int]
     """
     test_epoch_loss = 0.0
     test_num_correct = 0
@@ -545,11 +534,7 @@ def mcc_acc_testing_epoch(
     return test_epoch_loss, test_num_correct
 
 
-def train_mc_cnn_acc(
-    cfg: Dict[str, Any],
-    output_dir: str,
-    dataloader_params: Dict[str, Any],
-    experiment_id: str):
+def train_mc_cnn_acc(cfg: dict[str, Any], output_dir: str, dataloader_params: dict[str, Any], experiment_id: str):
     """
     Train the accurate mc_cnn network
 
@@ -570,9 +555,9 @@ def train_mc_cnn_acc(
     net = AccMcCnn()
     net.to(device)
 
-    optimizer = optim.SGD(net.parameters(), lr=0.003, momentum=0.9)
+    optimizer = torch.optim.SGD(net.parameters(), lr=0.003, momentum=0.9)
 
-    criterion = nn.BCELoss(reduction="mean")
+    criterion = torch.nn.BCELoss(reduction="mean")
 
     # lr = 0.003 if epoch < 10
     # lr = 0.0003 if 10 <= epoch < 18 ...
@@ -581,8 +566,8 @@ def train_mc_cnn_acc(
     # Load training and testing data
     training_loader, testing_loader = load_dataset(cfg)
 
-    training_generator = data.DataLoader(training_loader, **dataloader_params)
-    testing_generator = data.DataLoader(testing_loader, **dataloader_params)
+    training_generator = torch.utils.data.DataLoader(training_loader, **dataloader_params)
+    testing_generator = torch.utils.data.DataLoader(testing_loader, **dataloader_params)
 
     # Start or resume mlflow run
     resume = cfg.get("resume", None)
@@ -643,7 +628,7 @@ def train_mc_cnn_acc(
     mlflow.end_run()
 
 
-def read_config_file(config_file: str) -> Dict[str, Any]:
+def read_config_file(config_file: str) -> dict[str, Any]:
     """
     Read a json configuration file
 
@@ -658,7 +643,7 @@ def read_config_file(config_file: str) -> Dict[str, Any]:
     return user_configuration
 
 
-def save_cfg(output: str, configuration: Dict[str, Any]):
+def save_cfg(output: str, configuration: dict[str, Any]):
     """
     Save user configuration in the json file : config.json
 
@@ -671,7 +656,7 @@ def save_cfg(output: str, configuration: Dict[str, Any]):
         json.dump(configuration, file, indent=2)
 
 
-def setup_mlflow(cfg_mlflow: Dict[str, Any]) -> str:
+def setup_mlflow(cfg_mlflow: dict[str, Any]) -> str:
     """
     Setup MLFlow
 

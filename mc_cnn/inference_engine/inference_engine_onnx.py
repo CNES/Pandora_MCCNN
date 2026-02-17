@@ -22,7 +22,7 @@ Module for ONNX inference.
 """
 
 import numpy as np
-from typing import Dict, Any
+from typing import Any
 from json_checker import And
 import onnxruntime as ort
 
@@ -34,13 +34,14 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
     """
     ONNX engine class
     """
-    def __init__(self, cfg: Dict) -> None:
+
+    def __init__(self, cfg: dict) -> None:
         super().__init__(cfg)
         self.provider = "GPUExecutionProvider" if self.device == "cuda" else "CPUExecutionProvider"
         self.load_model()
-    
+
     @property
-    def schema(self) -> Dict[str, Any]:
+    def schema(self) -> dict[str, Any]:
         """Schema property for the inference updated for ONNX engine"""
         schema = super().schema
         schema.update({"model_path": And(str, lambda x: x.endswith(".onnx"))})
@@ -58,7 +59,7 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
         so.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
 
         providers = self.provider
-        provider_options: Dict[str, Any] = {}
+        provider_options: dict[str, Any] = {}
 
         self.session = ort.InferenceSession(
             self.model_path, sess_options=so, providers=[providers], provider_options=[provider_options]
@@ -68,8 +69,8 @@ class ONNXEngine(inference_engine_base.AbstractInferenceEngine):
         """
         Inference function with ONNX
 
-        :param: image to infer (row, col). 
-    
+        :param: image to infer (row, col).
+
         :return: image features (C=64, row, col), float32
         """
         # Expect img_np shape (row, col)

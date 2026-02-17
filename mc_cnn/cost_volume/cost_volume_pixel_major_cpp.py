@@ -23,7 +23,6 @@ with the cpp pixel-major kernel.
 
 import numpy as np
 from json_checker import And
-from typing import Dict
 
 from .cost_volume_base import AbstractCostVolume
 from ..cost_volume_cpp import cost_volume_bind
@@ -34,9 +33,10 @@ class CostVolumeCPP(AbstractCostVolume):
     """
     CPP cost volume class
     """
+
     schema = {"cost_volume_method": And(str, lambda x: x in ["cpp"])}
 
-    def __init__(self, cfg: Dict) -> None:
+    def __init__(self, cfg: dict) -> None:
         """
         :param cfg: configuration
 
@@ -45,11 +45,7 @@ class CostVolumeCPP(AbstractCostVolume):
         super().__init__(cfg)
 
     def computes_cost_volume(
-        self,
-        left_features: np.ndarray,
-        right_features: np.ndarray,
-        disp_min: int,
-        disp_max: int
+        self, left_features: np.ndarray, right_features: np.ndarray, disp_min: int, disp_max: int
     ) -> np.ndarray:
         """
         Calls native pixel-major kernel (returns row, col, disp) and returns as-is.

@@ -25,7 +25,8 @@ import logging
 from abc import ABC, abstractmethod
 from json_checker import Checker, And
 import numpy as np
-from typing import Dict, Callable
+from collections.abc import Callable
+from typing import Any
 from typing_extensions import Self
 
 
@@ -33,9 +34,10 @@ class AbstractInferenceEngine(ABC):
     """
     Abstract Filter class
     """
-    inference_engines_avail: Dict = {}
 
-    def __new__(cls, cfg: Dict):
+    inference_engines_avail: dict = {}
+
+    def __new__(cls, cfg: dict):
         """
         Return the plugin associated with the inference engine given in the configuration
 
@@ -51,8 +53,8 @@ class AbstractInferenceEngine(ABC):
                     raise KeyError
 
         return super(AbstractInferenceEngine, cls).__new__(cls)
-    
-    def __init__(self, cfg: Dict) -> None:
+
+    def __init__(self, cfg: dict) -> None:
         """
         :param cfg: configuration
 
@@ -61,15 +63,13 @@ class AbstractInferenceEngine(ABC):
         self.cfg = self.check_conf(cfg)
         self.model_path = self.cfg["model_path"]
         self.device = self.cfg["device"]
-    
-    @property
-    def schema(self):
-        """Schema property for the inference engine"""
-        return {
-            "device": And(str, lambda x: x in ["cpu", "cuda"])
-        }
 
-    def check_conf(self, cfg: Dict) -> Dict[str, str]:
+    @property
+    def schema(self) -> dict[str, Any]:
+        """Schema property for the inference engine"""
+        return {"device": And(str, lambda x: x in ["cpu", "cuda"])}
+
+    def check_conf(self, cfg: dict) -> dict[str, str]:
         """Check the inference engine configuration
 
         :param cfg: user_config for matching cost
@@ -98,7 +98,7 @@ class AbstractInferenceEngine(ABC):
             return subclass
 
         return decorator
-    
+
     @abstractmethod
     def load_model(self) -> None:
         """
@@ -111,7 +111,7 @@ class AbstractInferenceEngine(ABC):
         Inference function
 
         :param: image to infer (row, col), should be cast in float32.
-    
+
         :return: image features (channel=64, row, col)
         """
 
@@ -122,13 +122,10 @@ class AbstractInferenceEngine(ABC):
                      img - mean
         img_norm  = ------------
                        std
-    
+
         :param img: image to normalized (row, col), should be cast in float32.
 
         :return: normalized image (row, col)
         """
-        std = float(img.std())
-        return (img - img.mean()) / (std if std != 0. else 1.0)
-
-
-
+        std = img.std()
+        return (img - img.mean()) / (std if std != 0.0 else 1.0)

@@ -32,10 +32,9 @@ import numpy as np
 from numba import njit, prange
 import h5py
 import rasterio
-from typing import Tuple, List, Union
 
 
-def load_pfm(fname: str) -> Tuple[np.ndarray, float]:
+def load_pfm(fname: str) -> tuple[np.ndarray, float]:
     """
     Load a PFM file into a Numpy array.
 
@@ -113,10 +112,7 @@ def read_im(fname: str, downsample: bool) -> np.ndarray:
 
 @njit(parallel=True)
 def compute_mask(
-    left_disp: np.ndarray,
-    left_row_disp: Union[np.ndarray, None],
-    right_disp: np.ndarray,
-    patch_size: int
+    left_disp: np.ndarray, left_row_disp: np.ndarray | None, right_disp: np.ndarray, patch_size: int
 ) -> np.ndarray:
     """
     Apply cross-checking, and invalidate pixels with incomplete patch
@@ -159,11 +155,7 @@ def compute_mask(
 
 
 def save_dataset(
-    img: List[np.ndarray],
-    sample: np.ndarray,
-    num_img: int,
-    img_file: h5py.Group,
-    sample_file: h5py.Group
+    img: list[np.ndarray], sample: np.ndarray, num_img: int, img_file: h5py.Group, sample_file: h5py.Group
 ):
     """
     Save the dataset in hdf5 files :
@@ -193,7 +185,9 @@ def save_dataset(
 
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-function-args
 # pylint: disable=too-many-positional-arguments
-def middleburry(in_dir_2014: str, in_dir_2006: str, in_dir_2005: str, in_dir_2003: str, in_dir_2001: str, output_dir: str):
+def middleburry(
+    in_dir_2014: str, in_dir_2006: str, in_dir_2005: str, in_dir_2003: str, in_dir_2001: str, output_dir: str
+):
     """
     Preprocess and create middlebury hdf5 database
 

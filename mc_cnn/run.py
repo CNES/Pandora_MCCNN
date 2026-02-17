@@ -35,7 +35,7 @@ def run_mc_cnn_fast(
     model_path: str,
     cost_volume_method: str = "cpp",
     window_size: int = 11,
-    device: str = "cpu"
+    device: str = "cpu",
 ) -> np.ndarray:
     """
     Compute the cost volume for a pair of images with MC-CNN fast.
@@ -47,17 +47,20 @@ def run_mc_cnn_fast(
     :param img_right: right image, shape (row, col)
     :param disp_min: minimum disparity (inclusive, negative or zero)
     :param disp_max: maximum disparity (inclusive, typically 0 for left-to-right)
-    :param cfg: configuration dictionnary for the IA and cost volume functions
+    :param model_path:
+    :param cost_volime_method:
+    :param window_size:
+    :param device:
 
     :return: cost volume as numpy array of shape (row, col, disp), float32
     """
     # ---------------- Stage: Model init ----------------
     cfg = {
-        "inference_method": Path(model_path).suffix.lstrip('.'),
+        "inference_method": Path(model_path).suffix.lstrip("."),
         "model_path": model_path,
         "cost_volume_method": cost_volume_method,
         "window_size": window_size,
-        "device": device
+        "device": device,
     }
 
     model_inferer = inference_engine_base.AbstractInferenceEngine(cfg)

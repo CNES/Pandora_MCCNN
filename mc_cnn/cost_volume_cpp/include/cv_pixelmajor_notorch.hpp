@@ -21,6 +21,10 @@
 // Torch-free pixel-major kernel (NumPy I/O).
 // Expects HWC float32 inputs (already transposed on Python side) and returns HWD.
 
+
+#ifndef CV_PIXELMAJOR_NOTORCH_HPP
+#define CV_PIXELMAJOR_NOTORCH_HPP
+
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <algorithm>
@@ -51,11 +55,11 @@ inline void ensure_3d_dimensions(const py::array& data_features, const char* nam
  * @param data_features_a : first array to check
  * @param data_features_b : second array to check
  *
- * @throws std::invalid_argument if the shapes of data_features_a and data_features_b are different                       
+ * @throws std::invalid_argument if the shapes of data_features_a and data_features_b are different
  */
 inline void ensure_same_shape(const py::array& data_features_a, const py::array& data_features_b) {
     for (ssize_t dim_i = 0; dim_i < data_features_a.ndim(); ++dim_i) {
-        if (data_features_a.shape(i) != data_features_b.shape(dim_i)) {
+        if (data_features_a.shape(dim_i) != data_features_b.shape(dim_i)) {
             throw std::invalid_argument("left/right shapes must match exactly");
         }
     }
@@ -77,4 +81,6 @@ py::array_t<float> cv_pixelmajor(
     py::array_t<float, py::array::c_style | py::array::forcecast> right_features_hwc,
     int32_t disp_min,
     int32_t disp_max,
-)
+);
+
+#endif

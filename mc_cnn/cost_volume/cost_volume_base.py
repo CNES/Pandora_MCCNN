@@ -24,7 +24,7 @@ Module for common base of all cost volume methods.
 import logging
 from abc import abstractmethod, ABC
 import numpy as np
-from typing import Dict, Callable
+from collections.abc import Callable
 from typing_extensions import Self
 from json_checker import Checker
 
@@ -33,13 +33,14 @@ class AbstractCostVolume(ABC):
     """
     Abstract Cost Volume class
     """
-    cv_methods_avail: Dict = {}
 
-    def __new__(cls, cfg: Dict):
+    cv_methods_avail: dict = {}
+
+    def __new__(cls, cfg: dict):
         """
         Return the plugin associated with the cost volume function given in the configuration
 
-        :param cfg: Dict
+        :param cfg: dict
         """
         if cls is AbstractCostVolume:
             if isinstance(cfg["cost_volume_method"], str):
@@ -51,8 +52,8 @@ class AbstractCostVolume(ABC):
                     raise KeyError
 
         return super(AbstractCostVolume, cls).__new__(cls)
-    
-    def __init__(self, cfg: Dict) -> None:
+
+    def __init__(self, cfg: dict) -> None:
         """
         :param cfg: configuration
 
@@ -60,7 +61,7 @@ class AbstractCostVolume(ABC):
         """
         self.cfg = self.check_conf(cfg)
 
-    def check_conf(self, cfg: Dict) -> Dict:
+    def check_conf(self, cfg: dict) -> dict:
         """
         Check the cost volume method configuration.
 
@@ -71,7 +72,7 @@ class AbstractCostVolume(ABC):
         checker.validate(cfg)
 
         return cfg
-    
+
     @classmethod
     def register_subclass(cls, short_name: str) -> Callable[[type[Self]], type[Self]]:
         """
@@ -90,7 +91,6 @@ class AbstractCostVolume(ABC):
             return subclass
 
         return decorator
-
 
     @abstractmethod
     def computes_cost_volume(

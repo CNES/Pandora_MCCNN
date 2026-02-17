@@ -21,7 +21,6 @@ This module contains the mc-cnn fast network
 """
 
 from torch import Tensor, nn, squeeze, no_grad
-from typing import Union, Tuple
 
 
 class FastMcCnn(nn.Module):
@@ -35,6 +34,7 @@ class FastMcCnn(nn.Module):
     :param conv_kernel_size: convolution kernel size
     :type conv_kernel_size: int. Default 3
     """
+
     def __init__(self, in_channels: int = 1, num_conv_feature_maps: int = 64, conv_kernel_size: int = 3):
         super().__init__()
         self.in_channels = in_channels
@@ -73,7 +73,7 @@ class FastMcCnn(nn.Module):
 
     # pylint: disable=arguments-differ
     # pylint: disable=no-else-return
-    def forward(self, sample: Tensor, training: bool) -> Union[Tuple[Tensor, Tensor, Tensor], Tensor]:
+    def forward(self, sample: Tensor, training: bool) -> tuple[Tensor, Tensor, Tensor] | Tensor:
         """
         Forward function
 

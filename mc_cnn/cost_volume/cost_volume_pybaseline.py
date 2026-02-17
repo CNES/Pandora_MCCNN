@@ -24,9 +24,7 @@ with the baseline (pytorch) method.
 
 from json_checker import And
 import numpy as np
-import torch
-import torch.nn as nn
-from typing import Dict, Tuple
+from torch import nn, from_numpy, no_grad, Tensor
 
 from .cost_volume_base import AbstractCostVolume
 
@@ -36,9 +34,10 @@ class CostVolumeBaseline(AbstractCostVolume):
     """
     Baseline cost volume class
     """
+
     schema = {"cost_volume_method": And(str, lambda x: x in ["baseline"])}
 
-    def __init__(self, cfg: Dict) -> None:
+    def __init__(self, cfg: dict) -> None:
         """
         :param cfg: configuration
 
@@ -63,13 +62,13 @@ class CostVolumeBaseline(AbstractCostVolume):
 
         :return: cost volume as numpy array of shape (row, col, disp), float32
         """
- 
+
         # Construct the cost volume
         disparity_range = np.arange(disp_min, disp_max + 1).astype(np.int32)
 
         # Allocate cost volume as (disp, col, row) for intermediate fill, initialized with NaN
-        left_features_torch = torch.from_numpy(left_features)
-        right_features_torch = torch.from_numpy(right_features)
+        left_features_torch = from_numpy(left_features)
+        right_features_torch = from_numpy(right_features)
         row, col = left_features_torch.shape[1], left_features_torch.shape[2]
 
         cost_volume = np.full((len(disparity_range), col, row), fill_value=np.nan, dtype=np.float32)
@@ -77,7 +76,7 @@ class CostVolumeBaseline(AbstractCostVolume):
         # cosine over channel dimension C
         cos = nn.CosineSimilarity(dim=0, eps=1e-6)
 
-        with torch.no_grad():
+        with no_grad():
             for disp in disparity_range:
                 left_int, right_int = point_interval(left_features_torch, right_features_torch, int(disp))
                 ind_d = int(disp - disp_min)
@@ -88,7 +87,7 @@ class CostVolumeBaseline(AbstractCostVolume):
                     right_features_torch[:, :, right_int[0] : right_int[1]],
                 )  # shape: (row, valid_col)
 
-                # Place into cv (transpose to (valid_col, row))
+                # Place into cost volume (transpose to (valid_col, row))
                 cost_volume[ind_d, left_int[0] : left_int[1], :] = sim.cpu().numpy().T
 
         # Convert similarity to cost (negate), then return as (row, col, disp)
@@ -96,11 +95,7 @@ class CostVolumeBaseline(AbstractCostVolume):
         return np.swapaxes(cost_volume, 0, 2)
 
 
-def point_interval(
-    left_features: torch.Tensor,
-    right_features: torch.Tensor,
-    disp: int
-) -> Tuple[Tuple[int, int], Tuple[int, int]]:
+def point_interval(left_features: Tensor, right_features: Tensor, disp: int) -> tuple[tuple[int, int], tuple[int, int]]:
     """
     Compute the horizontal intervals over which similarity is applied for a given disparity.
     left_features/right_features shape: (channel=64, row, col)

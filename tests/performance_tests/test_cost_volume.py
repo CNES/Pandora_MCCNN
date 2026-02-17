@@ -24,7 +24,6 @@ This module contains functions to test the cost volume create by mc_cnn
 import pytest
 import numpy as np
 import torch
-from torch import nn
 
 from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
 from mc_cnn.cost_volume import cost_volume_base
@@ -64,19 +63,20 @@ class TestCostVolume:
     """
     TestCostVolume class allows to test the cost volume create by mc_cnn
     """
+
     @pytest.mark.parametrize(
         ["method"],
         [
             pytest.param("baseline"),
             # pytest.param("cpp"),
-        ]
+        ],
     )
     def test_computes_cost_volume_mc_cnn_fast(self, method: str, left_features, right_features):
         """ "
         Test the computes_cost_volume_mc_cnn_fast function
 
         """
-        cos = nn.CosineSimilarity(dim=0, eps=1e-6)
+        cos = torch.nn.CosineSimilarity(dim=0, eps=1e-6)
 
         # Create the ground truth cost volume (row, col, disp)
         cv_gt = np.full((4, 4, 5), np.nan)
@@ -107,13 +107,13 @@ class TestCostVolume:
         [
             pytest.param("baseline"),
             # pytest.param("cpp"),
-        ]
+        ],
     )
     def test_computes_cost_volume_mc_cnn_fast_negative_disp(self, method: str, left_features, right_features):
         """ "
         Test the computes_cost_volume_mc_cnn_fast function with negative disparities
         """
-        cos = nn.CosineSimilarity(dim=0, eps=1e-6)
+        cos = torch.nn.CosineSimilarity(dim=0, eps=1e-6)
 
         # Create the ground truth cost volume (row, col, disp)
         cv_gt = np.full((4, 4, 4), np.nan)
@@ -143,14 +143,14 @@ class TestCostVolume:
         [
             pytest.param("baseline"),
             # pytest.param("cpp"),
-        ]
+        ],
     )
     def test_computes_cost_volume_mc_cnn_fast_positive_disp(self, method, left_features, right_features):
         """ "
         Test the computes_cost_volume_mc_cnn_fast function with positive disparities
 
         """
-        cos = nn.CosineSimilarity(dim=0, eps=1e-6)
+        cos = torch.nn.CosineSimilarity(dim=0, eps=1e-6)
 
         # Create the ground truth cost volume (row, col, disp)
         cv_gt = np.full((4, 4, 4), np.nan)
@@ -173,7 +173,6 @@ class TestCostVolume:
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
-
 
     def sad_cost(self, left_features, right_features) -> np.ndarray:
         """

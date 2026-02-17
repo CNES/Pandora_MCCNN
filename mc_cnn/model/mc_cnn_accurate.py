@@ -22,11 +22,10 @@ This module contains the mc-cnn accurate network
 
 # pylint:disable=too-few-public-methods
 
-import torch
-import torch.nn as nn
+from torch import nn, Tensor, cat, squeeze, arange, no_grad
 
 import numpy as np
-from typing import Tuple, Callable
+from collections.abc import Callable
 
 
 class AccMcCnn(nn.Module):
@@ -40,6 +39,7 @@ class AccMcCnn(nn.Module):
     :param conv_kernel_size: convolution kernel size
     :type conv_kernel_size: int. Default 3
     """
+
     def __init__(self, in_channels: int = 1, num_conv_feature_maps: int = 112, conv_kernel_size: int = 3):
         super().__init__()
         self.in_channels = in_channels
@@ -91,7 +91,7 @@ class AccMcCnn(nn.Module):
         )
 
     # pylint: disable=arguments-differ
-    def forward(self, sample: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, sample: Tensor) -> tuple[Tensor, Tensor]:
         """
         Forward function
 
@@ -114,13 +114,13 @@ class AccMcCnn(nn.Module):
 
         # Compute similarity score
         # Positive output
-        pos_sample = torch.cat((left, pos), dim=1)
-        pos_sample = torch.squeeze(pos_sample)
+        pos_sample = cat((left, pos), dim=1)
+        pos_sample = squeeze(pos_sample)
         pos_sample = self.fl_blocks(pos_sample)
 
         # Negative output
-        neg_sample = torch.cat((left, neg), dim=1)
-        neg_sample = torch.squeeze(neg_sample)
+        neg_sample = cat((left, neg), dim=1)
+        neg_sample = squeeze(neg_sample)
         neg_sample = self.fl_blocks(neg_sample)
 
         return pos_sample, neg_sample
@@ -130,6 +130,7 @@ class AccMcCnnInfer(nn.Module):
     """
     Define the mc_cnn accurate neural network for inference
     """
+
     def __init__(self):
         super().__init__()
         self.in_channels = 1
@@ -181,7 +182,7 @@ class AccMcCnnInfer(nn.Module):
         )
 
     # pylint: disable=arguments-differ
-    def forward(self, left: torch.Tensor, right: torch.Tensor, disp_min: int, disp_max: int) -> np.ndarray:
+    def forward(self, left: Tensor, right: Tensor, disp_min: int, disp_max: int) -> np.ndarray:
         """
         Extract left and right features and computes the cost volume for a pair of images
 
@@ -193,12 +194,12 @@ class AccMcCnnInfer(nn.Module):
         :type disp_min: torch
         :param disp_max: maximal disparity
         :type disp_max: torch
-    
+
         :return: return the cost volume ( similarity score is converted to a matching cost )
         :rtype: np.array 3D ( row, col, disp)
         """
         # Disabling gradient calculation in evaluation mode. It will reduce memory consumption
-        with torch.no_grad():
+        with no_grad():
             # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 2 dimensions
             # Shape left_features and right_features is [1, 112, row-10, col-10]
             left_features = self.conv_blocks(left.unsqueeze(0).unsqueeze(0))
@@ -212,11 +213,11 @@ class AccMcCnnInfer(nn.Module):
 
     @staticmethod
     def computes_cost_volume_mc_cnn_accurate(
-        left_features: torch.Tensor,
-        right_features: torch.Tensor,
+        left_features: Tensor,
+        right_features: Tensor,
         disp_min: int,
         disp_max: int,
-        measure: Callable[[torch.Tensor, torch.Tensor], np.ndarray]
+        measure: Callable[[Tensor, Tensor], np.ndarray],
     ) -> np.ndarray:
         """
         Computes the cost volume using the left and right features computing by mc_cnn accurate
@@ -227,11 +228,11 @@ class AccMcCnnInfer(nn.Module):
         :type right_features: Tensor of shape (1, 112, 64, row, col)
         :param measure: measure to apply
         :type measure: Callable[[torch.Tensor, Torch.Tensor], np.ndarray]
-    
+
         :return: the cost volume ( similarity score is converted to a matching cost )
         :rtype: 3D np.array (row, col, disp)
         """
-        disparity_range = torch.arange(disp_min, disp_max + 1)
+        disparity_range = arange(disp_min, disp_max + 1)
 
         # Allocate the numpy cost volume cv = (disp, col, row), for efficient memory management
         cv = np.zeros((len(disparity_range), left_features.shape[3], left_features.shape[2]), dtype=np.float32)
@@ -241,7 +242,7 @@ class AccMcCnnInfer(nn.Module):
         _, _, _, nx_right = right_features.shape
 
         # Disabling gradient calculation in evaluation mode. It will reduce memory consumption
-        with torch.no_grad():
+        with no_grad():
             for disp in disparity_range:
                 # range in the left image
                 left = (max(0 - disp, 0), min(nx_left - disp, nx_left))
@@ -252,7 +253,7 @@ class AccMcCnnInfer(nn.Module):
                 cv[index_d, left[0] : left[1], :] = np.swapaxes(
                     measure(left_features[:, :, :, left[0] : left[1]], right_features[:, :, :, right[0] : right[1]]),
                     0,
-                    1
+                    1,
                 )
 
         # The minus sign converts the similarity score to a matching cost
@@ -260,7 +261,7 @@ class AccMcCnnInfer(nn.Module):
 
         return np.swapaxes(cv, 0, 2)
 
-    def compute_cost_mc_cnn_accurate(self, left_features: torch.Tensor, right_features: torch.Tensor) -> np.ndarray:
+    def compute_cost_mc_cnn_accurate(self, left_features: Tensor, right_features: Tensor) -> np.ndarray:
         """
         Compute the cost between the left and right features using the last part of the mc_cnn accurate
 
@@ -268,13 +269,13 @@ class AccMcCnnInfer(nn.Module):
         :type left_features: Tensor of shape (1, 112, row, col)
         :param right_features: right features
         :type right_features: Tensor of shape (1, 112, row, col)
-    
+
         :return: the cost
         :rtype:  array of shape (col, row)
         """
-        sample = torch.cat((left_features, right_features), dim=1)
+        sample = cat((left_features, right_features), dim=1)
         # Tanspose because input of nn.Linear is(batch_size, *, in_features)
         sample = self.fl_blocks(sample.permute(0, 2, 3, 1))
-        sample = torch.squeeze(sample)
-    
+        sample = squeeze(sample)
+
         return sample.cpu().detach().numpy()
