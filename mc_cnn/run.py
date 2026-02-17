@@ -47,10 +47,10 @@ def run_mc_cnn_fast(
     :param img_right: right image, shape (row, col)
     :param disp_min: minimum disparity (inclusive, negative or zero)
     :param disp_max: maximum disparity (inclusive, typically 0 for left-to-right)
-    :param model_path: 
-    :param cost_volime_method:
-    :param window_size:
-    :param device:
+    :param model_path: path to weights model, must be an onnx or pt file.
+    :param cost_volume_method: cost volume function method, must be "cpp" or "baseline". Default "cpp".
+    :param window_size: window size of the measure, int.
+    :param device: device for the inference of the AI part of MC-CNN, "cpu" or "cuda". Default "cpu".
 
     :return: cost volume as numpy array of shape (row, col, disp), float32
     """

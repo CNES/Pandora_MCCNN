@@ -176,85 +176,73 @@ class TestCostVolume:
         """
         return torch.sum(abs(left_features[0, :, :, :] - right_features[0, :, :, :]), dim=0).cpu().detach().numpy()
 
-    def test_computes_cost_volume_mc_cnn_accurate(self):
+    def test_computes_cost_volume_mc_cnn_accurate(self, left_features_4d, right_features_4d):
         """
         Test the computes_cost_volume_mc_cnn_accurate function
         """
-        # create left and right features
-        left_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
-        right_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
-
         # Create the ground truth cost volume (row, col, disp)
         cv_gt = np.full((4, 4, 5), np.nan)
 
         # disparity -2
-        cv_gt[:, 2:, 0] = self.sad_cost(left_features[:, :, :, 2:], right_features[:, :, :, 0:2])
+        cv_gt[:, 2:, 0] = self.sad_cost(left_features_4d[:, :, :, 2:], right_features_4d[:, :, :, 0:2])
         # disparity -1
-        cv_gt[:, 1:, 1] = self.sad_cost(left_features[:, :, :, 1:], right_features[:, :, :, 0:3])
+        cv_gt[:, 1:, 1] = self.sad_cost(left_features_4d[:, :, :, 1:], right_features_4d[:, :, :, 0:3])
         # disparity 0
-        cv_gt[:, :, 2] = self.sad_cost(left_features[:, :, :, :], right_features[:, :, :, :])
+        cv_gt[:, :, 2] = self.sad_cost(left_features_4d[:, :, :, :], right_features_4d[:, :, :, :])
         # disparity 1
-        cv_gt[:, :3, 3] = self.sad_cost(left_features[:, :, :, :3], right_features[:, :, :, 1:4])
+        cv_gt[:, :3, 3] = self.sad_cost(left_features_4d[:, :, :, :3], right_features_4d[:, :, :, 1:4])
         # disparity 2
-        cv_gt[:, :2, 4] = self.sad_cost(left_features[:, :, :, :2], right_features[:, :, :, 2:4])
+        cv_gt[:, :2, 4] = self.sad_cost(left_features_4d[:, :, :, :2], right_features_4d[:, :, :, 2:4])
 
         # The minus sign converts the similarity score to a matching cost
         cv_gt *= -1
 
         acc = AccMcCnnInfer()
         # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 1 dimensions
-        cv = acc.computes_cost_volume_mc_cnn_accurate(left_features, right_features, -2, 2, self.sad_cost)
+        cv = acc.computes_cost_volume_mc_cnn_accurate(left_features_4d, right_features_4d, -2, 2, self.sad_cost)
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
-    def test_computes_cost_volume_mc_cnn_accuratenegative_disp(self):
+    def test_computes_cost_volume_mc_cnn_accuratenegative_disp(self, left_features_4d, right_features_4d):
         """
         Test the computes_cost_volume_mc_cnn_accurate function with negative disparities
         """
-        # create left and right features
-        left_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
-        right_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
-
         # Create the ground truth cost volume (row, col, disp)
         cv_gt = np.full((4, 4, 4), np.nan)
 
         # disparity -4
         # all nan
         # disparity -3
-        cv_gt[:, 3:, 1] = self.sad_cost(left_features[:, :, :, 3:], right_features[:, :, :, 0:1])
+        cv_gt[:, 3:, 1] = self.sad_cost(left_features_4d[:, :, :, 3:], right_features_4d[:, :, :, 0:1])
         # disparity -2
-        cv_gt[:, 2:, 2] = self.sad_cost(left_features[:, :, :, 2:], right_features[:, :, :, 0:2])
+        cv_gt[:, 2:, 2] = self.sad_cost(left_features_4d[:, :, :, 2:], right_features_4d[:, :, :, 0:2])
         # disparity -1
-        cv_gt[:, 1:, 3] = self.sad_cost(left_features[:, :, :, 1:], right_features[:, :, :, 0:3])
+        cv_gt[:, 1:, 3] = self.sad_cost(left_features_4d[:, :, :, 1:], right_features_4d[:, :, :, 0:3])
 
         # The minus sign converts the similarity score to a matching cost
         cv_gt *= -1
 
         acc = AccMcCnnInfer()
         # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 1 dimensions
-        cv = acc.computes_cost_volume_mc_cnn_accurate(left_features, right_features, -4, -1, self.sad_cost)
+        cv = acc.computes_cost_volume_mc_cnn_accurate(left_features_4d, right_features_4d, -4, -1, self.sad_cost)
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
-    def test_computes_cost_volume_mc_cnn_accurate_positive_disp(self):
+    def test_computes_cost_volume_mc_cnn_accurate_positive_disp(self, left_features_4d, right_features_4d):
         """
         Test the computes_cost_volume_mc_cnn_accurate function with positive disparities
         """
-        # create left and right features
-        left_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
-        right_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
-
         # Create the ground truth cost volume (row, col, disp)
         cv_gt = np.full((4, 4, 4), np.nan)
 
         # disparity 1
-        cv_gt[:, :3, 0] = self.sad_cost(left_features[:, :, :, :3], right_features[:, :, :, 1:4])
+        cv_gt[:, :3, 0] = self.sad_cost(left_features_4d[:, :, :, :3], right_features_4d[:, :, :, 1:4])
         # disparity 2
-        cv_gt[:, :2, 1] = self.sad_cost(left_features[:, :, :, :2], right_features[:, :, :, 2:4])
+        cv_gt[:, :2, 1] = self.sad_cost(left_features_4d[:, :, :, :2], right_features_4d[:, :, :, 2:4])
         # disparity 3
-        cv_gt[:, :1, 2] = self.sad_cost(left_features[:, :, :, :1], right_features[:, :, :, 3:])
+        cv_gt[:, :1, 2] = self.sad_cost(left_features_4d[:, :, :, :1], right_features_4d[:, :, :, 3:])
         # disparity 4
         # all nan
 
@@ -263,7 +251,7 @@ class TestCostVolume:
 
         acc = AccMcCnnInfer()
         # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 1 dimensions
-        cv = acc.computes_cost_volume_mc_cnn_accurate(left_features, right_features, 1, 4, self.sad_cost)
+        cv = acc.computes_cost_volume_mc_cnn_accurate(left_features_4d, right_features_4d, 1, 4, self.sad_cost)
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
