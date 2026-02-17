@@ -21,12 +21,12 @@
 Module for common base of all inference engines.
 """
 
-import logging
+from collections.abc import Callable
+from typing import Any
+
 from abc import ABC, abstractmethod
 from json_checker import Checker, And
 import numpy as np
-from collections.abc import Callable
-from typing import Any
 from typing_extensions import Self
 
 
@@ -48,9 +48,8 @@ class AbstractInferenceEngine(ABC):
                 inference_engine = cfg["inference_method"]
                 try:
                     return super(AbstractInferenceEngine, cls).__new__(cls.inference_engines_avail[inference_engine])
-                except KeyError:
-                    logging.error("No subpixel method named %s supported", inference_engine)
-                    raise KeyError
+                except KeyError as exc:
+                    raise KeyError(f"No inference engine method named {inference_engine} supported") from exc
 
         return super(AbstractInferenceEngine, cls).__new__(cls)
 

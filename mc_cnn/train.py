@@ -29,11 +29,11 @@ import os
 import errno
 import json
 import copy
+from typing import Any
 
 import torch
 from tqdm import tqdm
 import mlflow
-from typing import Any
 
 from mc_cnn.model.mc_cnn_accurate import AccMcCnn
 from mc_cnn.model.mc_cnn_fast import FastMcCnn
@@ -148,11 +148,11 @@ def load_checkpoint(
     # Compute start epoch
     start_epoch = int(params["epochs"])
     epoch_i = 0
-    additional_epochs_key = f"additional_epochs{i}"
+    additional_epochs_key = f"additional_epochs{epoch_i}"
     while additional_epochs_key in params:
         start_epoch += int(params[additional_epochs_key])
         epoch_i += 1
-        additional_epochs_key = f"additional_epochs{i}"
+        additional_epochs_key = f"additional_epochs{epoch_i}"
 
     # Get checkpoint path
     checkpoint_path = cfg["resume"].get("checkpoint", None)

@@ -21,12 +21,15 @@
 This module contains functions to test the cost volume create by mc_cnn
 """
 
+# pylint: disable=redefined-outer-name
+
 import pytest
 import numpy as np
 import torch
 
 from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
-from mc_cnn.cost_volume import cost_volume_base
+from mc_cnn.cost_volume.cost_volume_pybaseline import CostVolumeBaseline
+#from mc_cnn.cost_volume.cost_volume_pixel_major_cpp import CostVolumeCPP
 
 
 @pytest.fixture
@@ -50,13 +53,13 @@ def right_features(nb_row, nb_col):
 
 
 @pytest.fixture
-def left_features_4D(nb_row, nb_col):
-    return torch.randn((1, 112, nb_row, nb_col), dtype=torch.float32)
+def left_features_4d(nb_row, nb_col):
+    return torch.randn((1, 112, nb_row, nb_col), dtype=torch.float64)
 
 
 @pytest.fixture
-def right_features_4D(nb_row, nb_col):
-    return torch.randn((1, 112, nb_row, nb_col), dtype=torch.float32)
+def right_features_4d(nb_row, nb_col):
+    return torch.randn((1, 112, nb_row, nb_col), dtype=torch.float64)
 
 
 class TestCostVolume:
@@ -65,13 +68,13 @@ class TestCostVolume:
     """
 
     @pytest.mark.parametrize(
-        ["method"],
+        ["cost_volume_instance"],
         [
-            pytest.param("baseline"),
-            # pytest.param("cpp"),
+            pytest.param(CostVolumeBaseline({"cost_volume_method": "baseline"})),
+            #pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"}), marks=pytest.mark.skip(reason="To be uncommented with ticket 59")),
         ],
     )
-    def test_computes_cost_volume_mc_cnn_fast(self, method: str, left_features, right_features):
+    def test_computes_cost_volume_mc_cnn_fast(self, cost_volume_instance, left_features, right_features):
         """ "
         Test the computes_cost_volume_mc_cnn_fast function
 
@@ -95,21 +98,19 @@ class TestCostVolume:
         # The minus sign converts the similarity score to a matching cost
         cv_gt *= -1
 
-        cfg = {"cost_volume_method": method}
-        cost_volume = cost_volume_base.AbstractCostVolume(cfg)
-        cv = cost_volume.computes_cost_volume(left_features.numpy(), right_features.numpy(), -2, 2)
+        cv = cost_volume_instance.computes_cost_volume(left_features.numpy(), right_features.numpy(), -2, 2)
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
     @pytest.mark.parametrize(
-        ["method"],
+        ["cost_volume_instance"],
         [
-            pytest.param("baseline"),
-            # pytest.param("cpp"),
+            pytest.param(CostVolumeBaseline({"cost_volume_method": "baseline"})),
+            #pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"}), marks=pytest.mark.skip(reason="To be uncommented with ticket 59")),
         ],
     )
-    def test_computes_cost_volume_mc_cnn_fast_negative_disp(self, method: str, left_features, right_features):
+    def test_computes_cost_volume_mc_cnn_fast_negative_disp(self, cost_volume_instance, left_features, right_features):
         """ "
         Test the computes_cost_volume_mc_cnn_fast function with negative disparities
         """
@@ -130,22 +131,19 @@ class TestCostVolume:
         # The minus sign converts the similarity score to a matching cost
         cv_gt *= -1
 
-        cfg = {"cost_volume_method": method}
-        cost_volume = cost_volume_base.AbstractCostVolume(cfg)
-        cv = cost_volume.computes_cost_volume(left_features.numpy(), right_features.numpy(), -4, -1)
+        cv = cost_volume_instance.computes_cost_volume(left_features.numpy(), right_features.numpy(), -4, -1)
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
-    # load-plugins=pylint.extensions.no_self_use
     @pytest.mark.parametrize(
-        ["method"],
+        ["cost_volume_instance"],
         [
-            pytest.param("baseline"),
-            # pytest.param("cpp"),
+            pytest.param(CostVolumeBaseline({"cost_volume_method": "baseline"})),
+            #pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"}), marks=pytest.mark.skip(reason="To be uncommented with ticket 59")),
         ],
     )
-    def test_computes_cost_volume_mc_cnn_fast_positive_disp(self, method, left_features, right_features):
+    def test_computes_cost_volume_mc_cnn_fast_positive_disp(self, cost_volume_instance, left_features, right_features):
         """ "
         Test the computes_cost_volume_mc_cnn_fast function with positive disparities
 
@@ -167,9 +165,7 @@ class TestCostVolume:
         # The minus sign converts the similarity score to a matching cost
         cv_gt *= -1
 
-        cfg = {"cost_volume_method": method}
-        cost_volume = cost_volume_base.AbstractCostVolume(cfg)
-        cv = cost_volume.computes_cost_volume(left_features.numpy(), right_features.numpy(), 1, 4)
+        cv = cost_volume_instance.computes_cost_volume(left_features.numpy(), right_features.numpy(), 1, 4)
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)

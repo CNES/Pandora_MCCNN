@@ -21,12 +21,12 @@
 Module for common base of all cost volume methods.
 """
 
-import logging
 from abc import abstractmethod, ABC
-import numpy as np
 from collections.abc import Callable
-from typing_extensions import Self
+
 from json_checker import Checker
+import numpy as np
+from typing_extensions import Self
 
 
 class AbstractCostVolume(ABC):
@@ -35,6 +35,7 @@ class AbstractCostVolume(ABC):
     """
 
     cv_methods_avail: dict = {}
+    schema = None
 
     def __new__(cls, cfg: dict):
         """
@@ -47,9 +48,8 @@ class AbstractCostVolume(ABC):
                 cv_method = cfg["cost_volume_method"]
                 try:
                     return super(AbstractCostVolume, cls).__new__(cls.cv_methods_avail[cv_method])
-                except KeyError:
-                    logging.error("No subpixel method named %s supported", cv_method)
-                    raise KeyError
+                except KeyError as exc:
+                    raise KeyError(f"No cost volume method named {cv_method} supported") from exc
 
         return super(AbstractCostVolume, cls).__new__(cls)
 

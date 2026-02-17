@@ -21,8 +21,9 @@
 Module for PyTorch inference.
 """
 
-from torch import device, load, from_numpy, no_grad
 from typing import Any
+
+from torch import device, load, from_numpy, no_grad
 import numpy as np
 from json_checker import And
 

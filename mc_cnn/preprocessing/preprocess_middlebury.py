@@ -45,8 +45,6 @@ def load_pfm(fname: str) -> tuple[np.ndarray, float]:
     :rtype: tuple(np.array (row, col) , scale factor)
     """
     color = None
-    width = None
-    height = None
     scale = None
     endian = None
 
@@ -184,7 +182,6 @@ def save_dataset(
 
 
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-function-args
-# pylint: disable=too-many-positional-arguments
 def middleburry(
     in_dir_2014: str, in_dir_2006: str, in_dir_2005: str, in_dir_2003: str, in_dir_2001: str, output_dir: str
 ):

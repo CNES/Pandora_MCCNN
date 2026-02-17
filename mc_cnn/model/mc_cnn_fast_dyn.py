@@ -26,13 +26,16 @@ from torch import nn, squeeze, Tensor, no_grad
 class FastMcCnnDyn(nn.Module):
     """
     Dynamic MC-CNN fast with N conv layers (3x3, valid), ReLU after each conv except the last
-    
+
     :param num_layers: number of convolutional layers, depends on the window size
 
                         W - 1
         num_layers = ------- or 1 num_layers < 1
                         2
     """
+
+    # pylint:disable=too-few-public-methods
+
     def __init__(self, num_layers: int):
         super().__init__()
         layers = []
@@ -55,12 +58,12 @@ class FastMcCnnDyn(nn.Module):
                                         right negative patch, 11 the patch
             - else :
                 - normalized image torch(batch_size, row, col)
-        :param training: training mode, true for train false else, bool 
+        :param training: training mode, true for train false else, bool
 
         :return:
 
-            - if training mode : left, right positive and right negative features, 
-                                    (torch(batch_size, 64, 1, 1), torch(batch_size, 64, 1, 1), torch(batch_size, 64, 1, 1))
+            - if training mode : left, right positive and right negative features,
+                (torch(batch_size, 64, 1, 1), torch(batch_size, 64, 1, 1), torch(batch_size, 64, 1, 1))
             - else : extracted features, torch(64, row, col)
         """
         if training:
@@ -74,7 +77,7 @@ class FastMcCnnDyn(nn.Module):
             neg = nn.functional.normalize(neg, p=2, dim=1)
 
             return left, pos, neg
-        else:
-            with no_grad():
-                feats = self.conv_blocks(sample.unsqueeze(0).unsqueeze(0))
-                return squeeze(nn.functional.normalize(feats, p=2, dim=1))
+
+        with no_grad():
+            feats = self.conv_blocks(sample.unsqueeze(0).unsqueeze(0))
+            return squeeze(nn.functional.normalize(feats, p=2, dim=1))

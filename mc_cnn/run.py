@@ -47,7 +47,7 @@ def run_mc_cnn_fast(
     :param img_right: right image, shape (row, col)
     :param disp_min: minimum disparity (inclusive, negative or zero)
     :param disp_max: maximum disparity (inclusive, typically 0 for left-to-right)
-    :param model_path:
+    :param model_path: 
     :param cost_volime_method:
     :param window_size:
     :param device:

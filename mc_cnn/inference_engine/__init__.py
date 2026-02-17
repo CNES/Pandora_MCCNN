@@ -16,6 +16,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""
+Init file for inference engine module
+"""
 
 from . import inference_engine_onnx, inference_engine_pytorch
 from .inference_engine_base import AbstractInferenceEngine

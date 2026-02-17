@@ -16,8 +16,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+"""
+Init file for cost volume module
+"""
 
-from . import cost_volume_pybaseline #, cost_volume_pixel_major_cpp
+from . import cost_volume_pybaseline  # , cost_volume_pixel_major_cpp
 from .cost_volume_base import AbstractCostVolume
 
-__all__ = ["AbstractCostVolume", "cost_volume_pybaseline"] #, "cost_volume_pixel_major_cpp"]
+__all__ = ["AbstractCostVolume", "cost_volume_pybaseline"]  # , "cost_volume_pixel_major_cpp"]

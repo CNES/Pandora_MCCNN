@@ -21,8 +21,9 @@
 Module for ONNX inference.
 """
 
-import numpy as np
 from typing import Any
+
+import numpy as np
 from json_checker import And
 import onnxruntime as ort
 

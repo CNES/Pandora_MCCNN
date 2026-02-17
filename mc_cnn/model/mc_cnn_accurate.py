@@ -22,10 +22,11 @@ This module contains the mc-cnn accurate network
 
 # pylint:disable=too-few-public-methods
 
-from torch import nn, Tensor, cat, squeeze, arange, no_grad
-
-import numpy as np
 from collections.abc import Callable
+import numpy as np
+
+
+from torch import nn, Tensor, cat, squeeze, arange, no_grad
 
 
 class AccMcCnn(nn.Module):

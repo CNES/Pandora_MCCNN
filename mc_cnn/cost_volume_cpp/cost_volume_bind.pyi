@@ -16,17 +16,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+# pylint: skip-file
+
 import numpy as np
 
-
 def cv_pixelmajor(
-    left_features_hwc: np.ndarray,
-    right_features_hwc: np.ndarray,
-    disp_min: int,
-    disp_max: int) -> np.ndarray:
+    left_features_hwc: np.ndarray, right_features_hwc: np.ndarray, disp_min: int, disp_max: int
+) -> np.ndarray:
     """
     Compute cost volume with torch-free pixel-major kernel. Expects (row, col, channel) float32 arrays.
-    
+
     :param left_features_hwc: left features, expects float32 array (row, col, channel).
     :type: float32 array (row, col, channel)
     :param right_features_hwc: right features, expects float32 array (row, col, channel).
@@ -35,7 +35,7 @@ def cv_pixelmajor(
     :type: int
     :param disp_max : maximum disparity.
     :type: int
-    
+
     :return: cost volume (row, col, disparity).
-    :rtype: array float[row, col, disparity]  
+    :rtype: array float[row, col, disparity]
     """

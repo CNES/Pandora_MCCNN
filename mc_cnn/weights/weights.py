@@ -32,18 +32,10 @@ from importlib.abc import Traversable
 from pathlib import Path
 
 AVAILABLE_WEIGHTS = {
-    "fast": {
-        "middlebury": "mc_cnn_fast_mb_weights.pt", "dfc": "mc_cnn_fast_data_fusion_contest.pt"
-    },
-    "accurate": {
-        "middlebury": "mc_cnn_accurate_mb_weights.pt", "dfc": "mc_cnn_accurate_data_fusion_contest.pt"
-    },
-    "onnx_int8": {
-        "middlebury": "mc_cnn_fast_mb_weights_dynamo_int8_excl_01.onnx"
-    },
-    "onnx_dw": {
-        "middlebury": "mc_cnn_fast_epoch13.onnx"
-    }
+    "fast": {"middlebury": "mc_cnn_fast_mb_weights.pt", "dfc": "mc_cnn_fast_data_fusion_contest.pt"},
+    "accurate": {"middlebury": "mc_cnn_accurate_mb_weights.pt", "dfc": "mc_cnn_accurate_data_fusion_contest.pt"},
+    "onnx_int8": {"middlebury": "mc_cnn_fast_mb_weights_dynamo_int8_excl_01.onnx"},
+    "onnx_dw": {"middlebury": "mc_cnn_fast_epoch13.onnx"},
 }
 
 
@@ -73,5 +65,4 @@ def get_onnx(arch="onnx_int8", training_dataset="middlebury") -> Path:
     :return: absolute path of MC-CNN weights (.pt file)
     :rtype: PosixPath
     """
-    return Path(AVAILABLE_ONNX[arch][training_dataset])
- 
+    return Path(AVAILABLE_WEIGHTS[arch][training_dataset])

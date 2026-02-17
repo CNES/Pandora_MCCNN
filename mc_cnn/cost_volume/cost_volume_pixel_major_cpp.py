@@ -36,14 +36,6 @@ class CostVolumeCPP(AbstractCostVolume):
 
     schema = {"cost_volume_method": And(str, lambda x: x in ["cpp"])}
 
-    def __init__(self, cfg: dict) -> None:
-        """
-        :param cfg: configuration
-
-        :return: None
-        """
-        super().__init__(cfg)
-
     def computes_cost_volume(
         self, left_features: np.ndarray, right_features: np.ndarray, disp_min: int, disp_max: int
     ) -> np.ndarray:

@@ -35,6 +35,8 @@ class FastMcCnn(nn.Module):
     :type conv_kernel_size: int. Default 3
     """
 
+    # pylint:disable=too-few-public-methods
+
     def __init__(self, in_channels: int = 1, num_conv_feature_maps: int = 64, conv_kernel_size: int = 3):
         super().__init__()
         self.in_channels = in_channels
@@ -72,7 +74,6 @@ class FastMcCnn(nn.Module):
         )
 
     # pylint: disable=arguments-differ
-    # pylint: disable=no-else-return
     def forward(self, sample: Tensor, training: bool) -> tuple[Tensor, Tensor, Tensor] | Tensor:
         """
         Forward function
@@ -109,10 +110,8 @@ class FastMcCnn(nn.Module):
 
             return left, pos, neg
 
-        # Testing mode
-        else:
-            # Disabling gradient calculation in evaluation mode. It will reduce memory consumption
-            with no_grad():
-                # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 2 dimensions
-                features = self.conv_blocks(sample.unsqueeze(0).unsqueeze(0))
-                return squeeze(nn.functional.normalize(features, p=2, dim=1))
+        # Disabling gradient calculation in evaluation mode. It will reduce memory consumption
+        with no_grad():
+            # Because input shape of nn.Conv2d is (Batch_size, Channel, H, W), we add 2 dimensions
+            features = self.conv_blocks(sample.unsqueeze(0).unsqueeze(0))
+            return squeeze(nn.functional.normalize(features, p=2, dim=1))
