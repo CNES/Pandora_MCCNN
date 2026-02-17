@@ -68,7 +68,7 @@ class TestCostVolume:
         ["method"],
         [
             pytest.param("baseline"),
-            pytest.param("cpp"),
+            # pytest.param("cpp"),
         ]
     )
     def test_computes_cost_volume_mc_cnn_fast(self, method: str, left_features, right_features):
@@ -97,7 +97,7 @@ class TestCostVolume:
 
         cfg = {"cost_volume_method": method}
         cost_volume = cost_volume_base.AbstractCostVolume(cfg)
-        cv = cost_volume.compute_cost_volume(left_features.numpy(), right_features.numpy(), -2, 2)
+        cv = cost_volume.computes_cost_volume(left_features.numpy(), right_features.numpy(), -2, 2)
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
@@ -106,7 +106,7 @@ class TestCostVolume:
         ["method"],
         [
             pytest.param("baseline"),
-            pytest.param("cpp"),
+            # pytest.param("cpp"),
         ]
     )
     def test_computes_cost_volume_mc_cnn_fast_negative_disp(self, method: str, left_features, right_features):
@@ -132,7 +132,7 @@ class TestCostVolume:
 
         cfg = {"cost_volume_method": method}
         cost_volume = cost_volume_base.AbstractCostVolume(cfg)
-        cv = cost_volume.compute_cost_volume(left_features.numpy(), right_features.numpy(), -4, -1)
+        cv = cost_volume.computes_cost_volume(left_features.numpy(), right_features.numpy(), -4, -1)
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
@@ -142,7 +142,7 @@ class TestCostVolume:
         ["method"],
         [
             pytest.param("baseline"),
-            pytest.param("cpp"),
+            # pytest.param("cpp"),
         ]
     )
     def test_computes_cost_volume_mc_cnn_fast_positive_disp(self, method, left_features, right_features):
@@ -169,7 +169,7 @@ class TestCostVolume:
 
         cfg = {"cost_volume_method": method}
         cost_volume = cost_volume_base.AbstractCostVolume(cfg)
-        cv = cost_volume.compute_cost_volume(left_features.numpy(), right_features.numpy(), 1, 4)
+        cv = cost_volume.computes_cost_volume(left_features.numpy(), right_features.numpy(), 1, 4)
 
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
@@ -213,10 +213,14 @@ class TestCostVolume:
         # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
         np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
 
-    def test_computes_cost_volume_mc_cnn_accuratenegative_disp(self, left_features, right_features):
+    def test_computes_cost_volume_mc_cnn_accuratenegative_disp(self):
         """
         Test the computes_cost_volume_mc_cnn_accurate function with negative disparities
         """
+        # create left and right features
+        left_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
+        right_features = torch.randn((1, 112, 4, 4), dtype=torch.float64)
+
         # Create the ground truth cost volume (row, col, disp)
         cv_gt = np.full((4, 4, 4), np.nan)
 

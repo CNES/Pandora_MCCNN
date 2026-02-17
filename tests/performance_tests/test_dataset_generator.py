@@ -41,19 +41,19 @@ def right_img_negative():
 
 @pytest.fixture
 def middlebury_file():
-    return "tests/data/sample_middlebury.hdf5"
+    return "tests/data/images/sample_middlebury.hdf5"
 
 @pytest.fixture
 def middlebury_images():
-    return "tests/data/images_middlebury.hdf5"
+    return "tests/data/images/images_middlebury.hdf5"
 
 @pytest.fixture
 def dfc_file():
-    return "tests/data/sample_dfc.hdf5"
+    return "tests/data/images/sample_dfc.hdf5"
 
 @pytest.fixture
 def dfc_images():
-    return "tests/data/images_dfc.hdf5"
+    return "tests/data/images/images_dfc.hdf5"
 
 
 class TestDatasetGenerator:
