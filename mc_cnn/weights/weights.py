@@ -35,7 +35,7 @@ AVAILABLE_WEIGHTS = {
     "fast": {"middlebury": "mc_cnn_fast_mb_weights.pt", "dfc": "mc_cnn_fast_data_fusion_contest.pt"},
     "accurate": {"middlebury": "mc_cnn_accurate_mb_weights.pt", "dfc": "mc_cnn_accurate_data_fusion_contest.pt"},
     "onnx_int8": {"middlebury": "mc_cnn_fast_mb_weights_dynamo_int8_excl_01.onnx"},
-    "onnx_dw": {"middlebury": "mc_cnn_fast_epoch13.onnx"},
+    "onnx_dw": {"middlebury": "mc_cnn_fast_dw.onnx"},
 }
 
 
