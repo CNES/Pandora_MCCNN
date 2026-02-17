@@ -63,12 +63,13 @@ py::array_t<float> cv_pixelmajor(
     for (auto height_idx = 0; height_idx < height; ++height_idx) {
         // Loop over the columns
         for (auto width_idx = 0; width_idx < width; ++width_idx) {
-            const auto& left_pixel = left_data(height_idx, width_idx, py::ellipsis()) // left_features[height_idx, width_idx, :]
+            // left_features[height_idx, width_idx, :]
+            const auto& left_pixel = left_data(height_idx, width_idx, py::ellipsis())
 
             // minimum disparity according the col index
-            int32_t disp_low = std::max(disp_min, -static_cast<std::int32_t>(width_idx));
+            int32_t disp_low = std::max(disp_min, - width_idx);
              // maximum disparity according the col index
-            int32_t disp_high = std::min(disp_max, static_cast<std::int32_t>(width) - 1 - static_cast<std::int32_t>(width_idx));
+            int32_t disp_high = std::min(disp_max, width - 1 - width_idx);
 
             auto disp_idx = disp_low;
             // Tiled disparities
@@ -77,13 +78,16 @@ py::array_t<float> cv_pixelmajor(
                 const auto base_right = width_idx + disp_idx
                 const auto base_cv = disp_idx - disp_min;
                 for (auto idx = 0; idx < BD; ++idx) {
-                    const auto& right_pixel = right_data[height_idx, base_right + idx, py::ellipsis()];
+                    const auto& right_pixel =
+                        right_data[height_idx, base_right + idx, py::ellipsis()];
 
                     if (right_idx >= 0 && right_idx < width) {
-                        // Compute the dot product between the left and right features at the channel index: channel_idx 
-                        // and tiled disparity index : idx
-                        // left[height_idx, weight_idx, channel_idx] * right[height_idx, weight_idx + disp_idx + idx, channel_idx]
-                        auto dot_out = std::inner_product(left_pixel.begin(), left_pixel.end(), right_pixel.begin(), 0.f);
+                        // Compute the dot product between the left and right features 
+                        // at the channel index: channel_idx and tiled disparity index : idx
+                        auto dot_out = std::inner_product(left_pixel.begin(), 
+                                                          left_pixel.end(),
+                                                          right_pixel.begin(),
+                                                          0.f);
                         cost_volume[height_idx, weight_idx, base_cv + idx] = -dot_out[idx];
                     }
                 }
@@ -94,7 +98,10 @@ py::array_t<float> cv_pixelmajor(
                 // right[height_idx, width_idx + disp_idx, :]
                 const float* right_idx = width_idx + disp_idx;
                 const auto& right_pixel = right_data[height_idx, right_idx, py::ellipsis()];
-                auto sum = std::inner_product(left_pixel.begin(), left_pixel.end(), right_pixel.begin(), 0.f).begin();
+                auto sum = std::inner_product(left_pixel.begin(),
+                                              left_pixel.end(),
+                                              right_pixel.begin()
+                                              0.f).begin();
                 // Store the cost volume at base + idx disparity as
                 // cost = -dot
                 cost_volume(height_ix, width_idx, disp_idx - disp_min) = -sum;

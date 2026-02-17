@@ -25,7 +25,9 @@ using namespace pybind11::literals;
 
 
 PYBIND11_MODULE(cost_volume_bind, m) {
-    m.doc() = "MC-CNN CV pixel-major (NumPy I/O, CPU, expects (row, col, channel) input, returns (row, col disparity))";
+    m.doc() = 
+        "MC-CNN CV pixel-major (NumPy I/O, CPU, expects (row, col, channel) "
+        "input, returns (row, col, disparity))";
     m.def("cv_pixelmajor", &cv_pixelmajor, "left_features_hwc" _a, "right_features_hwc" _a,
           "disp_min" _a, "disp_max" _a,
           R"mydelimiter( 
