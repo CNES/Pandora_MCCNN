@@ -78,7 +78,7 @@ class TestDatasetGenerator:
 
         # # shape 1, 2, 13, 13 : 1 exposures, 2 = left and right images
         # image_pairs_0 = np.zeros((1, 2, 13, 13))
-        # left
+        # left
         # image_pairs_0[0, 0, :, :] = np.tile(np.arange(13), (13, 1))
         # right
         # image_pairs_0[0, 1, :, :] = np.tile(np.arange(13), (13, 1)) + 1
@@ -108,7 +108,6 @@ class TestDatasetGenerator:
         #                [ 0.,  0.,  0.,  0.]])
         # sampl_file.create_dataset(str(0), data=x0)
         # sampl_file.create_dataset(str(1), data=x1)
-
 
         # Positive disparity
         cfg = {
