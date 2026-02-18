@@ -30,7 +30,7 @@ import torch
 from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
 from mc_cnn.cost_volume.cost_volume_pybaseline import CostVolumeBaseline
 
-# from mc_cnn.cost_volume.cost_volume_pixel_major_cpp import CostVolumeCPP
+from mc_cnn.cost_volume.cost_volume_pixel_major_cpp import CostVolumeCPP
 
 
 @pytest.fixture
@@ -72,7 +72,7 @@ class TestCostVolume:
         ["cost_volume_instance"],
         [
             pytest.param(CostVolumeBaseline({"cost_volume_method": "baseline"})),
-            # pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
+            pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
         ],
     )
     def test_computes_cost_volume_mc_cnn_fast(self, cost_volume_instance, left_features, right_features):
@@ -108,7 +108,7 @@ class TestCostVolume:
         ["cost_volume_instance"],
         [
             pytest.param(CostVolumeBaseline({"cost_volume_method": "baseline"})),
-            # pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
+            pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
         ],
     )
     def test_computes_cost_volume_mc_cnn_fast_negative_disp(self, cost_volume_instance, left_features, right_features):
@@ -141,7 +141,7 @@ class TestCostVolume:
         ["cost_volume_instance"],
         [
             pytest.param(CostVolumeBaseline({"cost_volume_method": "baseline"})),
-            # pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
+            pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
         ],
     )
     def test_computes_cost_volume_mc_cnn_fast_positive_disp(self, cost_volume_instance, left_features, right_features):
