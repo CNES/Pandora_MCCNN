@@ -19,12 +19,101 @@
 # pyproject.toml
 
 [build-system]
-requires = ["setuptools>=65.5", "wheel", "setuptools_scm[toml]>=6.2"]
+requires = ["setuptools>=61", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
+
+[tool.setuptools.packages.find]
+where = ["mc_cnn"]
+
 [tool.setuptools_scm]
+
+[project]
+name = "MCCNN"
+dynamic = ["version"]
+authors = [{ name = "CNES", email = "pandora@cnes.fr" }]
+description = "MCCNN is a neural network for learning a similarity measure on image patches"
+keywords = [
+  "3D",
+  "IA",
+  "DEM",
+  "pandora",
+  "correlation",
+  "cars",
+  "photogrammetry"
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.10"
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.10",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "json-checker",
+    "numpy",
+    "numba",
+    "rasterio",
+    "torch",
+    "torchvision",
+    "h5py",
+    "opencv-python-headless!=4.7.0.68",
+    "scipy",
+    "onnxruntime",
+    "psutil",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mccnn[test]",
+    "pre-commit",
+    "isort>=5.8.0",                  # Check imports
+    "black>=21.5b0",                 # PEP8 format code
+    "flake8>=3.9.1",                 # General linter
+    "flake8-comprehensions>=3.4.0",  # Check list/dict/set
+    "flake8-bugbear>=21.4.3",        # Add some rules to flake8
+    "pylint",                        # General linter
+    "setuptools_scm",                # versions from git tag
+    "twine",                         # for pypi upload
+    "build",
+    "tox",
+    "mypy",
+    "tqdm",
+    "mlflow",
+]
+
+test = ["pytest", "pytest-cov"]
+
+docs = ["sphinx", "sphinx_rtd_theme", "sphinx_autoapi"]
+
+[project.urls]
+Homepage = "https://github.com/CNES/Pandora_MCCNN"
+Repository = "https://github.com/CNES/Pandora_MCCNN"
+Issues = "https://github.com/CNES/Pandora_MCCNN/issues"
+Changelog = "https://github.com/CNES/Pandora_MCCNN/blob/master/CHANGELOG.md"
+
+[tool.setuptools.package-data]
+"mc_cnn.weights" = ["*.onnx", "*.pt"]
 
 [tool.black]
 # https://github.com/psf/black
 line-length = 120
 exclude = "(.eggs|.git|.mypy_cache|.nox|.tox|_build|build|dist|venv)"
+
+[tool.flake8]
+exclude = ".git, venv, build, dist, tests/test_output"
+extend-ignore = ["E203", "W503"]
+max-complexity = 15
+max-line-length = 120
+# errors types are not selected by default, so add them to your selection
+select = ["E", "F", "W", "C", "B9", "C4", "B"]
