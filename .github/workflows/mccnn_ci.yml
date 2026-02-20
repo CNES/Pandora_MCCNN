@@ -6,6 +6,62 @@ on:
 
 
 jobs:
+
+  generate-wheels-matrix:
+    name: Generate wheels matrix
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.set-matrix.outputs.include }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install cibuildwheel
+        run: pipx install cibuildwheel==3.0.1
+      - id: set-matrix
+        run: |
+          MATRIX=$(
+            {
+              cibuildwheel --print-build-identifiers --platform linux \
+              | jq -nRc '{"only": inputs, "os": "ubuntu-latest"}' \
+              && cibuildwheel --print-build-identifiers --platform windows \
+              | jq -nRc '{"only": inputs, "os": "windows-latest"}'
+            } | jq -sc
+          )
+          echo "include=$MATRIX" >> $GITHUB_OUTPUT
+
+  build_wheels:
+    name: Build ${{ matrix.only }}
+    needs: generate-wheels-matrix
+    strategy:
+      matrix:
+        include: ${{ fromJson(needs.generate-wheels-matrix.outputs.include) }}
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Set coverage source
+        run: echo "COVERAGE_SOURCE=mc_cnn" >> $GITHUB_ENV
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.0.1
+        with:
+          only: ${{ matrix.only }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
+          path: ./wheelhouse/*.whl
+
+      - name: Upload coverage to Codecov
+        if: matrix.os == 'ubuntu-latest'
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+          directory: ./wheelhouse
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: CNES/Pandora_MCCNN
   test:
     name: Install and test MC-CNN
     runs-on: ubuntu-latest
