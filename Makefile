@@ -65,7 +65,7 @@ venv: ## create virtualenv in "venv" dir if not exists
 .PHONY: install
 install: venv  ## install environment for development target (depends venv)
 	@[ "${CHECK_MC-CNN}" ] || echo "Install mc_cnn package from local directory"
-	@[ "${CHECK_MC-CNN}" ] || { . ${VENV}/bin/activate; ${VENV}/bin/pip install --no-build-isolation -e .[dev,docs];}
+	@[ "${CHECK_MC-CNN}" ] || { . ${VENV}/bin/activate; ${VENV}/bin/pip install --no-build-isolation -e .[dev,docs] -v;}
 	@test -f .git/hooks/pre-commit || echo "Install pre-commit"
 	@test -f .git/hooks/pre-commit || ${VENV}/bin/pre-commit install -t pre-commit
 	@test -f .git/hooks/pre-push || ${VENV}/bin/pre-commit install -t pre-push
