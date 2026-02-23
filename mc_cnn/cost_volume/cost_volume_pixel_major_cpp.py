@@ -24,8 +24,8 @@ with the cpp pixel-major kernel.
 import numpy as np
 from json_checker import And
 
+from mc_cnn.cost_volume_cpp import cost_volume_bind
 from .cost_volume_base import AbstractCostVolume
-from ..cost_volume_cpp import cost_volume_bind
 
 
 @AbstractCostVolume.register_subclass("cpp")

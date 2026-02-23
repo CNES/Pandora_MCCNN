@@ -63,7 +63,7 @@ def run_mc_cnn_fast(
         "device": device,
     }
 
-    model_inferer = inference_engine_base.AbstractInferenceEngine(cfg)
+    model_inferer = inference_engine_base.AbstractInferenceEngine(cfg)  # pylint: disable=abstract-class-instantiated
 
     # ---------------- Stage: Model inference ----------------
     left = model_inferer.normalize(img_left)
@@ -75,7 +75,7 @@ def run_mc_cnn_fast(
     right_features = model_inferer.inference_func(right)
 
     # ---------------- Stage: Cost volume computation ----------------
-    cost_volume = cost_volume_base.AbstractCostVolume(cfg)
+    cost_volume = cost_volume_base.AbstractCostVolume(cfg)  # pylint: disable=abstract-class-instantiated
     cv = cost_volume.computes_cost_volume(left_features, right_features, disp_min, disp_max)
 
     return cv
