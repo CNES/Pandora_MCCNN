@@ -68,7 +68,7 @@ class AbstractCostVolume(ABC):
         :param cfg: user_config for cost volume method
         :return: cfg: global configuration
         """
-        checker = Checker(self.schema)
+        checker = Checker(self.schema, ignore_extra_keys=True)
         checker.validate(cfg)
 
         return cfg
