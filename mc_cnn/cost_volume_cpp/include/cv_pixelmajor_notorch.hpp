@@ -80,7 +80,7 @@ py::array_t<float> cv_pixelmajor(
     py::array_t<float, py::array::c_style | py::array::forcecast> left_features_hwc,
     py::array_t<float, py::array::c_style | py::array::forcecast> right_features_hwc,
     int32_t disp_min,
-    int32_t disp_max,
+    int32_t disp_max
 );
 
 #endif

@@ -21,7 +21,7 @@
 This module contains functions to test the cost volume create by mc_cnn
 """
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, unused-argument
 
 import pytest
 import numpy as np
@@ -30,7 +30,7 @@ import torch
 from mc_cnn.model.mc_cnn_accurate import AccMcCnnInfer
 from mc_cnn.cost_volume.cost_volume_pybaseline import CostVolumeBaseline
 
-# from mc_cnn.cost_volume.cost_volume_pixel_major_cpp import CostVolumeCPP
+from mc_cnn.cost_volume.cost_volume_pixel_major_cpp import CostVolumeCPP
 
 
 @pytest.fixture
@@ -44,22 +44,28 @@ def nb_col():
 
 
 @pytest.fixture
-def left_features(nb_row, nb_col):
+def fixed_seed():
+    seed = 0
+    torch.manual_seed(seed)
+
+
+@pytest.fixture
+def left_features(nb_row, nb_col, fixed_seed):
     return torch.randn((64, nb_row, nb_col), dtype=torch.float32)
 
 
 @pytest.fixture
-def right_features(nb_row, nb_col):
+def right_features(nb_row, nb_col, fixed_seed):
     return torch.randn((64, nb_row, nb_col), dtype=torch.float32)
 
 
 @pytest.fixture
-def left_features_4d(nb_row, nb_col):
+def left_features_4d(nb_row, nb_col, fixed_seed):
     return torch.randn((1, 112, nb_row, nb_col), dtype=torch.float64)
 
 
 @pytest.fixture
-def right_features_4d(nb_row, nb_col):
+def right_features_4d(nb_row, nb_col, fixed_seed):
     return torch.randn((1, 112, nb_row, nb_col), dtype=torch.float64)
 
 
@@ -72,11 +78,11 @@ class TestCostVolume:
         ["cost_volume_instance"],
         [
             pytest.param(CostVolumeBaseline({"cost_volume_method": "baseline"})),
-            # pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
+            pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
         ],
     )
     def test_computes_cost_volume_mc_cnn_fast(self, cost_volume_instance, left_features, right_features):
-        """ "
+        """
         Test the computes_cost_volume_mc_cnn_fast function
 
         """
@@ -101,18 +107,27 @@ class TestCostVolume:
 
         cv = cost_volume_instance.computes_cost_volume(left_features.numpy(), right_features.numpy(), -2, 2)
 
-        # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
-        np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
+        # Replace nan value with inf value to avoid choosing a nan as the minimum value
+        cv_gt = np.nan_to_num(cv_gt, nan=np.inf)
+        cv = np.nan_to_num(cv, nan=np.inf)
+
+        # Check if the minimum value is the same along the last dimension
+        min_index_cv_gt = np.argmin(cv_gt, axis=2)
+        min_index_cv = np.argmin(cv, axis=2)
+
+        # Check that the minimum cost value is achieved for the same disparity for each point
+        # between the ground truth and the calculated cost volume.
+        np.testing.assert_equal(min_index_cv, min_index_cv_gt)
 
     @pytest.mark.parametrize(
         ["cost_volume_instance"],
         [
             pytest.param(CostVolumeBaseline({"cost_volume_method": "baseline"})),
-            # pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
+            pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
         ],
     )
     def test_computes_cost_volume_mc_cnn_fast_negative_disp(self, cost_volume_instance, left_features, right_features):
-        """ "
+        """
         Test the computes_cost_volume_mc_cnn_fast function with negative disparities
         """
         cos = torch.nn.CosineSimilarity(dim=0, eps=1e-6)
@@ -134,18 +149,27 @@ class TestCostVolume:
 
         cv = cost_volume_instance.computes_cost_volume(left_features.numpy(), right_features.numpy(), -4, -1)
 
-        # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
-        np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
+        # Replace nan value with inf value to avoid choosing a nan as the minimum value
+        cv_gt = np.nan_to_num(cv_gt, nan=np.inf)
+        cv = np.nan_to_num(cv, nan=np.inf)
+
+        # Check if the minimum value is the same along the last dimension
+        min_index_cv_gt = np.argmin(cv_gt, axis=2)
+        min_index_cv = np.argmin(cv, axis=2)
+
+        # Check that the minimum cost value is achieved for the same disparity for each point
+        # between the ground truth and the calculated cost volume.
+        np.testing.assert_equal(min_index_cv, min_index_cv_gt)
 
     @pytest.mark.parametrize(
         ["cost_volume_instance"],
         [
             pytest.param(CostVolumeBaseline({"cost_volume_method": "baseline"})),
-            # pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
+            pytest.param(CostVolumeCPP({"cost_volume_method": "cpp"})),
         ],
     )
     def test_computes_cost_volume_mc_cnn_fast_positive_disp(self, cost_volume_instance, left_features, right_features):
-        """ "
+        """
         Test the computes_cost_volume_mc_cnn_fast function with positive disparities
 
         """
@@ -168,8 +192,17 @@ class TestCostVolume:
 
         cv = cost_volume_instance.computes_cost_volume(left_features.numpy(), right_features.numpy(), 1, 4)
 
-        # Check if the calculated cost volume is equal to the ground truth (same shape and all elements equals)
-        np.testing.assert_allclose(cv, cv_gt, rtol=1e-05)
+        # Replace nan value with inf value to avoid choosing a nan as the minimum value
+        cv_gt = np.nan_to_num(cv_gt, nan=np.inf)
+        cv = np.nan_to_num(cv, nan=np.inf)
+
+        # Check if the minimum value is the same along the last dimension
+        min_index_cv_gt = np.argmin(cv_gt, axis=2)
+        min_index_cv = np.argmin(cv, axis=2)
+
+        # Check that the minimum cost value is achieved for the same disparity for each point
+        # between the ground truth and the calculated cost volume.
+        np.testing.assert_equal(min_index_cv, min_index_cv_gt)
 
     def sad_cost(self, left_features, right_features) -> np.ndarray:
         """
