@@ -103,7 +103,7 @@ format: install format/black  ## run black and isort formatting (depends install
 .PHONY: format/black
 format/black: install  ## run black formatting (depends install)
 	@echo "+ $@"
-	@${VENV}/bin/black mc_cnn tests
+	@${VENV}/bin/black src/mc_cnn tests
 
 ### Check code quality and linting : isort, black, flake8, pylint
 
@@ -113,12 +113,12 @@ lint: install lint/black lint/pylint ## check code quality and linting
 .PHONY: lint/black
 lint/black: ## check global style with black
 	@echo "+ $@"
-	@${VENV}/bin/black --check mc_cnn tests
+	@${VENV}/bin/black --check src/mc_cnn tests
 
 .PHONY: lint/pylint
 lint/pylint: ## check linting with pylint
 	@echo "+ $@"
-	@set -o pipefail; ${VENV}/bin/pylint mc_cnn tests --rcfile=.pylintrc --output-format=parseable | tee pylint-report.txt # pipefail to propagate pylint exit code in bash
+	@set -o pipefail; ${VENV}/bin/pylint src/mc_cnn tests --rcfile=.pylintrc --output-format=parseable | tee pylint-report.txt # pipefail to propagate pylint exit code in bash
 
 ## Documentation section
 

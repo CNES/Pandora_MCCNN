@@ -78,9 +78,6 @@ jobs:
       run: |
         pytest --junitxml=pytest-report.xml --cov-config=.coveragerc --cov-report xml --cov
 
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v1
-
 
   build_sdist:
     name: Build source distribution
