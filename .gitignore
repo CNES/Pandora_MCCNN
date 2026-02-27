@@ -116,7 +116,5 @@ ENV/
 # Swap file
 *.swp
 
-*.onnx
-*.onnx.data
 *.bin
 *.xml
