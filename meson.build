@@ -16,10 +16,10 @@ py = import('python').find_installation(pure: false)
 pybind11_dep = dependency('pybind11')
 
 install_subdir(
-  'mc_cnn',
+  'src/mc_cnn',
   install_dir: py.get_install_dir() / 'mc_cnn',
   strip_directory: true,
 )
 
 
-subdir('mc_cnn/cost_volume_cpp')
+subdir('src/mc_cnn/cost_volume_cpp')
