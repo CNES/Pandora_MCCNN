@@ -118,9 +118,7 @@ class AbstractInferenceEngine(ABC):
         """
         Image normalization
 
-                     img - mean
-        img_norm  = ------------
-                       std
+        img_norm  = (img-mean)/std
 
         :param img: image to normalized (row, col), should be cast in float32.
 
