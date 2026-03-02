@@ -30,12 +30,15 @@ export BROWSER_PYSCRIPT
 BROWSER := python -c "$$BROWSER_PYSCRIPT"
 
 # Python global variables definition
-PYTHON_VERSION_MIN = 3.8
+PYTHON_VERSION_MIN = 3.10
 
 PYTHON=$(shell command -v python3)
 
 PYTHON_VERSION_CUR=$(shell $(PYTHON) -c 'import sys; print("%d.%d"% sys.version_info[0:2])')
 PYTHON_VERSION_OK=$(shell $(PYTHON) -c 'import sys; cur_ver = sys.version_info[0:2]; min_ver = tuple(map(int, "$(PYTHON_VERSION_MIN)".split("."))); print(int(cur_ver >= min_ver))')
+
+# We can not get easily the build-dir that meson-python will use, so we build the name with the same code:
+CPP_BUILD_DIR=$(shell $(PYTHON) -c "import sys; interpreters = {'python': 'py', 'cpython': 'cp', 'pypy': 'pp', 'ironpython': 'ip', 'jython': 'jy'}; version = sys.version_info;name = sys.implementation.name; name = interpreters.get(name, name); print(f'build/{name}{version[0]}{version[1]}')")
 
 ############### Check python version supported ############
 
@@ -57,13 +60,12 @@ help: ## this help
 venv: ## create virtualenv in "venv" dir if not exists
 	@test -d ${VENV} || python3 -m venv ${VENV}
 	@touch ${VENV}/bin/activate
-	@${VENV}/bin/python -m pip install --upgrade wheel setuptools pip # no check to upgrade each time
-
+	@${VENV}/bin/python -m pip install --upgrade pip meson-python meson ninja pybind11 "setuptools-scm>=8" "setuptools>=61" # no check to upgrade each time
 
 .PHONY: install
 install: venv  ## install environment for development target (depends venv)
 	@[ "${CHECK_MC-CNN}" ] || echo "Install mc_cnn package from local directory"
-	@[ "${CHECK_MC-CNN}" ] || ${VENV}/bin/pip install -e .[dev,docs]
+	@[ "${CHECK_MC-CNN}" ] || { . ${VENV}/bin/activate; ${VENV}/bin/pip install --no-build-isolation -e .[dev,docs] -v;}
 	@test -f .git/hooks/pre-commit || echo "Install pre-commit"
 	@test -f .git/hooks/pre-commit || ${VENV}/bin/pre-commit install -t pre-commit
 	@test -f .git/hooks/pre-push || ${VENV}/bin/pre-commit install -t pre-push
@@ -73,8 +75,8 @@ install: venv  ## install environment for development target (depends venv)
 ## Test section
 
 .PHONY: test
-test: install ## run tests and coverage quickly with the default Python
-	@${VENV}/bin/pytest -o log_cli=true --cov-config=.coveragerc --cov --cov-report=xml --junitxml=pytest-report.xml
+test: install reports_dir ## run tests and coverage quickly with the default Python
+	@${VENV}/bin/pytest -o log_cli=true --cov-config=.coveragerc --cov --cov-report=xml:reports/py-coverage.cobertura.xml --cov-report term --junitxml=pytest-report.xml
 
 .PHONY: test-all
 test-all: install ## run tests on every Python version with tox
@@ -91,13 +93,17 @@ coverage: install ## check code coverage quickly with the default Python
 
 ### Format with isort and black
 
+.PHONY: reports_dir
+reports_dir:
+	mkdir -p reports
+
 .PHONY: format
 format: install format/black  ## run black and isort formatting (depends install)
 
 .PHONY: format/black
 format/black: install  ## run black formatting (depends install)
 	@echo "+ $@"
-	@${VENV}/bin/black mc_cnn tests
+	@${VENV}/bin/black src/mc_cnn tests
 
 ### Check code quality and linting : isort, black, flake8, pylint
 
@@ -107,12 +113,12 @@ lint: install lint/black lint/pylint ## check code quality and linting
 .PHONY: lint/black
 lint/black: ## check global style with black
 	@echo "+ $@"
-	@${VENV}/bin/black --check mc_cnn tests
+	@${VENV}/bin/black --check src/mc_cnn tests
 
 .PHONY: lint/pylint
 lint/pylint: ## check linting with pylint
 	@echo "+ $@"
-	@set -o pipefail; ${VENV}/bin/pylint mc_cnn tests --rcfile=.pylintrc --output-format=parseable | tee pylint-report.txt # pipefail to propagate pylint exit code in bash
+	@set -o pipefail; ${VENV}/bin/pylint src/mc_cnn tests --rcfile=.pylintrc --output-format=parseable | tee pylint-report.txt # pipefail to propagate pylint exit code in bash
 
 ## Documentation section
 
@@ -177,6 +183,7 @@ clean-test: ## remove test and coverage artifacts
 	@rm -fr .pytest_cache
 	@rm -f pytest-report.xml
 	@find . -type f -name "debug.log" -exec rm -fr {} +
+	@rm -rf reports
 
 .PHONY: clean-lint
 clean-lint: ## remove linting artifacts

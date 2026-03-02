@@ -17,5 +17,10 @@
 # limitations under the License.
 #
 """
-Init file of PANDORA_MCCNN tests module (needed to have a module)
+Init file for inference engine module
 """
+
+from . import inference_engine_onnx, inference_engine_pytorch
+from .inference_engine_base import AbstractInferenceEngine
+
+__all__ = ["AbstractInferenceEngine", "inference_engine_onnx", "inference_engine_pytorch"]

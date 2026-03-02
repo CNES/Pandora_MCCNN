@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.3.0.a1 (March 2026)
+
+### Added
+
+- Added CI on Gitlab.
+- Added a new optimised model.
+
+### Changed
+
+- Updated minimal Python version from 3.9 to 3.10.
+- Updated subpix parameter values from 1 to [1, 2, 4].
+
 ## 1.2.5 (November 2025)
 
 ## 1.2.5a1 (October 2025)

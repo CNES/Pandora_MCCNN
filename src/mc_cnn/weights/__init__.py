@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf8
+#
 # Copyright (c) 2026 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
@@ -17,5 +20,7 @@
 # limitations under the License.
 #
 """
-Init file of PANDORA_MCCNN tests module (needed to have a module)
+Init file for model package
 """
+
+from .weights import get_weights, get_onnx

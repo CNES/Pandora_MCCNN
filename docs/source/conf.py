@@ -1,7 +1,7 @@
 # pylint: skip-file
 #
 # coding: utf8
-# Copyright (c) 2025 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2026 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of Pandora_MCCNN
 #
@@ -30,7 +30,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "MCCNN"
-copyright = "2025, CNES"
+copyright = "2026, CNES"
 author = "CNES"
 
 # The full version, including alpha/beta/rc tags
@@ -52,7 +52,7 @@ extensions = [
 ]
 
 
-autoapi_dirs = ["../../mc_cnn"]
+autoapi_dirs = ["../../src/mc_cnn"]
 autoapi_root = "api_reference"
 autoapi_keep_files = True
 autoapi_options = [

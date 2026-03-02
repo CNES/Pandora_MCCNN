@@ -41,12 +41,12 @@ htmlcov/
 .coverage
 .coverage.*
 .cache
-nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
 pytest-report.xml
+reports/
 
 #  Code quality
 pylint-report.xml
@@ -116,3 +116,5 @@ ENV/
 # Swap file
 *.swp
 
+*.bin
+*.xml

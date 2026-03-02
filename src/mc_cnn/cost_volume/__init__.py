@@ -17,5 +17,10 @@
 # limitations under the License.
 #
 """
-Init file of PANDORA_MCCNN tests module (needed to have a module)
+Init file for cost volume module
 """
+
+from . import cost_volume_pybaseline, cost_volume_pixel_major_cpp
+from .cost_volume_base import AbstractCostVolume
+
+__all__ = ["AbstractCostVolume", "cost_volume_pybaseline", "cost_volume_pixel_major_cpp"]

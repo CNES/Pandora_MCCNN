@@ -17,5 +17,16 @@
 # limitations under the License.
 #
 """
-Init file of PANDORA_MCCNN tests module (needed to have a module)
+Init file for pandora_mc_cnn package
 """
+
+# VERSION through setuptools_scm when python3 > 3.10, otherwise unknown
+try:
+    from importlib.metadata import version
+
+    __version__ = version("mc_cnn")
+except Exception:  # pylint: disable=broad-except
+    __version__ = "unknown"
+
+__author__ = "CNES"
+__email__ = "cars@cnes.fr"

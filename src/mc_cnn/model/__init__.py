@@ -17,5 +17,5 @@
 # limitations under the License.
 #
 """
-Init file of PANDORA_MCCNN tests module (needed to have a module)
+Init file for model package
 """

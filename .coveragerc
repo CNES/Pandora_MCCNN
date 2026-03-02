@@ -1,5 +1,5 @@
 [run]
-source = mc_cnn
-omit =
-    # Omit tests
-    /tests/*
+source =
+    src
+    */site-packages
+omit = */build/*,tests/*

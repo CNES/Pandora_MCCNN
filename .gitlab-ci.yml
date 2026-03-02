@@ -1,0 +1,85 @@
+# Organization of the different stages and jobs:
+# build:
+#  |_ py-pytest (Python unit tests)
+#
+# test:
+#  |_ py-black (Python code formatting)
+#  |_ py-lint (static analysis with Pylint)
+#  |_ py-trivy (dependency scanning)
+#  |_ sonar (SonarQube analysis)
+
+include:
+  - component: $CI_SERVER_FQDN/to-be-continuous/python/gitlab-ci-python@8.1.3
+    inputs:
+      image: ${UL_ARTIFACTORY_HOST}/publicremotes-docker/python:3.10
+      pytest-enabled: true
+      pylint-enabled: true
+      black-enabled: true
+      # Mypy disabled, will be implemented in ticket 54
+      mypy-enabled: false
+      build-system: setuptools
+      extra-deps: test 
+  - component: $CI_SERVER_FQDN/to-be-continuous/sonar/gitlab-ci-sonar@5.0.1
+    inputs:
+      host-url: "${UL_SONARQUBE_URL}"
+      quality-gate-enabled: true
+
+variables:
+  # default production ref name (pattern)
+  PROD_REF: /^(master|main)$/
+  # default integration ref name (pattern)
+  INTEG_REF: /^(develop|release)$/
+
+  # Python
+  PIP_INDEX_URL: "https://${PANDORA_ARTIFACTORY_USERNAME}:${PANDORA_ARTIFACTORY_KEY}@${UL_ARTIFACTORY_HOST}/artifactory/api/pypi/pypi/simple"
+  # Runs Pylint only on the following directories
+  PYLINT_FILES: mc_cnn tests
+  # HACK: Override MYPY_FILES without files definition in order to reuse the config from mypy.ini
+  MYPY_FILES: '--exclude "(.cache|.venv)"'
+
+# Default configuration for all jobs
+default:
+  tags:
+    - Usine_Logicielle
+  timeout: 30 minutes
+
+# Override to use the Makefile rules
+py-pytest:
+  script:
+    # ${TRACE+-d} define the log level
+    # Install in editable mode to compute coverage
+    - make ${TRACE+-d} test
+  
+py-black:
+  stage: test
+
+py-lint:
+  stage: test
+
+py-mypy:
+  stage: test
+
+github-sync:
+  stage: .post
+  image:
+    name: ${UL_ARTIFACTORY_HOST}/publicremotes-docker/alpine/git
+    entrypoint: [""]
+  variables:
+    # Ensure we fetch enought history before pushing it
+    GIT_DEPTH: 150
+  before_script:
+    # Add Cnes certificates
+    - mkdir /usr/local/share/ca-certificates/
+    - cat ${CNES_CERTIFICATE} > /usr/local/share/ca-certificates/my-cert.crt
+    - cat /usr/local/share/ca-certificates/my-cert.crt >> /etc/ssl/certs/ca-certificates.crt
+  script:
+    - echo "CI_COMMIT_REF_NAME=$CI_COMMIT_REF_NAME"
+    - echo "GITHUB_URL=$GITHUB_URL"
+    - echo "CI_COMMIT_SHA=$CI_COMMIT_SHA"
+    - git remote add github https://${PANDORA_CNES_GITHUB_TOKEN_USERNAME}:${PANDORA_CNES_GITHUB_TOKEN_PASSWORD}@${GITHUB_URL}
+    - git fetch origin ${CI_COMMIT_SHA}
+    - git checkout -B ${CI_COMMIT_REF_NAME}
+    - git push github ${CI_COMMIT_REF_NAME}
+  rules:
+    # run on production and integration branches + release pipelines
+    - !reference [.delivery-policy, rules]
