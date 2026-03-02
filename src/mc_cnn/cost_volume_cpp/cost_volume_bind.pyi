@@ -33,7 +33,7 @@ def cv_pixelmajor(
     :type: float32 array (row, col, channel)
     :param disp_min: minimum disparity.
     :type: int
-    :param disp_max : maximum disparity.
+    :param disp_max: maximum disparity.
     :type: int
 
     :return: cost volume (row, col, disparity).

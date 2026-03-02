@@ -29,9 +29,8 @@ class FastMcCnnDyn(nn.Module):
 
     :param num_layers: number of convolutional layers, depends on the window size
 
-                        W - 1
-        num_layers = ------- or 1 num_layers < 1
-                        2
+    num_layers = (W-1)/2 or 1 num_layers < 1
+
     """
 
     # pylint:disable=too-few-public-methods

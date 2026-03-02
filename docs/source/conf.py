@@ -52,7 +52,7 @@ extensions = [
 ]
 
 
-autoapi_dirs = ["../../mc_cnn"]
+autoapi_dirs = ["../../src/mc_cnn"]
 autoapi_root = "api_reference"
 autoapi_keep_files = True
 autoapi_options = [
