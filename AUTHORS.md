@@ -23,6 +23,8 @@ This file keeps track of authors contributions.
 * Yoann Steux <yoann.steux@cs-soprasteria.com>
 * Mathis Roux <mathis.roux@cs-soprasteria.com>
 * Cassandra Mussard <cassandra.mussard@cnes.fr>
+* Pauline Delporte <pauline.delporte@cs-soprasteria.com>
+* Clément Herbin <clement.herbin@cs-soprasteria.com>
 
 Update here with new contributors.
 
