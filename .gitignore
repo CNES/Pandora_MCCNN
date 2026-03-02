@@ -116,3 +116,5 @@ ENV/
 # Swap file
 *.swp
 
+*.bin
+*.xml

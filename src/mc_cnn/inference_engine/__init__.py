@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# coding: utf8
-#
-# Copyright (c) 2025 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2026 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -20,7 +17,10 @@
 # limitations under the License.
 #
 """
-Init file for model package
+Init file for inference engine module
 """
 
-from .weights import get_weights
+from . import inference_engine_onnx, inference_engine_pytorch
+from .inference_engine_base import AbstractInferenceEngine
+
+__all__ = ["AbstractInferenceEngine", "inference_engine_onnx", "inference_engine_pytorch"]

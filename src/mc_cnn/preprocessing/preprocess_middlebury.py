@@ -34,18 +34,17 @@ import h5py
 import rasterio
 
 
-def load_pfm(fname):
+def load_pfm(fname: str) -> tuple[np.ndarray, float]:
     """
     Load a PFM file into a Numpy array.
 
     :param fname: path to the PFM file
     :type fname: string
+
     :return: data of the PFM file
-    :rtype: tuple(np.array (row, col) , scale factor )
+    :rtype: tuple(np.array (row, col) , scale factor)
     """
     color = None
-    width = None
-    height = None
     scale = None
     endian = None
 
@@ -60,7 +59,7 @@ def load_pfm(fname):
 
         dim_match = re.match(r"^(\d+)\s(\d+)\s$", file.readline().decode("latin-1"))
         if dim_match:
-            width, height = map(int, dim_match.groups())
+            col, row = map(int, dim_match.groups())
         else:
             raise OSError("Malformed PFM header.")
 
@@ -72,11 +71,11 @@ def load_pfm(fname):
             endian = ">"  # big-endian
 
         data = np.fromfile(file, endian + "f")
-        shape = (height, width, 3) if color else (height, width)
+        shape = (row, col, 3) if color else (row, col)
     return np.flipud(np.reshape(data, shape)), scale
 
 
-def read_im(fname, downsample):
+def read_im(fname: str, downsample: bool) -> np.ndarray:
     """
     Read image, apply gray conversion, normalize image
 
@@ -84,6 +83,7 @@ def read_im(fname, downsample):
     :type fname: string
     :param downsample: downsample the image
     :type downsample: bool
+
     :return: data of the file
     :rtype: np.array (1, row, col)
     """
@@ -109,18 +109,21 @@ def read_im(fname, downsample):
 
 
 @njit(parallel=True)
-def compute_mask(left_disp, left_row_disp, right_disp, patch_size):
+def compute_mask(
+    left_disp: np.ndarray, left_row_disp: np.ndarray | None, right_disp: np.ndarray, patch_size: int
+) -> np.ndarray:
     """
     Apply cross-checking, and invalidate pixels with incomplete patch
 
     :param left_disp: Left disparity
     :type left_disp: numpy.array (row, col)
     :param left_row_disp: Left column disparity
-    :type left_row_disp: numpy.array (row, col)
+    :type left_row_disp: numpy.array (row, col), or None
     :param right_disp: Right disparity
     :type right_disp: numpy.array (row, col)
     :param patch_size: patch size
     :type patch_size: int
+
     :return: Result of the cross-checking with the convention : invalid pixels = 0, valid pixels = 1
     :rtype: numpy.array (row, col)
     """
@@ -149,7 +152,9 @@ def compute_mask(left_disp, left_row_disp, right_disp, patch_size):
     return mask
 
 
-def save_dataset(img, sample, num_img, img_file, sample_file):
+def save_dataset(
+    img: list[np.ndarray], sample: np.ndarray, num_img: int, img_file: h5py.Group, sample_file: h5py.Group
+):
     """
     Save the dataset in hdf5 files :
         - images are saved in the img_file file: creation of a group of name num_img that contains number of exposures
@@ -177,8 +182,9 @@ def save_dataset(img, sample, num_img, img_file, sample_file):
 
 
 # pylint: disable=too-many-locals, too-many-branches, too-many-statements, too-many-function-args
-# pylint: disable=too-many-positional-arguments
-def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001, output_dir):
+def middleburry(
+    in_dir_2014: str, in_dir_2006: str, in_dir_2005: str, in_dir_2003: str, in_dir_2001: str, output_dir: str
+):
     """
     Preprocess and create middlebury hdf5 database
 
@@ -297,9 +303,9 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
                 imgs.append(left)
                 imgs.append(right)
 
-            _, height, width = imgs[0].shape
+            _, row, col = imgs[0].shape
             # im_tensor is a list of size = 1 + number of light, im_tensor[0].shape = (3, 2, row, col )
-            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, row, col))
 
         left_disp = rasterio.open(base1 + "/disp1.png").read().astype(np.float32)
         right_disp = rasterio.open(base1 + "/disp5.png").read().astype(np.float32)
@@ -346,10 +352,10 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
                 imgs.append(left)
                 imgs.append(right)
 
-            _, height, width = imgs[0].shape
+            _, row, col = imgs[0].shape
             # im_tensor is a list of size = 1 + number of light
             # im_tensor[0].shape = (3, 2, row, col )
-            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, row, col))
 
         left_disp = rasterio.open(base1 + "/disp1.png").read().astype(np.float32)
         right_disp = rasterio.open(base1 + "/disp5.png").read().astype(np.float32)
@@ -388,11 +394,11 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
         left = read_im(base1 + "/im2.ppm", False)
         right = read_im(base1 + "/im6.ppm", False)
-        _, height, width = left.shape
+        _, row, col = left.shape
 
         imgs.append(left)
         imgs.append(right)
-        im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+        im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, row, col))
 
         left_disp = rasterio.open(base1 + "/disp2.pgm").read().astype(np.float32)
         right_disp = rasterio.open(base1 + "/disp6.pgm").read().astype(np.float32)
@@ -439,11 +445,11 @@ def middleburry(in_dir_2014, in_dir_2006, in_dir_2005, in_dir_2003, in_dir_2001,
 
             left = read_im(os.path.join(base2, fname_x0), False)
             right = read_im(os.path.join(base2, fname_x1), False)
-            _, height, width = left.shape
+            _, row, col = left.shape
 
             imgs.append(left)
             imgs.append(right)
-            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, height, width))
+            im_tensor.append(np.concatenate(imgs).reshape(len(imgs) // 2, 2, row, col))
 
             left_disp = rasterio.open(os.path.join(base2, fname_disp0)).read().astype(np.float32) / 8.0
             right_disp = rasterio.open(os.path.join(base2, fname_disp1)).read().astype(np.float32) / 8.0

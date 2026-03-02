@@ -1,7 +1,4 @@
-#!/usr/bin/env python
-# coding: utf8
-#
-# Copyright (c) 2025 Centre National d'Etudes Spatiales (CNES).
+# Copyright (c) 2026 Centre National d'Etudes Spatiales (CNES).
 #
 # This file is part of PANDORA_MCCNN
 #
@@ -20,19 +17,5 @@
 # limitations under the License.
 #
 """
-Packaging setup.py for compatibility
-All packaging in setup.cfg, except setuptools_scm version activation
+Init file of PANDORA_MCCNN functionaltests module (needed to have a module)
 """
-
-from setuptools import setup
-
-try:
-    setup()
-except Exception:
-    print(
-        "\n\nAn error occurred while building the project, "
-        "please ensure you have the most updated version of setuptools, "
-        "setuptools_scm and wheel with:\n"
-        "   pip install -U setuptools setuptools_scm wheel\n\n"
-    )
-    raise

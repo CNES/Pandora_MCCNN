@@ -43,6 +43,13 @@ default:
     - Usine_Logicielle
   timeout: 30 minutes
 
+# Override to use the Makefile rules
+py-pytest:
+  script:
+    # ${TRACE+-d} define the log level
+    # Install in editable mode to compute coverage
+    - make ${TRACE+-d} test
+  
 py-black:
   stage: test
 
