@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.3.0 (April 2026)
+
 ## 1.3.0.a1 (March 2026)
 
 ### Added
