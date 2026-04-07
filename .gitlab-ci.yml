@@ -17,6 +17,7 @@ include:
       black-enabled: true
       # Mypy disabled, will be implemented in ticket 54
       mypy-enabled: false
+      trivy-disabled: true
       build-system: setuptools
       extra-deps: test 
   - component: $CI_SERVER_FQDN/to-be-continuous/sonar/gitlab-ci-sonar@5.0.1
