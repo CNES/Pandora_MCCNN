@@ -45,6 +45,8 @@ def load_pfm(fname: str) -> tuple[np.ndarray, float]:
     :rtype: tuple(np.array (row, col) , scale factor)
     """
     color = None
+    row = None
+    col = None
     scale = None
     endian = None
 
@@ -207,19 +209,20 @@ def middleburry(
     training_file = h5py.File(os.path.join(output_dir, "training_dataset.hdf5"), "w")
     testing_file = h5py.File(os.path.join(output_dir, "testing_dataset.hdf5"), "w")
 
+    num_image = 0
+
     logging.info("Middlebury 2014")
     # --------------- Middlebury 2014 dataset ---------------
+    num_2014_img = 0
 
-    # Testing dataset = 'Adirondack-imperfect', 'Backpack-imperfect', 'Bicycle1-imperfect', 'Cable-imperfect',
-    # 'Classroom1-imperfect', 'Couch-imperfect', 'Flowers-imperfect'
-    test_ds_range = np.arange(0, 7)
+    # Testing dataset = 'Adirondack-imperfect', 'Backpack-imperfect'
+    test_ds_range = np.arange(0, 2)
 
-    # Training dataset = 'Jadeplant-imperfect', 'Mask-imperfect', 'Motorcycle-imperfect',
+    # Training dataset = 'Bicycle1-imperfect', 'Cable-imperfect', 'Classroom1-imperfect', 'Couch-imperfect',
+    # 'Flowers-imperfect''Jadeplant-imperfect', 'Mask-imperfect', 'Motorcycle-imperfect',
     # 'Piano-imperfect', 'Pipes-imperfect', 'Playroom-imperfect', 'Playtable-imperfect', 'Recycle-imperfect',
     # 'Shelves-imperfect', 'Shopvac-imperfect', 'Sticks-imperfect', 'Storage-imperfect', 'Sword1-imperfect',
     # 'Sword2-imperfect', 'Umbrella-imperfect', 'Vintage-imperfect'
-
-    num_image = 0
 
     for directory in sorted(os.listdir(in_dir_2014)):
         base1 = os.path.join(in_dir_2014, directory)
@@ -254,10 +257,10 @@ def middleburry(
         # Read ground truth disparity
         left_disp, __ = load_pfm(os.path.join(base1, "disp0.pfm"))
         # Downsample
-        left_disp = left_disp[::2, ::2]
+        left_disp = left_disp[::2, ::2] / 2
         right_disp, __ = load_pfm(os.path.join(base1, "disp1.pfm"))
         # Downsample
-        right_disp = right_disp[::2, ::2]
+        right_disp = right_disp[::2, ::2] / 2
 
         # Left GT y-disparities
         left_row_disp, __ = load_pfm(os.path.join(base1, "disp0y.pfm"))
@@ -281,14 +284,24 @@ def middleburry(
             )
         ).astype(np.float32)
 
-        if num_image in test_ds_range:
+        if num_2014_img in test_ds_range:
             save_dataset(im_tensor, data, num_image, img_file, testing_file)
         else:
             save_dataset(im_tensor, data, num_image, img_file, training_file)
+        num_2014_img += 1
         num_image += 1
 
     logging.info("Middlebury 2006")
     # --------------- Middlebury 2006 dataset ---------------
+    num_2006_img = 0
+
+    # Testing dataset = 'Aloe', 'Baby1'
+    test_ds_range = np.arange(0, 2)
+
+    # Training dataset = 'Baby2', 'Baby3', 'Bowling1', 'Bowling2', 'Cloth1', 'Cloth2', Cloth3',
+    # 'Cloth4', 'Flowerpots', 'Lampshade1', 'Lampshade2', 'Midd1', 'Midd2', 'Monopoly' 'Plastic'
+    # 'Rocks1', 'Rocks2', 'Wood1', 'Wood2'
+
     for directory in sorted(os.listdir(in_dir_2006)):
         im_tensor = []
 
@@ -331,11 +344,24 @@ def middleburry(
                 left_disp[non_zero_y_idx, non_zero_x_idx],
             )
         ).astype(np.float32)
-        save_dataset(im_tensor, data, num_image, img_file, training_file)
+
+        if num_2006_img in test_ds_range:
+            save_dataset(im_tensor, data, num_image, img_file, testing_file)
+        else:
+            save_dataset(im_tensor, data, num_image, img_file, training_file)
+        num_2006_img += 1
         num_image += 1
 
     logging.info("Middlebury 2005")
     # --------------- Middlebury 2005 dataset ---------------
+    num_2005_img = 0
+
+    # Testing dataset = 'Art'
+    test_ds_range = np.arange(0, 1)
+
+    # Training dataset = 'Books', 'Computer', 'Dolls', 'Drumsticks', 'Dwarves', 'Laundry',
+    # 'Moebius', 'Reindeer'
+
     for directory in sorted(os.listdir(in_dir_2005)):
         im_tensor = []
 
@@ -381,11 +407,23 @@ def middleburry(
                 left_disp[non_zero_y_idx, non_zero_x_idx],
             )
         ).astype(np.float32)
-        save_dataset(im_tensor, data, num_image, img_file, training_file)
+
+        if num_2005_img in test_ds_range:
+            save_dataset(im_tensor, data, num_image, img_file, testing_file)
+        else:
+            save_dataset(im_tensor, data, num_image, img_file, training_file)
+        num_2005_img += 1
         num_image += 1
 
     logging.info("Middlebury 2003")
     # --------------- Middlebury 2003 dataset ---------------
+    num_2003_img = 0
+
+    # Testing dataset = 'conesH'
+    test_ds_range = np.arange(0, 1)
+
+    # Training dataset = 'teddyH'
+
     for directory in ("conesH", "teddyH"):
         base1 = os.path.join(in_dir_2003, directory)
 
@@ -425,11 +463,23 @@ def middleburry(
                 left_disp[non_zero_y_idx, non_zero_x_idx],
             )
         ).astype(np.float32)
-        save_dataset(im_tensor, data, num_image, img_file, training_file)
+
+        if num_2003_img in test_ds_range:
+            save_dataset(im_tensor, data, num_image, img_file, testing_file)
+        else:
+            save_dataset(im_tensor, data, num_image, img_file, training_file)
+        num_2003_img += 1
         num_image += 1
 
     logging.info("Middlebury 2001")
     # --------------- Middlebury 2001 dataset ---------------
+    num_2001_img = 0
+
+    # Testing dataset = 'barn1'
+    test_ds_range = np.arange(0, 1)
+
+    # Training dataset = 'barn2', 'bull', 'map', 'poster', 'sawtooth', venus'
+
     for directory in sorted(os.listdir(in_dir_2001)):
         if directory == "tsukuba":
             continue
@@ -472,7 +522,12 @@ def middleburry(
                     left_disp[non_zero_y_idx, non_zero_x_idx],
                 )
             ).astype(np.float32)
-            save_dataset(im_tensor, data, num_image, img_file, training_file)
+
+            if num_2001_img in test_ds_range:
+                save_dataset(im_tensor, data, num_image, img_file, testing_file)
+            else:
+                save_dataset(im_tensor, data, num_image, img_file, training_file)
+            num_2001_img += 1
             num_image += 1
 
 
