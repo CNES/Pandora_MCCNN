@@ -18,6 +18,9 @@ endif
 # Check python install in VENV
 CHECK_MC-CNN = $(shell ${VENV}/bin/python3 -m pip list|grep MCCNN)
 
+# Check torch install in VENV
+CHECK_TORCH = $(shell ${VENV}/bin/python3 -m pip list|grep torch)
+
 # Browser definition
 define BROWSER_PYSCRIPT
 import os, webbrowser, sys
@@ -72,10 +75,17 @@ install: venv  ## install environment for development target (depends venv)
 	@[ "${CHECK_MC-CNN}" ] || echo "MC-CNN library installed in dev mode in virtualenv ${VENV}"
 	@[ "${CHECK_MC-CNN}" ] || echo "MC-CNN library venv usage : source ${VENV}/bin/activate; python3 -c 'import mc_cnn' "
 
+
+.PHONY: install-torch
+install-torch: install ## install environment for development with torch
+	@[ "${CHECK_TORCH}" ] || { . ${VENV}/bin/activate; ${VENV}/bin/pip install --no-build-isolation -e .[torch] -v;}
+	@echo "MC-CNN library with torch installed in dev mode in virtualenv ${VENV}"
+	@echo "MC-CNN library venv usage : source ${VENV}/bin/activate; python3 -c 'import mc_cnn' "
+
 ## Test section
 
 .PHONY: test
-test: install reports_dir ## run tests and coverage quickly with the default Python
+test: install install-torch reports_dir ## run tests and coverage quickly with the default Python
 	@${VENV}/bin/pytest -o log_cli=true --cov-config=.coveragerc --cov --cov-report=xml:reports/py-coverage.cobertura.xml --cov-report term --junitxml=pytest-report.xml
 
 .PHONY: test-all
