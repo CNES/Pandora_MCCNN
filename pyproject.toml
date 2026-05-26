@@ -121,7 +121,7 @@ select = ["E", "F", "W", "C", "B9", "C4", "B"]
 archs = "auto64"
 skip = ["pp*", "cp36-*", "cp37-*", "cp38-*", "cp39-*", "*-musllinux*"]
 test-extras = ["test"]
-test-command = "pytest {project}/tests/functional_tests/test_basic.py -k onnx"
+test-command = "pytest {project}/tests/functional_tests/test_basic_onnx.py -k cpp"
 
 # Use delvewheel on windows
 [tool.cibuildwheel.windows]

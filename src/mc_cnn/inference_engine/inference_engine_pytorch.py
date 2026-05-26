@@ -23,12 +23,33 @@ Module for PyTorch inference.
 
 from typing import Any
 
-from torch import device, load, from_numpy, no_grad
 import numpy as np
 from json_checker import And
 
 from . import inference_engine_base
 from ..model.mc_cnn_fast_dyn import FastMcCnnDyn
+
+
+def _get_torch():
+    """
+    Lazily import torch components required for the baseline cost volume computation.
+
+    This function is used instead of a top-level import to make torch an optional
+    dependency. It should be called only in code paths that actually need torch.
+
+    :raises ImportError: If torch is not installed.
+    :return: Tuple of (device, load, from_numpy, no_grad) from torch.
+    :rtype: tuple
+    """
+    try:
+        from torch import device, load, from_numpy, no_grad  # pylint: disable=import-outside-toplevel
+
+        return device, load, from_numpy, no_grad
+    except ImportError as exc:
+        raise ImportError(
+            "Torch is required to use inference_engine_pytorch. "
+            "Install it using : pip install mccnn[torch] or make install-torch"
+        ) from exc
 
 
 @inference_engine_base.AbstractInferenceEngine.register_subclass("pt")
@@ -39,9 +60,17 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
 
     def __init__(self, cfg: dict) -> None:
         super().__init__(cfg)
+        device, load, from_numpy, no_grad = _get_torch()
+
+        # Store as instance attributes
+        self._device_cls = device
+        self._load = load
+        self._from_numpy = from_numpy
+        self._no_grad = no_grad
+
         num_layers = max(1, (int(self.cfg["window_size"]) - 1) // 2)
         self.model = FastMcCnnDyn(num_layers)
-        self.device = device(self.device)
+        self.device = self._device_cls(self.device)  # <- use _device_cls
 
         self.load_model()
 
@@ -56,7 +85,7 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
         """
         PyTorch load model function.
         """
-        state = load(self.model_path, map_location=self.device)
+        state = self._load(self.model_path, map_location=self.device)
         state_dict = state["model"] if isinstance(state, dict) and "model" in state else state
         # strip DataParallel 'module.' if present
         if isinstance(state_dict, dict) and any(k.startswith("module.") for k in state_dict.keys()):
@@ -75,9 +104,9 @@ class PyTorchInferer(inference_engine_base.AbstractInferenceEngine):
         :return: image features (channel=64, row', col'), float32
         """
         # Convert img array into tensor
-        img = from_numpy(img).to(device=self.device)
+        img = self._from_numpy(img).to(device=self.device)
 
-        with no_grad():
+        with self._no_grad():
             # Model inference: as outputs left_features and right _features have the followging shape
             # (64, row', col') where row', col' is different from row, col.
             feats = self.model(img, training=False)

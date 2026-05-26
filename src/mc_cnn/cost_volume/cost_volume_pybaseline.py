@@ -22,11 +22,39 @@ This module contains functions associated to the cost volume computation step
 with the baseline (pytorch) method.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from json_checker import And
 import numpy as np
-from torch import nn, from_numpy, no_grad, Tensor
 
 from .cost_volume_base import AbstractCostVolume
+
+if TYPE_CHECKING:
+    from torch import Tensor
+
+
+def _get_torch():
+    """
+    Lazily import torch components required for the baseline cost volume computation.
+
+    This function is used instead of a top-level import to make torch an optional
+    dependency. It should be called only in code paths that actually need torch.
+
+    :raises ImportError: If torch is not installed.
+    :return: Tuple of (nn, from_numpy, no_grad) from torch.
+    :rtype: tuple
+    """
+    try:
+        from torch import nn, from_numpy, no_grad  # pylint: disable=import-outside-toplevel
+
+        return nn, from_numpy, no_grad
+    except ImportError as exc:
+        raise ImportError(
+            "Torch is required to use cost_volume_pybaseline. "
+            "Install it using : pip install mccnn[torch] or make install-torch"
+        ) from exc
 
 
 @AbstractCostVolume.register_subclass("baseline")
@@ -54,6 +82,9 @@ class CostVolumeBaseline(AbstractCostVolume):
 
         :return: cost volume as numpy array of shape (row, col, disp), float32
         """
+
+        # Import torch
+        nn, from_numpy, no_grad = _get_torch()
 
         # Construct the cost volume
         disparity_range = np.arange(disp_min, disp_max + 1).astype(np.int32)
