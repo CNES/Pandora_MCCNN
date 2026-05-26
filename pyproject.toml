@@ -60,8 +60,6 @@ dependencies = [
     "numpy",
     "numba",
     "rasterio",
-    "torch",
-    "torchvision",
     "h5py",
     "opencv-python-headless!=4.7.0.68",
     "scipy",
@@ -91,6 +89,11 @@ dev = [
 test = ["pytest", "pytest-cov"]
 
 docs = ["sphinx", "sphinx_rtd_theme", "sphinx_autoapi"]
+
+torch = [
+    "torch",
+    "torchvision",
+]
 
 [project.urls]
 Homepage = "https://github.com/CNES/Pandora_MCCNN"
