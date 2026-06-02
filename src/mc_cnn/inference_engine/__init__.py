@@ -20,7 +20,13 @@
 Init file for inference engine module
 """
 
-from . import inference_engine_onnx, inference_engine_pytorch
+from . import inference_engine_onnx
 from .inference_engine_base import AbstractInferenceEngine
 
-__all__ = ["AbstractInferenceEngine", "inference_engine_onnx", "inference_engine_pytorch"]
+try:
+    from . import inference_engine_pytorch
+
+    __all__ = ["AbstractInferenceEngine", "inference_engine_onnx", "inference_engine_pytorch"]
+except ImportError:
+    inference_engine_pytorch = None
+    __all__ = ["AbstractInferenceEngine", "inference_engine_onnx"]

@@ -36,6 +36,21 @@ After cloning source code from repository, do a local pip install in a virtualen
 make install
 ```
 
+PyTorch is an optional dependency. If your work requires it (e.g. training or running neural networks, or loading `.pt` weight files), install the `torch` extras group:
+
+```bash
+make install-torch
+```
+
+or
+
+```bash
+pip install .[torch]
+```
+
+> **Note:** If you do not need PyTorch, the base `make install` is sufficient.
+
+
 ## Usage
 
 Documentation explains how to train and use MCCNN convolutional neural network.
