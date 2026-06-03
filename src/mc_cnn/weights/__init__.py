@@ -23,4 +23,4 @@
 Init file for model package
 """
 
-from .weights import get_weights, get_onnx
+from .weights import get_weights

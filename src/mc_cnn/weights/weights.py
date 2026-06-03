@@ -29,40 +29,25 @@ except ImportError:
     from importlib_resources import files  # python<=3.8
 
 from importlib.abc import Traversable
-from pathlib import Path
 
 AVAILABLE_WEIGHTS = {
     "fast": {"middlebury": "mc_cnn_fast_mb_weights.pt", "dfc": "mc_cnn_fast_data_fusion_contest.pt"},
     "accurate": {"middlebury": "mc_cnn_accurate_mb_weights.pt", "dfc": "mc_cnn_accurate_data_fusion_contest.pt"},
-    "onnx_int8": {"middlebury": "mc_cnn_fast_mb_weights_dynamo_int8_excl_01.onnx"},
-    "onnx_dw": {"middlebury": "mc_cnn_fast_dw.onnx"},
+    "onnx_fast_int8": {"middlebury": "mc_cnn_fast_int8_excl_01.onnx"},
+    "onnx_fast_dw": {"middlebury": "mc_cnn_fast_dw.onnx"},
 }
 
 
-def get_weights(arch="fast", training_dataset="middlebury") -> Traversable:
+def get_weights(arch="onnx_fast_int8", training_dataset="middlebury") -> Traversable:
     """
     Return the absolute path of MC-CNN weights according to network and training parameters
 
-    :param arch: architecture of MC-CNN : "fast" or "accurate"
+    :param arch: architecture of MC-CNN : "fast" / "accurate" / "onnx_fast_int8" or "onnx_fast_dw"
     :type arch: str
     :param training_dataset: training dataset of MC-CNN : "middlebury" of "dfc" (Data Fusion Contest)
     :type training_dataset: str
-    :return: absolute path of MC-CNN weights (.pt file)
+    :return: absolute path of MC-CNN weights (.pt or .onnx file)
     :rtype: PosixPath
     """
     filename = AVAILABLE_WEIGHTS[arch][training_dataset]
     return files("mc_cnn.weights").joinpath(filename)
-
-
-def get_onnx(arch="onnx_int8", training_dataset="middlebury") -> Path:
-    """
-    Return the absolute path of MC-CNN weights according to network and training parameters
-
-    :param arch: architecture of MC-CNN : "onnx_int8" or "onnx_dw"
-    :type arch: str
-    :param training_dataset: training dataset of MC-CNN : "middlebury" of "dfc" (Data Fusion Contest)
-    :type training_dataset: str
-    :return: absolute path of MC-CNN weights (.pt file)
-    :rtype: PosixPath
-    """
-    return Path(AVAILABLE_WEIGHTS[arch][training_dataset])

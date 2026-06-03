@@ -36,6 +36,21 @@ After cloning source code from repository, do a local pip install in a virtualen
 make install
 ```
 
+PyTorch is an optional dependency. If your work requires it (e.g. training or running neural networks, or loading `.pt` weight files), install the `torch` extras group:
+
+```bash
+make install-torch
+```
+
+or
+
+```bash
+pip install .[torch]
+```
+
+> **Note:** If you do not need PyTorch, the base `make install` is sufficient.
+
+
 ## Usage
 
 Documentation explains how to train and use MCCNN convolutional neural network.
@@ -52,16 +67,19 @@ Let's see [pandora_plugin_mccnn](https://github.com/CNES/Pandora_plugin_mccnn) f
 ### Download weights files
 
 Pretrained weights for mc-cnn fast and mc-cnn accurate neural networks are available in the weights directory :
--  mc_cnn_fast_mb_weights.pt and mc_cnn_accurate_mb_weights.pt are the weights of the pretrained networks on the Middlebury dataset [[Middlebury]](#Middlebury)
--  mc_cnn_fast_data_fusion_contest.pt and mc_cnn_accurate_data_fusion_contest.pt are the weights of the pretrained networks on the Data Fusion Contest dataset [[DFC]](#DFC)
+-  mc_cnn_fast_mb_weights.pt and mc_cnn_accurate_mb_weights.pt are the PyTorch weights of the pretrained networks on the Middlebury dataset [[Middlebury]](#Middlebury)
+-  mc_cnn_fast_data_fusion_contest.pt and mc_cnn_accurate_data_fusion_contest.pt are the PyTorch weights of the pretrained networks on the Data Fusion Contest dataset [[DFC]](#DFC)
+-  mc_cnn_fast_int8_excl_01.onnx and mc_cnn_fast_dw.onnx are the ONNX weights of the pretrained networks on the Middlebury dataset [[Middlebury]](#Middlebury)
 
 To download the pretrained weights:
 
 ```bash
-wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/mc_cnn/weights/mc_cnn_fast_mb_weights.pt
-wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/mc_cnn/weights/mc_cnn_fast_data_fusion_contest.pt
-wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/mc_cnn/weights/mc_cnn_accurate_mb_weights.pt
-wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/mc_cnn/weights/mc_cnn_accurate_data_fusion_contest.pt
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/src/mc_cnn/weights/mc_cnn_fast_mb_weights.pt
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/src/mc_cnn/weights/mc_cnn_fast_data_fusion_contest.pt
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/src/mc_cnn/weights/mc_cnn_accurate_mb_weights.pt
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/src/mc_cnn/weights/mc_cnn_accurate_data_fusion_contest.pt
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/src/mc_cnn/weights/mc_cnn_fast_int8_excl_01.onnx
+wget https://raw.githubusercontent.com/CNES/Pandora_MCCNN/master/src/mc_cnn/weights/mc_cnn_fast_dw.onnx
 ```
 
 ### Access weights from pip package
@@ -70,11 +88,13 @@ Pretrained weights are stored into the pip package and downloaded for any instal
 To access it, use the `weights` submodule :
 
 ```python
-from mc_cnn.weights import get_weights
+from mc_cnn.weights import get_weights, get_onnx
 mc_cnn_fast_mb_weights_path = get_weights(arch="fast", training_dataset="middlebury")
 mc_cnn_fast_data_fusion_contest_path = get_weights(arch="fast", training_dataset="dfc")
 mc_cnn_accurate_mb_weights_path = get_weights(arch="accurate", training_dataset="middlebury")
 mc_cnn_accurate_data_fusion_contest = get_weights(arch="accurate", training_dataset="dfc")
+onnx_mc_cnn_fast_int_8_mb_weights_path = get_onnx(arch="onnx_fast_int8", training_dataset="middlebury")
+onnx_mc_cnn_fast_dw_mb_weights_path = get_onnx(arch="onnx_fast_dw", training_dataset="middlebury")
 ```
 
 ## References

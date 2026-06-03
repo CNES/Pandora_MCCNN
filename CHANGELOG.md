@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.0a1 (June 2026)
+
+### Changed
+
+- Updated onnx weights. [#68]
+- Removed pytorch dependency. [#67]
+
+### Fixed
+
+- Fixed Middlebury pre-processing
+
 ## 1.3.0 (April 2026)
 
 ## 1.3.0.a1 (March 2026)

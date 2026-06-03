@@ -71,7 +71,7 @@ jobs:
 
     - name: Install mc-cnn
       run: |
-        pip install .[dev]
+        pip install .[dev,torch]
         pip freeze
 
     - name: Test with pytest
