@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.4.1a1 (August 2026)
+
+### Fixed
+
+- Fixed minimal version of mlflow. [#71]
+
 ## 1.4.0 (June 2026)
 
 ## 1.4.0a1 (June 2026)
