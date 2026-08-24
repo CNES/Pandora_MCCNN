@@ -65,8 +65,7 @@ dependencies = [
     "scipy",
     "onnxruntime",
     "psutil",
-    "tqdm",
-    "mlflow>=3.14.0",
+    "typing_extensions",
 ]
 
 [project.optional-dependencies]
@@ -84,6 +83,8 @@ dev = [
     "build",
     "tox",
     "mypy",
+    "tqdm",
+    "mlflow>=3.14.0",
 ]
 
 test = ["pytest", "pytest-cov"]

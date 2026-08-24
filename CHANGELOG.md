@@ -1,5 +1,7 @@
 # Changelog
 
+## 1.4.1 (August 2026)
+
 ## 1.4.1a1 (August 2026)
 
 ### Fixed
