@@ -65,15 +65,7 @@ dependencies = [
     "scipy",
     "onnxruntime",
     "psutil",
-<<<<<<< Updated upstream
-=======
-<<<<<<< Updated upstream
-    "tqdm",
-    "mlflow>=3.14.0",
-=======
     "typing_extensions",
->>>>>>> Stashed changes
->>>>>>> Stashed changes
 ]
 
 [project.optional-dependencies]
