@@ -34,7 +34,7 @@ copyright = "2026, CNES"
 author = "CNES"
 
 # The full version, including alpha/beta/rc tags
-version = "1.4.1a1"
+version = "1.4.1"
 
 
 # -- General configuration ---------------------------------------------------
